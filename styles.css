@@ -811,20 +811,6 @@ body {
 
 /* Responsive Design */
 @media (min-width: 768px) {
-    .events-layout {
-        flex-direction: column;
-    }
-
-    .filter-panel {
-        width: 100%;
-        position: static;
-        max-height: none;
-    }
-
-    .controls-section {
-        grid-template-columns: 2fr 1fr;
-    }
-
     .events-container {
         grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     }
@@ -837,6 +823,18 @@ body {
         flex-direction: row;
         align-items: center;
         justify-content: space-between;
+    }
+}
+
+@media (max-width: 767px) {
+    .events-layout {
+        flex-direction: column;
+    }
+
+    .filter-panel {
+        width: 100%;
+        position: static;
+        max-height: none;
     }
 }
 
