@@ -36,18 +36,9 @@
         // Also expose as const for backward compatibility
         const NASA_API_CONFIG = window.NASA_API_CONFIG;
         
-        // Astronomy API Configuration
-        window.ASTRONOMY_API_CONFIG = {
-            appId: '95875ee4-2471-4b8e-970f-4d11d9ce0ea7',
-            appSecret: '7d3127a493c01e1484bc248b1b20ea4bc93b42c7efcfda31cff18cd782529855976fc03aa34088efff1d05aa87e10b3a0b33ba48ac1b1dd813ae1a323f00659429d3b48b3cf74ff30ed9d9b2b413d7575fc3d60e7f1124980249dc0815c2e5acf709ed3e029e94c8333b729aeca88daa',
-            baseUrl: 'https://api.astronomyapi.com/api/v2',
-            // Cache settings (in milliseconds)
-            cacheSettings: {
-                events: 6 * 60 * 60 * 1000,      // 6 hours
-                positions: 1 * 60 * 60 * 1000,   // 1 hour (planet positions change slowly)
-                skyMap: 30 * 60 * 1000           // 30 minutes
-            }
-        };
+        // Note: Astronomy API (api.astronomyapi.com) requires server-side proxy due to CORS
+        // Replaced with Open-Meteo Astronomy API (free, CORS-enabled, no key required)
+        // Old credentials kept in api-info-DO-NOT-DELETE.txt for reference
         
         // Also expose as const for backward compatibility
         const ASTRONOMY_API_CONFIG = window.ASTRONOMY_API_CONFIG;
@@ -131,7 +122,7 @@
                         </label>
                         <label class="filter-checkbox">
                             <input type="checkbox" value="astronomy" checked>
-                            <span>Astronomy API (Moon phases & planet positions)</span>
+                            <span>Open-Meteo Astronomy (Moon phases & sun events)</span>
                         </label>
                     </div>
                     <button id="applyFilters" class="apply-button">Apply Filters</button>

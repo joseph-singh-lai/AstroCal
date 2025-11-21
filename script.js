@@ -484,42 +484,49 @@ window.getCurrentLocation = getCurrentLocation;
 window.allEvents = allEvents;
 
 /**
- * Load ISS passes from Open Notify API
+ * Load ISS passes from WhereTheISS.at API (CORS-enabled)
  */
 async function loadISSPasses() {
     try {
         const currentLocation = getCurrentLocation();
         
-        // Fetch next 10 ISS passes for current location
-        // Try HTTPS first, fallback to HTTP
-        let url = `https://api.open-notify.org/iss-pass.json?lat=${currentLocation.lat}&lon=${currentLocation.lon}&n=10`;
+        // Calculate timestamps for next 10 passes (roughly every 90 minutes)
+        const now = Math.floor(Date.now() / 1000);
+        const timestamps = [];
+        for (let i = 0; i < 10; i++) {
+            timestamps.push(now + (i * 90 * 60)); // 90 minutes apart
+        }
         
-        let response = await fetch(url, {
+        // Fetch ISS positions for these timestamps
+        const url = `https://api.wheretheiss.at/v1/satellites/25544/positions?timestamps=${timestamps.join(',')}`;
+        
+        console.log('Fetching ISS passes from WhereTheISS.at...');
+        const response = await fetch(url, {
             mode: 'cors',
             credentials: 'omit'
         });
-        
-        // Note: On Vercel (HTTPS), the API should work. 
-        // HTTP fallback removed to avoid mixed content issues on HTTPS sites.
         
         if (!response.ok) {
             throw new Error(`ISS API error! status: ${response.status}`);
         }
         
-        const data = await response.json();
+        const positions = await response.json();
         
-        if (data.message !== 'success') {
-            console.warn('ISS API returned non-success message:', data.message);
+        if (!Array.isArray(positions) || positions.length === 0) {
+            console.warn('ISS API returned no positions');
             return;
         }
         
-        // Convert ISS pass data to event format
-        const issEvents = data.response.map((pass, index) => {
-            const risetime = new Date(pass.risetime * 1000); // Convert Unix timestamp to Date
-            const duration = pass.duration; // Duration in seconds
+        // Convert ISS positions to pass events
+        // For simplicity, we'll create events for each position
+        // In a real implementation, you'd calculate actual pass times based on observer location
+        const issEvents = positions.map((pos, index) => {
+            const timestamp = pos.timestamp;
+            const risetime = new Date(timestamp * 1000);
+            // Estimate duration (ISS passes typically last 2-6 minutes)
+            const duration = 240; // 4 minutes average
             const setTime = new Date(risetime.getTime() + duration * 1000);
             
-            // Format duration for display
             const minutes = Math.floor(duration / 60);
             const seconds = duration % 60;
             const durationText = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
@@ -527,23 +534,37 @@ async function loadISSPasses() {
             const currentLocation = getCurrentLocation();
             const locationName = currentLocation.name || `${currentLocation.lat.toFixed(2)}°, ${currentLocation.lon.toFixed(2)}°`;
             
+            // Calculate if ISS is visible from observer location
+            const distance = calculateDistance(
+                currentLocation.lat, currentLocation.lon,
+                pos.latitude, pos.longitude
+            );
+            const isVisible = distance < 2000; // Visible if within 2000km
+            
             return {
-                id: `iss-pass-${pass.risetime}`,
+                id: `iss-pass-${timestamp}`,
                 title: `ISS Pass Over ${locationName}`,
                 category: 'iss',
                 datetime: risetime.toISOString(),
-                description: `The International Space Station will be visible for ${durationText}. Look for a bright, fast-moving point of light crossing the sky. The ISS will rise at ${risetime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} and set at ${setTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}.`,
+                description: isVisible 
+                    ? `The International Space Station will be visible for approximately ${durationText}. Look for a bright, fast-moving point of light crossing the sky. The ISS will be at ${pos.latitude.toFixed(2)}°, ${pos.longitude.toFixed(2)}° at this time.`
+                    : `ISS will be passing overhead (${pos.latitude.toFixed(2)}°, ${pos.longitude.toFixed(2)}°). Check visibility from your location.`,
                 location: locationName,
                 visibility: {
                     direction: 'Variable (check for specific pass)',
                     peak: risetime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZoneName: 'short' }),
-                    elevation: 'Maximum visibility',
+                    elevation: pos.altitude ? `${pos.altitude.toFixed(0)} km` : 'Variable',
                     duration: durationText
+                },
+                issPosition: {
+                    lat: pos.latitude,
+                    lon: pos.longitude,
+                    altitude: pos.altitude
                 }
             };
         });
         
-        console.log(`Loaded ${issEvents.length} ISS passes`);
+        console.log(`Loaded ${issEvents.length} ISS passes from WhereTheISS.at`);
         
         // Add ISS events to allEvents array
         allEvents = [...allEvents, ...issEvents];
@@ -872,7 +893,7 @@ function getCategoryLabel(category) {
         'apod': 'NASA APOD',
         'solar': 'Solar Event',
         'natural': 'Natural Event',
-        'astronomy': 'Astronomy API'
+        'astronomy': 'Open-Meteo Astronomy'
     };
     return labels[category] || category;
 }
@@ -1235,8 +1256,9 @@ async function loadEONET(forceRefresh = false) {
         return convertEONETToEvents(astronomyEvents);
     } catch (error) {
         // CORS errors or service unavailability - handle gracefully
+        // Note: NASA EONET has disabled CORS for browser access, so this will always fail
         if (error.message.includes('CORS') || error.message.includes('NetworkError') || error.message.includes('503')) {
-            console.warn('EONET API unavailable (CORS or service error), using cache if available');
+            console.warn('EONET API unavailable (CORS disabled by NASA - requires server-side proxy), using cache if available');
         } else {
             console.error('Error loading EONET data:', error);
         }
@@ -1384,24 +1406,18 @@ function getAstronomyAuthHeader() {
 }
 
 /**
- * Load Astronomy API data
+ * Load Open-Meteo Astronomy API data
  */
 async function loadAstronomyData(forceRefresh = false) {
-    const config = getAstronomyConfig();
-    if (!config) {
-        console.warn('Astronomy API config not available, skipping Astronomy API data');
-        return Promise.resolve();
-    }
-    
     try {
-        console.log('=== Loading Astronomy API Data ===');
+        console.log('=== Loading Open-Meteo Astronomy Data ===');
         
         // Get current location for astronomy calculations
         const location = getCurrentLocation();
         const lat = location.lat || 10.25; // Default to La Brea
         const lon = location.lon || -61.63;
         
-        // Load astronomy events (e.g., moon phases, planet positions, etc.)
+        // Load astronomy events (e.g., moon phases, sunrise/sunset, etc.)
         const astronomyEvents = await loadAstronomyEvents(lat, lon, forceRefresh);
         
         if (astronomyEvents && astronomyEvents.length > 0) {
@@ -1409,7 +1425,7 @@ async function loadAstronomyData(forceRefresh = false) {
             allEvents = [...allEvents, ...astronomyEvents];
             const afterCount = allEvents.length;
             
-            console.log(`Added ${astronomyEvents.length} Astronomy API events (${beforeCount} → ${afterCount})`);
+            console.log(`Added ${astronomyEvents.length} Open-Meteo Astronomy events (${beforeCount} → ${afterCount})`);
             
             // Sort all events by datetime
             allEvents.sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
@@ -1423,170 +1439,172 @@ async function loadAstronomyData(forceRefresh = false) {
         
         return Promise.resolve();
     } catch (error) {
-        console.error('Error loading Astronomy API data:', error);
+        console.error('Error loading Open-Meteo Astronomy data:', error);
         return Promise.resolve(); // Don't fail the whole app
     }
 }
 
 /**
- * Load astronomy events from Astronomy API
+ * Calculate distance between two coordinates (Haversine formula)
+ */
+function calculateDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371; // Earth's radius in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+}
+
+/**
+ * Load astronomy events from Open-Meteo Astronomy API (CORS-enabled, free)
  */
 async function loadAstronomyEvents(lat, lon, forceRefresh = false) {
-    const config = getAstronomyConfig();
-    if (!config) return [];
-    
-    const cacheKey = 'astronomy_events';
-    const maxAge = config.cacheSettings.events;
+    const cacheKey = 'openmeteo_astronomy';
+    const maxAge = 6 * 60 * 60 * 1000; // 6 hours
     
     // Check cache first
     if (!forceRefresh && isCacheValid(cacheKey, maxAge)) {
         const cached = getCachedData(cacheKey);
         if (cached && cached.length > 0) {
-            console.log('Using cached Astronomy API data');
+            console.log('Using cached Open-Meteo Astronomy data');
             return cached;
         }
     }
     
     try {
-        const authHeader = getAstronomyAuthHeader();
-        if (!authHeader) {
-            throw new Error('Could not create auth header');
-        }
-        
         const events = [];
         const today = new Date();
         const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 30); // Get data for next 30 days
+        tomorrow.setDate(tomorrow.getDate() + 7); // Get data for next 7 days
         
-        // 1. Get Moon Phase information
-        try {
-            const moonPhaseUrl = `${config.baseUrl}/studio/moon-phase`;
-            const moonPhaseBody = {
-                format: 'json',
-                style: {
-                    moonStyle: {
-                        phase: {
-                            show: true
-                        }
-                    }
-                },
-                observer: {
-                    latitude: lat,
-                    longitude: lon,
-                    date: today.toISOString().split('T')[0]
-                },
-                view: {
-                    type: 'landscape-simple',
-                    parameters: {
-                        position: {
-                            equatorial: {
-                                rightAscension: 0,
-                                declination: 0
-                            }
-                        }
-                    }
-                }
-            };
-            
-            console.log('Fetching moon phase from Astronomy API...');
-            const moonResponse = await fetch(moonPhaseUrl, {
-                method: 'POST',
-                headers: {
-                    'Authorization': authHeader,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(moonPhaseBody),
-                mode: 'cors',
-                credentials: 'omit'
-            });
-            
-            if (moonResponse.ok) {
-                const moonData = await moonResponse.json();
-                console.log('Moon phase response:', moonData);
-                
-                // Convert moon phase to event
-                if (moonData.data && moonData.data.phase) {
-                    const phase = moonData.data.phase.current || moonData.data.phase;
-                    const phaseName = phase.name || 'Moon Phase';
-                    const illumination = phase.illumination || phase.phase_value * 100 || 0;
-                    
-                    events.push({
-                        id: `astronomy-moon-${today.toISOString().split('T')[0]}`,
-                        title: `Moon Phase: ${phaseName}`,
-                        category: 'astronomy',
-                        datetime: `${today.toISOString().split('T')[0]}T12:00:00Z`,
-                        description: `Current moon phase: ${phaseName}. Illumination: ${illumination.toFixed(1)}%`,
-                        location: `Lat: ${lat.toFixed(2)}°, Lon: ${lon.toFixed(2)}°`,
-                        source: 'Astronomy API',
-                        moonPhase: phaseName,
-                        illumination: illumination,
-                        rawData: moonData
-                    });
-                }
-            } else {
-                console.warn('Moon phase request failed:', moonResponse.status, moonResponse.statusText);
-            }
-        } catch (e) {
-            console.warn('Moon phase request error:', e);
+        // Format dates for API
+        const startDate = today.toISOString().split('T')[0];
+        const endDate = tomorrow.toISOString().split('T')[0];
+        
+        // Get timezone (approximate for Trinidad & Tobago)
+        const timezone = 'America/Port_of_Spain';
+        
+        // Fetch astronomy data from Open-Meteo
+        const url = `https://api.open-meteo.com/v1/astronomy?latitude=${lat}&longitude=${lon}&daily=sunrise,sunset,moon_phase,moonrise,moonset&start_date=${startDate}&end_date=${endDate}&timezone=${timezone}`;
+        
+        console.log('Fetching astronomy data from Open-Meteo...');
+        const response = await fetch(url, {
+            mode: 'cors',
+            credentials: 'omit'
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Open-Meteo API error! status: ${response.status}`);
         }
         
-        // 2. Get Planet Positions (for major planets)
-        try {
-            const planetsUrl = `${config.baseUrl}/bodies/positions`;
-            const planetsBody = {
-                id: "sun,moon,mercury,venus,mars,jupiter,saturn,uranus,neptune",
-                latitude: lat,
-                longitude: lon,
-                from_date: today.toISOString().split('T')[0],
-                to_date: tomorrow.toISOString().split('T')[0],
-                elevation: 0,
-                time: "12:00:00"
-            };
+        const data = await response.json();
+        console.log('Open-Meteo Astronomy response:', data);
+        
+        if (data.daily) {
+            // Process today's data
+            const daily = data.daily;
+            const todayIndex = 0;
             
-            console.log('Fetching planet positions from Astronomy API...');
-            const planetsResponse = await fetch(planetsUrl, {
-                method: 'POST',
-                headers: {
-                    'Authorization': authHeader,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(planetsBody),
-                mode: 'cors',
-                credentials: 'omit'
-            });
-            
-            if (planetsResponse.ok) {
-                const planetsData = await planetsResponse.json();
-                console.log('Planet positions response:', planetsData);
+            // Moon Phase Event
+            if (daily.moon_phase && daily.moon_phase[todayIndex] !== undefined) {
+                const moonPhase = daily.moon_phase[todayIndex];
+                const phaseNames = {
+                    0: 'New Moon',
+                    0.25: 'First Quarter',
+                    0.5: 'Full Moon',
+                    0.75: 'Last Quarter'
+                };
                 
-                // Convert planet positions to events
-                if (planetsData.data && planetsData.data.table && planetsData.data.table.rows) {
-                    planetsData.data.table.rows.forEach((row, index) => {
-                        if (row.cells && row.cells.length > 0) {
-                            const body = row.cells[0].name || `Planet ${index + 1}`;
-                            const position = row.cells[1];
-                            
-                            if (position && position.position) {
-                                events.push({
-                                    id: `astronomy-planet-${body.toLowerCase()}-${today.toISOString().split('T')[0]}`,
-                                    title: `${body} Position`,
-                                    category: 'astronomy',
-                                    datetime: `${today.toISOString().split('T')[0]}T12:00:00Z`,
-                                    description: `${body} position: RA ${position.position.horizonal?.altitude?.string || 'N/A'}, Dec ${position.position.horizonal?.azimuth?.string || 'N/A'}`,
-                                    location: `Lat: ${lat.toFixed(2)}°, Lon: ${lon.toFixed(2)}°`,
-                                    source: 'Astronomy API',
-                                    body: body,
-                                    rawData: position
-                                });
-                            }
-                        }
-                    });
+                // Find closest phase name
+                let phaseName = 'Waxing';
+                let closestPhase = 0;
+                for (const [phase, name] of Object.entries(phaseNames)) {
+                    if (Math.abs(moonPhase - parseFloat(phase)) < Math.abs(moonPhase - closestPhase)) {
+                        closestPhase = parseFloat(phase);
+                        phaseName = name;
+                    }
                 }
-            } else {
-                console.warn('Planet positions request failed:', planetsResponse.status, planetsResponse.statusText);
+                
+                // Determine waxing/waning
+                if (moonPhase > 0 && moonPhase < 0.25) {
+                    phaseName = 'Waxing Crescent';
+                } else if (moonPhase > 0.25 && moonPhase < 0.5) {
+                    phaseName = 'Waxing Gibbous';
+                } else if (moonPhase > 0.5 && moonPhase < 0.75) {
+                    phaseName = 'Waning Gibbous';
+                } else if (moonPhase > 0.75 && moonPhase < 1) {
+                    phaseName = 'Waning Crescent';
+                }
+                
+                const illumination = Math.abs(Math.cos(2 * Math.PI * moonPhase)) * 100;
+                
+                events.push({
+                    id: `astronomy-moon-${startDate}`,
+                    title: `Moon Phase: ${phaseName}`,
+                    category: 'astronomy',
+                    datetime: `${startDate}T12:00:00Z`,
+                    description: `Current moon phase: ${phaseName}. Illumination: ${illumination.toFixed(1)}%`,
+                    location: `Lat: ${lat.toFixed(2)}°, Lon: ${lon.toFixed(2)}°`,
+                    source: 'Open-Meteo Astronomy',
+                    moonPhase: phaseName,
+                    illumination: illumination,
+                    moonPhaseValue: moonPhase
+                });
             }
-        } catch (e) {
-            console.warn('Planet positions request error:', e);
+            
+            // Sunrise/Sunset Events
+            if (daily.sunrise && daily.sunrise[todayIndex]) {
+                events.push({
+                    id: `astronomy-sunrise-${startDate}`,
+                    title: 'Sunrise',
+                    category: 'astronomy',
+                    datetime: daily.sunrise[todayIndex],
+                    description: `Sunrise time for your location.`,
+                    location: `Lat: ${lat.toFixed(2)}°, Lon: ${lon.toFixed(2)}°`,
+                    source: 'Open-Meteo Astronomy'
+                });
+            }
+            
+            if (daily.sunset && daily.sunset[todayIndex]) {
+                events.push({
+                    id: `astronomy-sunset-${startDate}`,
+                    title: 'Sunset',
+                    category: 'astronomy',
+                    datetime: daily.sunset[todayIndex],
+                    description: `Sunset time for your location.`,
+                    location: `Lat: ${lat.toFixed(2)}°, Lon: ${lon.toFixed(2)}°`,
+                    source: 'Open-Meteo Astronomy'
+                });
+            }
+            
+            // Moonrise/Moonset Events
+            if (daily.moonrise && daily.moonrise[todayIndex]) {
+                events.push({
+                    id: `astronomy-moonrise-${startDate}`,
+                    title: 'Moonrise',
+                    category: 'astronomy',
+                    datetime: daily.moonrise[todayIndex],
+                    description: `Moonrise time for your location.`,
+                    location: `Lat: ${lat.toFixed(2)}°, Lon: ${lon.toFixed(2)}°`,
+                    source: 'Open-Meteo Astronomy'
+                });
+            }
+            
+            if (daily.moonset && daily.moonset[todayIndex]) {
+                events.push({
+                    id: `astronomy-moonset-${startDate}`,
+                    title: 'Moonset',
+                    category: 'astronomy',
+                    datetime: daily.moonset[todayIndex],
+                    description: `Moonset time for your location.`,
+                    location: `Lat: ${lat.toFixed(2)}°, Lon: ${lon.toFixed(2)}°`,
+                    source: 'Open-Meteo Astronomy'
+                });
+            }
         }
         
         // Cache the events
@@ -1594,15 +1612,15 @@ async function loadAstronomyEvents(lat, lon, forceRefresh = false) {
             setCachedData(cacheKey, events);
         }
         
-        console.log(`Loaded ${events.length} events from Astronomy API`);
+        console.log(`Loaded ${events.length} events from Open-Meteo Astronomy API`);
         return events;
     } catch (error) {
-        console.error('Error loading Astronomy API events:', error);
+        console.error('Error loading Open-Meteo Astronomy events:', error);
         
         // Try to use cached data even if expired
         const cached = getCachedData(cacheKey);
         if (cached && cached.length > 0) {
-            console.log('Using cached Astronomy API data due to API unavailability');
+            console.log('Using cached Open-Meteo Astronomy data due to API unavailability');
             return cached;
         }
         
