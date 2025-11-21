@@ -8,7 +8,34 @@
     <link rel="stylesheet" href="styles.css">
     <!-- Leaflet CSS for GIBS map -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="config.js"></script>
+    <script>
+        // NASA API Configuration (inlined to avoid MIME type issues on Vercel)
+        window.NASA_API_CONFIG = {
+            apiKey: 'X2dVwncjWkOz6OrVnWpO16W5eWE6NaAXz3BHH67Q',
+            baseUrl: 'https://api.nasa.gov',
+            
+            // Cache settings (in milliseconds)
+            cacheSettings: {
+                apod: 24 * 60 * 60 * 1000,      // 24 hours (APOD is daily)
+                donki: 6 * 60 * 60 * 1000,      // 6 hours (solar events update frequently)
+                eonet: 12 * 60 * 60 * 1000,     // 12 hours (natural events)
+            },
+            
+            // Date ranges for fetching events
+            dateRanges: {
+                donki: {
+                    startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days ago
+                    endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]   // 30 days ahead
+                },
+                eonet: {
+                    days: 30 // Last 30 days
+                }
+            }
+        };
+        
+        // Also expose as const for backward compatibility
+        const NASA_API_CONFIG = window.NASA_API_CONFIG;
+    </script>
 </head>
 <body>
     <div id="app">
