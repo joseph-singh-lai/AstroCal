@@ -1460,11 +1460,14 @@ async function loadAstronomyEvents(lat, lon, forceRefresh = false) {
     try {
         const events = [];
         
+        // Get today's date in YYYY-MM-DD format (required by Open-Meteo)
+        const today = new Date().toISOString().split('T')[0];
+        
         // Get timezone (Trinidad & Tobago)
         const timezone = 'America/Port_of_Spain';
         
-        // Build URL with correct parameters (no start_date/end_date for astronomy endpoint)
-        const url = `https://api.open-meteo.com/v1/astronomy?latitude=${lat}&longitude=${lon}&daily=sunrise,sunset,moonrise,moonset,moon_phase&timezone=${timezone}`;
+        // Build URL with required date parameters
+        const url = `https://api.open-meteo.com/v1/astronomy?latitude=${lat}&longitude=${lon}&daily=sunrise,sunset,moonrise,moonset,moon_phase&timezone=${timezone}&start_date=${today}&end_date=${today}`;
         
         console.log('Fetching astronomy data from Open-Meteo...');
         console.log('URL:', url);
