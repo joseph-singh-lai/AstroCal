@@ -282,12 +282,27 @@ function switchGIBSLayer(layerKey) {
     
     // Add tile error handler as event listener (not constructor option)
     currentLayer.on('tileerror', function(error, tile) {
-        console.warn('GIBS tile error for:', layerConfig.name, 'URL:', tile.src);
+        console.warn('GIBS tile error for:', layerConfig.name);
         console.warn('Error details:', error);
         
         // Check Network tab - tile might be blocked by CORS or 404
-        if (tile.src) {
+        if (tile && tile.src) {
             console.log('Failed tile URL:', tile.src);
+        } else if (tile && tile.coords) {
+            // Tile might not have src yet, but we can reconstruct the URL
+            const coords = tile.coords;
+            const level = coords.z;
+            const maxRow = Math.pow(2, level) - 1;
+            const invertedRow = maxRow - coords.y;
+            const failedUrl = baseUrl
+                .replace('{time}', time)
+                .replace('{level}', level)
+                .replace('{row}', invertedRow)
+                .replace('{col}', coords.x);
+            console.log('Failed tile URL (reconstructed):', failedUrl);
+            console.log('Tile coords:', coords);
+        } else {
+            console.warn('Tile error - tile object not available');
         }
     });
 
