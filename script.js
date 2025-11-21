@@ -145,48 +145,98 @@ function setupNavigation() {
                         } else {
                             console.log('GIBS map already exists, forcing re-render...');
                             
-                            // Force map to re-render by invalidating size multiple times
-                            if (window.gibsMap && window.gibsMap.invalidateSize) {
-                                // First invalidation
-                                window.gibsMap.invalidateSize();
-                                
-                                // Update location if available
-                                if (typeof updateGIBSMapLocation === 'function') {
-                                    updateGIBSMapLocation();
-                                }
-                                
-                                // Force multiple invalidations to ensure tiles reload
-                                setTimeout(() => {
-                                    if (window.gibsMap) {
-                                        window.gibsMap.invalidateSize();
-                                        // Trigger a view change to force tile reload
-                                        const currentCenter = window.gibsMap.getCenter();
-                                        const currentZoom = window.gibsMap.getZoom();
-                                        window.gibsMap.setView(currentCenter, currentZoom);
-                                        console.log('Map view refreshed, center:', currentCenter, 'zoom:', currentZoom);
+                            // Check if map object is valid
+                            if (!window.gibsMap) {
+                                console.error('window.gibsMap is null or undefined');
+                                // Try to re-initialize
+                                initGIBSMap();
+                                return;
+                            }
+                            
+                            console.log('Map object exists, type:', typeof window.gibsMap);
+                            console.log('Map has invalidateSize:', typeof window.gibsMap.invalidateSize);
+                            
+                            try {
+                                // Force map to re-render by invalidating size multiple times
+                                if (window.gibsMap.invalidateSize) {
+                                    console.log('Calling invalidateSize()...');
+                                    window.gibsMap.invalidateSize();
+                                    console.log('First invalidateSize() completed');
+                                    
+                                    // Update location if available
+                                    if (typeof updateGIBSMapLocation === 'function') {
+                                        console.log('Updating map location...');
+                                        updateGIBSMapLocation();
                                     }
-                                }, 200);
-                                
-                                setTimeout(() => {
-                                    if (window.gibsMap) {
-                                        window.gibsMap.invalidateSize();
-                                        console.log('Final map size invalidation complete');
-                                        
-                                        // Check if tiles are loading
-                                        if (window.gibsMap._layers) {
-                                            const layers = Object.values(window.gibsMap._layers);
-                                            const tileLayers = layers.filter(l => l._url || l._tileUrl);
-                                            console.log('Active tile layers:', tileLayers.length);
-                                            tileLayers.forEach((layer, idx) => {
-                                                if (layer._tiles) {
-                                                    const tiles = Object.values(layer._tiles);
-                                                    const loaded = tiles.filter(t => t.complete && t.naturalWidth > 0).length;
-                                                    console.log(`Layer ${idx}: ${loaded} tiles loaded`);
+                                    
+                                    // Force multiple invalidations to ensure tiles reload
+                                    setTimeout(() => {
+                                        try {
+                                            if (window.gibsMap) {
+                                                console.log('Second invalidateSize() call...');
+                                                window.gibsMap.invalidateSize();
+                                                
+                                                // Trigger a view change to force tile reload
+                                                if (window.gibsMap.getCenter && window.gibsMap.getZoom) {
+                                                    const currentCenter = window.gibsMap.getCenter();
+                                                    const currentZoom = window.gibsMap.getZoom();
+                                                    console.log('Current map state - center:', currentCenter, 'zoom:', currentZoom);
+                                                    
+                                                    if (window.gibsMap.setView) {
+                                                        window.gibsMap.setView(currentCenter, currentZoom);
+                                                        console.log('Map view refreshed');
+                                                    }
                                                 }
-                                            });
+                                            }
+                                        } catch (e) {
+                                            console.error('Error in second invalidateSize timeout:', e);
                                         }
-                                    }
-                                }, 500);
+                                    }, 200);
+                                    
+                                    setTimeout(() => {
+                                        try {
+                                            if (window.gibsMap) {
+                                                console.log('Third invalidateSize() call...');
+                                                window.gibsMap.invalidateSize();
+                                                console.log('Final map size invalidation complete');
+                                                
+                                                // Check if tiles are loading
+                                                if (window.gibsMap._layers) {
+                                                    const layers = Object.values(window.gibsMap._layers);
+                                                    console.log('Total layers on map:', layers.length);
+                                                    
+                                                    const tileLayers = layers.filter(l => l._url || l._tileUrl || (l.options && l.options.getTileUrl));
+                                                    console.log('Active tile layers found:', tileLayers.length);
+                                                    
+                                                    tileLayers.forEach((layer, idx) => {
+                                                        console.log(`Layer ${idx} type:`, layer.constructor.name);
+                                                        if (layer._tiles) {
+                                                            const tiles = Object.values(layer._tiles);
+                                                            const loaded = tiles.filter(t => t.complete && t.naturalWidth > 0).length;
+                                                            const total = tiles.length;
+                                                            console.log(`Layer ${idx}: ${loaded}/${total} tiles loaded`);
+                                                            
+                                                            if (loaded === 0 && total > 0) {
+                                                                console.warn(`Layer ${idx} has no loaded tiles!`);
+                                                            }
+                                                        } else {
+                                                            console.log(`Layer ${idx} has no _tiles property`);
+                                                        }
+                                                    });
+                                                } else {
+                                                    console.warn('Map has no _layers property');
+                                                }
+                                            }
+                                        } catch (e) {
+                                            console.error('Error in third invalidateSize timeout:', e);
+                                        }
+                                    }, 500);
+                                } else {
+                                    console.error('Map does not have invalidateSize method');
+                                }
+                            } catch (e) {
+                                console.error('Error during map re-render:', e);
+                                console.error('Error stack:', e.stack);
                             }
                         }
                     } else {
