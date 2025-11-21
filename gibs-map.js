@@ -5,66 +5,57 @@ let gibsMap = null;
 let currentLayer = null;
 let mapInitializationAttempted = false;
 
-// GIBS tile layer URLs - Using correct WMTS format
-// Note: GIBS tiles may have CORS restrictions. Using NASA Worldview as alternative.
+// GIBS tile layer URLs - Using correct WMTS format from official GIBS service
+// Format: https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/{Layer}/default/{Time}/GoogleMapsCompatible_Level8/{z}/{y}/{x}.{format}
+// Reference: https://nasa-gibs.github.io/gibs-web-examples/map-tile-service-templates.html
 const GIBS_LAYERS = {
     blueMarble: {
         name: 'Blue Marble (Day)',
-        // Try NASA Worldview CDN first (more reliable)
-        url: 'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/BlueMarble_ShadedRelief_Bathymetry/default/{time}/GoogleMapsCompatible_Level{level}/{level}/{row}/{col}.jpg',
+        layerName: 'BlueMarble_ShadedRelief_Bathymetry',
+        url: 'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/BlueMarble_ShadedRelief_Bathymetry/default/{time}/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpg',
         attribution: 'NASA Blue Marble',
-        time: '2024-01-01',
-        format: 'jpg',
-        // Alternative: Use NASA Worldview tile service (try this first)
-        altUrl: 'https://map1.vis.earthdata.nasa.gov/wmts-geo/BlueMarble_ShadedRelief_Bathymetry/default/{time}/GoogleMapsCompatible_Level{level}/{level}/{row}/{col}.jpg'
+        time: '2013-01-01', // Valid date for this layer
+        format: 'jpg'
     },
     blueMarbleNight: {
         name: 'Blue Marble (Night)',
-        url: 'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_CityLights_2012/default/{time}/GoogleMapsCompatible_Level{level}/{level}/{row}/{col}.jpg',
+        layerName: 'VIIRS_SNPP_DayNightBand_ENCC',
+        url: 'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_SNPP_DayNightBand_ENCC/default/{time}/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpeg',
         attribution: 'NASA VIIRS Night Lights',
-        time: '2012-01-01',
-        format: 'jpg',
-        altUrl: 'https://map1.vis.earthdata.nasa.gov/wmts-geo/VIIRS_CityLights_2012/default/{time}/GoogleMapsCompatible_Level{level}/{level}/{row}/{col}.jpg'
-    },
-    viirsDayNight: {
-        name: 'VIIRS Day/Night Band',
-        url: 'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_DayNightBand_ENCC/default/{time}/GoogleMapsCompatible_Level{level}/{level}/{row}/{col}.jpg',
-        attribution: 'NASA VIIRS',
-        time: new Date().toISOString().split('T')[0],
-        format: 'jpg',
-        altUrl: 'https://map1.vis.earthdata.nasa.gov/wmts-geo/VIIRS_DayNightBand_ENCC/default/{time}/GoogleMapsCompatible_Level{level}/{level}/{row}/{col}.jpg'
+        time: '2020-01-01', // Valid date for this layer
+        format: 'jpeg'
     },
     modisTerra: {
         name: 'MODIS Terra True Color',
-        url: 'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/{time}/GoogleMapsCompatible_Level{level}/{level}/{row}/{col}.jpg',
+        layerName: 'MODIS_Terra_CorrectedReflectance_TrueColor',
+        url: 'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/{time}/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpeg',
         attribution: 'NASA MODIS Terra',
-        time: new Date().toISOString().split('T')[0],
-        format: 'jpg',
-        altUrl: 'https://map1.vis.earthdata.nasa.gov/wmts-geo/MODIS_Terra_CorrectedReflectance_TrueColor/default/{time}/GoogleMapsCompatible_Level{level}/{level}/{row}/{col}.jpg'
+        time: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 7 days ago (more likely to have data)
+        format: 'jpeg'
     },
     modisAqua: {
         name: 'MODIS Aqua True Color',
-        url: 'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Aqua_CorrectedReflectance_TrueColor/default/{time}/GoogleMapsCompatible_Level{level}/{level}/{row}/{col}.jpg',
+        layerName: 'MODIS_Aqua_CorrectedReflectance_TrueColor',
+        url: 'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Aqua_CorrectedReflectance_TrueColor/default/{time}/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpeg',
         attribution: 'NASA MODIS Aqua',
-        time: new Date().toISOString().split('T')[0],
-        format: 'jpg',
-        altUrl: 'https://map1.vis.earthdata.nasa.gov/wmts-geo/MODIS_Aqua_CorrectedReflectance_TrueColor/default/{time}/GoogleMapsCompatible_Level{level}/{level}/{row}/{col}.jpg'
+        time: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 7 days ago
+        format: 'jpeg'
     },
     fires: {
         name: 'Active Fires',
-        url: 'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/FIRMS/default/{time}/GoogleMapsCompatible_Level{level}/{level}/{row}/{col}.png',
+        layerName: 'VIIRS_SNPP_CorrectedReflectance_BandsM11-I2-I1',
+        url: 'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/FIRMS/default/{time}/GoogleMapsCompatible_Level8/{z}/{y}/{x}.png',
         attribution: 'NASA FIRMS',
-        time: new Date().toISOString().split('T')[0],
-        format: 'png',
-        altUrl: 'https://map1.vis.earthdata.nasa.gov/wmts-geo/FIRMS/default/{time}/GoogleMapsCompatible_Level{level}/{level}/{row}/{col}.png'
+        time: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Yesterday
+        format: 'png'
     },
     aerosol: {
         name: 'Aerosol Index',
-        url: 'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/OMI_Aerosol_Index/default/{time}/GoogleMapsCompatible_Level{level}/{level}/{row}/{col}.png',
+        layerName: 'OMI_Aerosol_Index',
+        url: 'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/OMI_Aerosol_Index/default/{time}/GoogleMapsCompatible_Level8/{z}/{y}/{x}.png',
         attribution: 'NASA OMI',
-        time: new Date().toISOString().split('T')[0],
-        format: 'png',
-        altUrl: 'https://map1.vis.earthdata.nasa.gov/wmts-geo/OMI_Aerosol_Index/default/{time}/GoogleMapsCompatible_Level{level}/{level}/{row}/{col}.png'
+        time: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 7 days ago
+        format: 'png'
     }
 };
 
@@ -229,11 +220,10 @@ function switchGIBSLayer(layerKey) {
     // Create new layer with proper WMTS format
     const time = layerConfig.time || new Date().toISOString().split('T')[0];
     
-    // Use Leaflet's tileLayer with custom getTileUrl
-    // Try alternative URL first (NASA Worldview CDN), fallback to main GIBS URL
-    // Note: altUrl is often more reliable, so we try it first
-    const baseUrl = layerConfig.altUrl || layerConfig.url;
-    console.log('Using tile URL base:', baseUrl.substring(0, 80) + '...');
+    // Use the correct GIBS URL format: {z}/{y}/{x} (not {level}/{row}/{col})
+    // Format: .../GoogleMapsCompatible_Level8/{z}/{y}/{x}.{format}
+    const baseUrl = layerConfig.url;
+    console.log('Using GIBS layer:', layerConfig.name, 'Time:', time);
     
     currentLayer = L.tileLayer('', {
         attribution: `© ${layerConfig.attribution} | NASA GIBS`,
@@ -247,22 +237,18 @@ function switchGIBSLayer(layerKey) {
         updateWhenZooming: false,
         getTileUrl: function(coords) {
             try {
-                // Convert Leaflet coords to GIBS WMTS format
-                const level = coords.z;
-                const row = coords.y;
-                const col = coords.x;
+                // Leaflet coords: z (zoom), x (column), y (row)
+                // GIBS format uses: {z}/{y}/{x} directly (no inversion needed for this format)
+                const z = coords.z;
+                const y = coords.y;
+                const x = coords.x;
                 
-                // GIBS uses inverted Y coordinates (TMS format)
-                const maxRow = Math.pow(2, level) - 1;
-                const invertedRow = maxRow - row;
-                
-                // Build the actual GIBS tile URL
-                // Replace all placeholders - need to replace {level} multiple times if it appears multiple times
+                // Build the actual GIBS tile URL with correct format
                 let gibsUrl = baseUrl
                     .replace(/{time}/g, time)
-                    .replace(/{level}/g, level)  // Use global replace in case {level} appears multiple times
-                    .replace(/{row}/g, invertedRow)
-                    .replace(/{col}/g, col);
+                    .replace(/{z}/g, z)
+                    .replace(/{y}/g, y)
+                    .replace(/{x}/g, x);
                 
                 // Use Vercel serverless function as CORS proxy
                 const proxyUrl = `/api/gibs-tile?url=${encodeURIComponent(gibsUrl)}`;
@@ -301,14 +287,11 @@ function switchGIBSLayer(layerKey) {
             
             // Reconstruct URL from coordinates (more reliable than tile.src which might be error placeholder)
             if (coords) {
-                const level = coords.z;
-                const maxRow = Math.pow(2, level) - 1;
-                const invertedRow = maxRow - coords.y;
                 const failedUrl = baseUrl
                     .replace(/{time}/g, time)
-                    .replace(/{level}/g, level)  // Use global replace
-                    .replace(/{row}/g, invertedRow)
-                    .replace(/{col}/g, coords.x);
+                    .replace(/{z}/g, coords.z)
+                    .replace(/{y}/g, coords.y)
+                    .replace(/{x}/g, coords.x);
                 console.log('Failed tile URL:', failedUrl);
                 console.log('Tile coords:', coords);
                 console.log('⚠️ Check Network tab for this URL - likely CORS, 404, or authentication required');
