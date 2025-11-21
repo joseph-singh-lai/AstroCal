@@ -1383,27 +1383,9 @@ async function loadNASAData(forceRefresh = false) {
     }
 }
 
-// Helper function to get Astronomy API config
-function getAstronomyConfig() {
-    if (typeof ASTRONOMY_API_CONFIG !== 'undefined') {
-        return ASTRONOMY_API_CONFIG;
-    }
-    if (typeof window !== 'undefined' && window.ASTRONOMY_API_CONFIG) {
-        return window.ASTRONOMY_API_CONFIG;
-    }
-    console.error('ASTRONOMY_API_CONFIG is not defined');
-    return null;
-}
-
-// Helper function to create Basic Auth header for Astronomy API
-function getAstronomyAuthHeader() {
-    const config = getAstronomyConfig();
-    if (!config) return null;
-    
-    // Create Basic Auth: base64(appId:appSecret)
-    const credentials = btoa(`${config.appId}:${config.appSecret}`);
-    return `Basic ${credentials}`;
-}
+// Note: Astronomy API (api.astronomyapi.com) requires server-side proxy due to CORS restrictions
+// We've replaced it with Open-Meteo Astronomy API which is free and CORS-enabled
+// The old config functions are removed as they're no longer needed
 
 /**
  * Load Open-Meteo Astronomy API data
