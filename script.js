@@ -82,7 +82,8 @@ document.addEventListener('DOMContentLoaded', () => {
     Promise.all([
         loadEvents(),
         loadISSPasses(),
-        loadNASAData()
+        loadNASAData(),
+        loadAstronomyData()
     ]).then(() => {
         console.log('All events loaded. Total:', allEvents.length);
         console.log('Event categories:', [...new Set(allEvents.map(e => e.category))]);
@@ -1356,6 +1357,153 @@ async function loadNASAData(forceRefresh = false) {
     } catch (error) {
         console.error('Error loading NASA data:', error);
         return Promise.resolve(); // Don't fail the whole app if NASA APIs fail
+    }
+}
+
+// Helper function to get Astronomy API config
+function getAstronomyConfig() {
+    if (typeof ASTRONOMY_API_CONFIG !== 'undefined') {
+        return ASTRONOMY_API_CONFIG;
+    }
+    if (typeof window !== 'undefined' && window.ASTRONOMY_API_CONFIG) {
+        return window.ASTRONOMY_API_CONFIG;
+    }
+    console.error('ASTRONOMY_API_CONFIG is not defined');
+    return null;
+}
+
+// Helper function to create Basic Auth header for Astronomy API
+function getAstronomyAuthHeader() {
+    const config = getAstronomyConfig();
+    if (!config) return null;
+    
+    // Create Basic Auth: base64(appId:appSecret)
+    const credentials = btoa(`${config.appId}:${config.appSecret}`);
+    return `Basic ${credentials}`;
+}
+
+/**
+ * Load Astronomy API data
+ */
+async function loadAstronomyData(forceRefresh = false) {
+    const config = getAstronomyConfig();
+    if (!config) {
+        console.warn('Astronomy API config not available, skipping Astronomy API data');
+        return Promise.resolve();
+    }
+    
+    try {
+        console.log('=== Loading Astronomy API Data ===');
+        
+        // Get current location for astronomy calculations
+        const location = getCurrentLocation();
+        const lat = location.lat || 10.25; // Default to La Brea
+        const lon = location.lon || -61.63;
+        
+        // Load astronomy events (e.g., moon phases, planet positions, etc.)
+        const astronomyEvents = await loadAstronomyEvents(lat, lon, forceRefresh);
+        
+        if (astronomyEvents && astronomyEvents.length > 0) {
+            const beforeCount = allEvents.length;
+            allEvents = [...allEvents, ...astronomyEvents];
+            const afterCount = allEvents.length;
+            
+            console.log(`Added ${astronomyEvents.length} Astronomy API events (${beforeCount} → ${afterCount})`);
+            
+            // Sort all events by datetime
+            allEvents.sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
+            window.allEvents = allEvents;
+            
+            // Re-apply filters if this is called after initial load
+            if (beforeCount > 0) {
+                applyFilters();
+            }
+        }
+        
+        return Promise.resolve();
+    } catch (error) {
+        console.error('Error loading Astronomy API data:', error);
+        return Promise.resolve(); // Don't fail the whole app
+    }
+}
+
+/**
+ * Load astronomy events from Astronomy API
+ */
+async function loadAstronomyEvents(lat, lon, forceRefresh = false) {
+    const config = getAstronomyConfig();
+    if (!config) return [];
+    
+    const cacheKey = 'astronomy_events';
+    const maxAge = config.cacheSettings.events;
+    
+    // Check cache first
+    if (!forceRefresh && isCacheValid(cacheKey, maxAge)) {
+        const cached = getCachedData(cacheKey);
+        if (cached && cached.length > 0) {
+            console.log('Using cached Astronomy API data');
+            return cached;
+        }
+    }
+    
+    try {
+        const authHeader = getAstronomyAuthHeader();
+        if (!authHeader) {
+            throw new Error('Could not create auth header');
+        }
+        
+        // Get current date for events
+        const today = new Date();
+        const events = [];
+        
+        // Try to get moon phase information
+        // Note: Adjust endpoints based on actual Astronomy API documentation
+        try {
+            // Example endpoint - adjust based on actual API
+            const moonPhaseUrl = `${config.baseUrl}/moon-phase?latitude=${lat}&longitude=${lon}&date=${today.toISOString().split('T')[0]}`;
+            
+            console.log('Fetching from Astronomy API:', moonPhaseUrl);
+            
+            const response = await fetch(moonPhaseUrl, {
+                method: 'GET',
+                headers: {
+                    'Authorization': authHeader,
+                    'Content-Type': 'application/json'
+                },
+                mode: 'cors',
+                credentials: 'omit'
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                console.log('Astronomy API response:', data);
+                // Convert to events based on API response structure
+                // This will need to be adjusted based on actual API response
+            } else {
+                console.warn('Astronomy API request failed:', response.status, response.statusText);
+            }
+        } catch (e) {
+            console.warn('Astronomy API request error:', e);
+        }
+        
+        // Cache the events
+        if (events.length > 0) {
+            setCachedData(cacheKey, events);
+        }
+        
+        console.log(`Loaded ${events.length} events from Astronomy API`);
+        return events;
+    } catch (error) {
+        console.error('Error loading Astronomy API events:', error);
+        
+        // Try to use cached data even if expired
+        const cached = getCachedData(cacheKey);
+        if (cached && cached.length > 0) {
+            console.log('Using cached Astronomy API data due to API unavailability');
+            return cached;
+        }
+        
+        return [];
     }
 }
 
