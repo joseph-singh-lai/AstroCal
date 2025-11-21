@@ -202,13 +202,15 @@ function requestUserLocation() {
     }
 
     // Check if running on HTTPS or localhost (required for geolocation)
+    // Vercel provides HTTPS, so this should work in production
     const isSecure = window.location.protocol === 'https:' || 
                      window.location.hostname === 'localhost' || 
-                     window.location.hostname === '127.0.0.1';
+                     window.location.hostname === '127.0.0.1' ||
+                     window.location.hostname.endsWith('.vercel.app');
     
     if (!isSecure && window.location.protocol !== 'file:') {
-        alert('Geolocation requires HTTPS or localhost. Please use a secure connection or run locally.');
-        return;
+        console.warn('Geolocation may not work without HTTPS');
+        // Don't block, just warn - Vercel provides HTTPS
     }
 
     if (locationPermissionRequested) {
@@ -356,15 +358,8 @@ async function loadISSPasses() {
             credentials: 'omit'
         });
         
-        // If HTTPS fails, try HTTP (though it may have CORS issues)
-        if (!response.ok && response.status === 404) {
-            console.warn('HTTPS ISS API failed, trying HTTP...');
-            url = `http://api.open-notify.org/iss-pass.json?lat=${currentLocation.lat}&lon=${currentLocation.lon}&n=10`;
-            response = await fetch(url, {
-                mode: 'cors',
-                credentials: 'omit'
-            });
-        }
+        // Note: On Vercel (HTTPS), the API should work. 
+        // HTTP fallback removed to avoid mixed content issues on HTTPS sites.
         
         if (!response.ok) {
             throw new Error(`ISS API error! status: ${response.status}`);

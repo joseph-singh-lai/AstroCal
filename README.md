@@ -1,6 +1,6 @@
-# Astronomy Events Planner
+# Astronomy Explorer
 
-A simple, clean web app for viewing astronomy events in La Brea, Trinidad & Tobago.
+A comprehensive, interactive web app for astronomy enthusiasts featuring event browsing, NASA satellite imagery, and an interactive sky map. Built for La Brea, Trinidad & Tobago with global location support.
 
 ## 🚀 Quick Start
 
@@ -50,11 +50,14 @@ AstroCal/
 
 ## 🌟 Features
 
-- View astronomy events for La Brea, Trinidad & Tobago
-- Filter by category (Meteor Showers, Planet Visibility, etc.)
-- Search events
-- Responsive, dark-mode friendly design
-- Click events for detailed information
+- **Events Browser**: View astronomy events (meteor showers, planet visibility, ISS passes, NASA APOD, solar events)
+- **Interactive Sky Map**: Explore the night sky with zoom, pan, and click interactions
+- **Satellite Imagery**: Browse NASA GIBS satellite imagery and OpenStreetMap
+- **Geolocation Support**: Automatic location detection with user permission
+- **NASA API Integration**: Real-time data from APOD, DONKI, and EONET
+- **Smart Caching**: Offline support with localStorage caching
+- **Responsive Design**: Works on desktop, tablet, and mobile
+- **Dark Theme**: Optimized for night-time astronomy viewing
 
 ## 📅 Event Data
 
