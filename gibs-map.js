@@ -10,12 +10,12 @@ let mapInitializationAttempted = false;
 const GIBS_LAYERS = {
     blueMarble: {
         name: 'Blue Marble (Day)',
-        // Using NASA Worldview which provides GIBS tiles through a CDN
+        // Try NASA Worldview CDN first (more reliable)
         url: 'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/BlueMarble_ShadedRelief_Bathymetry/default/{time}/GoogleMapsCompatible_Level{level}/{level}/{row}/{col}.jpg',
         attribution: 'NASA Blue Marble',
         time: '2024-01-01',
         format: 'jpg',
-        // Alternative: Use NASA Worldview tile service
+        // Alternative: Use NASA Worldview tile service (try this first)
         altUrl: 'https://map1.vis.earthdata.nasa.gov/wmts-geo/BlueMarble_ShadedRelief_Bathymetry/default/{time}/GoogleMapsCompatible_Level{level}/{level}/{row}/{col}.jpg'
     },
     blueMarbleNight: {
@@ -233,7 +233,9 @@ function switchGIBSLayer(layerKey) {
     
     // Use Leaflet's tileLayer with custom getTileUrl
     // Try alternative URL first (NASA Worldview CDN), fallback to main GIBS URL
+    // Note: altUrl is often more reliable, so we try it first
     const baseUrl = layerConfig.altUrl || layerConfig.url;
+    console.log('Using tile URL base:', baseUrl.substring(0, 80) + '...');
     
     currentLayer = L.tileLayer('', {
         attribution: `© ${layerConfig.attribution} | NASA GIBS`,
@@ -242,9 +244,9 @@ function switchGIBSLayer(layerKey) {
         tileSize: 256,
         zoomOffset: 0,
         // Optimize tile loading
-        keepBuffer: 2, // Keep fewer tiles in buffer for faster loading
-        updateWhenIdle: false, // Update tiles while panning
-        updateWhenZooming: false, // Update tiles while zooming
+        keepBuffer: 2,
+        updateWhenIdle: false,
+        updateWhenZooming: false,
         getTileUrl: function(coords) {
             try {
                 // Convert Leaflet coords to GIBS WMTS format
@@ -263,14 +265,39 @@ function switchGIBSLayer(layerKey) {
                     .replace('{row}', invertedRow)
                     .replace('{col}', col);
                 
+                // Debug: log first few tile URLs to check format
+                if (coords.x === 0 && coords.y === 0) {
+                    console.log('Sample GIBS tile URL:', url);
+                }
+                
                 return url;
             } catch (e) {
                 console.error('Error generating tile URL:', e);
                 return '';
             }
         },
-        crossOrigin: 'anonymous', // Handle CORS
-        errorTileUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
+        crossOrigin: 'anonymous',
+        errorTileUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+        // Add tile error handler
+        tileerror: function(error, tile) {
+            console.warn('GIBS tile error:', error, 'URL:', tile.src);
+            // If using altUrl and getting errors, try main URL
+            if (baseUrl === layerConfig.altUrl && layerConfig.url && !this._triedMainUrl) {
+                console.log('Trying main GIBS URL format...');
+                this._triedMainUrl = true;
+                // Switch to main URL
+                const mainUrl = layerConfig.url;
+                const level = tile.coords.z;
+                const maxRow = Math.pow(2, level) - 1;
+                const invertedRow = maxRow - tile.coords.y;
+                const newUrl = mainUrl
+                    .replace('{time}', time)
+                    .replace('{level}', level)
+                    .replace('{row}', invertedRow)
+                    .replace('{col}', tile.coords.x);
+                tile.src = newUrl;
+            }
+        }
     });
 
     // Add layer with error handling
