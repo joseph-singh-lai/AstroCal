@@ -277,26 +277,17 @@ function switchGIBSLayer(layerKey) {
             }
         },
         crossOrigin: 'anonymous',
-        errorTileUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
-        // Add tile error handler
-        tileerror: function(error, tile) {
-            console.warn('GIBS tile error:', error, 'URL:', tile.src);
-            // If using altUrl and getting errors, try main URL
-            if (baseUrl === layerConfig.altUrl && layerConfig.url && !this._triedMainUrl) {
-                console.log('Trying main GIBS URL format...');
-                this._triedMainUrl = true;
-                // Switch to main URL
-                const mainUrl = layerConfig.url;
-                const level = tile.coords.z;
-                const maxRow = Math.pow(2, level) - 1;
-                const invertedRow = maxRow - tile.coords.y;
-                const newUrl = mainUrl
-                    .replace('{time}', time)
-                    .replace('{level}', level)
-                    .replace('{row}', invertedRow)
-                    .replace('{col}', tile.coords.x);
-                tile.src = newUrl;
-            }
+        errorTileUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
+    });
+    
+    // Add tile error handler as event listener (not constructor option)
+    currentLayer.on('tileerror', function(error, tile) {
+        console.warn('GIBS tile error for:', layerConfig.name, 'URL:', tile.src);
+        console.warn('Error details:', error);
+        
+        // Check Network tab - tile might be blocked by CORS or 404
+        if (tile.src) {
+            console.log('Failed tile URL:', tile.src);
         }
     });
 
