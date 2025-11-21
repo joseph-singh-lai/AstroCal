@@ -86,12 +86,19 @@ document.addEventListener('DOMContentLoaded', () => {
         loadAstronomyData()
     ]).then(() => {
         console.log('All events loaded. Total:', allEvents.length);
-        console.log('Event categories:', [...new Set(allEvents.map(e => e.category))]);
+        const actualCategories = [...new Set(allEvents.map(e => e.category))];
+        console.log('Event categories:', actualCategories);
+        
+        // Update filter checkboxes to only show categories that have events
+        updateFilterCheckboxes(actualCategories);
+        
         applyFilters();
     }).catch((error) => {
         console.error('Error loading events:', error);
         // Even if some fail, show what we have
         if (allEvents.length > 0) {
+            const actualCategories = [...new Set(allEvents.map(e => e.category))];
+            updateFilterCheckboxes(actualCategories);
             applyFilters();
         }
     });
