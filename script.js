@@ -13,7 +13,7 @@ function getNASAConfig() {
 // Global state
 let allEvents = [];
 let filteredEvents = [];
-let selectedCategories = new Set(['meteor', 'planet', 'iss', 'workshop', 'apod', 'solar', 'natural', 'astronomy']);
+let selectedCategories = new Set(['meteor', 'planet', 'iss', 'apod', 'solar', 'astronomy']);
 
 // Location state
 let userLocation = null;
@@ -889,10 +889,8 @@ function getCategoryLabel(category) {
         'meteor': 'Meteor Shower',
         'planet': 'Planet Visibility',
         'iss': 'ISS Pass',
-        'workshop': 'Workshop',
         'apod': 'NASA APOD',
         'solar': 'Solar Event',
-        'natural': 'Natural Event',
         'astronomy': 'Open-Meteo Astronomy'
     };
     return labels[category] || category;
