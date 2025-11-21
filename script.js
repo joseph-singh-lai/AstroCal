@@ -126,20 +126,29 @@ function setupNavigation() {
                 setTimeout(() => {
                     if (typeof initGIBSMap === 'function') {
                         if (!window.gibsMap) {
+                            console.log('Initializing GIBS map...');
                             initGIBSMap();
                         } else {
+                            console.log('GIBS map already exists, invalidating size...');
                             if (typeof updateGIBSMapLocation === 'function') {
                                 updateGIBSMapLocation();
                             }
                             // Invalidate size in case container was hidden
                             if (window.gibsMap && window.gibsMap.invalidateSize) {
                                 window.gibsMap.invalidateSize();
+                                // Force a re-render
+                                setTimeout(() => {
+                                    if (window.gibsMap) {
+                                        window.gibsMap.invalidateSize();
+                                        console.log('Map size invalidated after section switch');
+                                    }
+                                }, 100);
                             }
                         }
                     } else {
                         console.error('initGIBSMap function not found');
                     }
-                }, 300); // Increased delay to ensure container is visible
+                }, 500); // Increased delay to ensure container is visible and rendered
             }
 
             if (targetSection === 'sky') {

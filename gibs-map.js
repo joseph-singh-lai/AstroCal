@@ -115,15 +115,53 @@ function initGIBSMap() {
         });
 
         // Start with OpenStreetMap as reliable fallback
-        currentLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors | <a href="https://www.openstreetmap.org/copyright">OSM</a>',
+        // Use CartoDB Positron as a more reliable alternative to OSM
+        currentLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '© OpenStreetMap contributors, © CARTO | <a href="https://www.openstreetmap.org/copyright">OSM</a>',
             maxZoom: 19,
-            subdomains: 'abc'
+            subdomains: 'abcd',
+            ext: 'png'
         });
-        currentLayer.addTo(gibsMap);
-        console.log('Map initialized with OpenStreetMap base layer');
         
-        // Try to load GIBS layer after a short delay to ensure map is rendered
+        // Add error handling for tile loading
+        currentLayer.on('tileerror', function(error, tile) {
+            console.warn('Tile load error:', error, tile);
+        });
+        
+        currentLayer.addTo(gibsMap);
+        console.log('Map initialized with CartoDB base layer');
+        
+        // Force map to resize and render after container becomes visible
+        setTimeout(() => {
+            if (gibsMap) {
+                console.log('Invalidating map size and checking tile loading...');
+                gibsMap.invalidateSize();
+                
+                // Check if tiles are loading
+                setTimeout(() => {
+                    if (currentLayer && currentLayer._tiles) {
+                        const tiles = Object.values(currentLayer._tiles);
+                        const loaded = tiles.filter(t => t.complete && t.naturalWidth > 0).length;
+                        const total = tiles.length;
+                        console.log(`Base layer tiles: ${loaded}/${total} loaded`);
+                        
+                        if (loaded === 0 && total > 0) {
+                            console.warn('No tiles loaded, trying alternative tile provider...');
+                            // Try OpenStreetMap directly
+                            gibsMap.removeLayer(currentLayer);
+                            currentLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                                attribution: '© OpenStreetMap contributors',
+                                maxZoom: 19
+                            });
+                            currentLayer.addTo(gibsMap);
+                            gibsMap.invalidateSize();
+                        }
+                    }
+                }, 2000);
+            }
+        }, 500);
+        
+        // Try to load GIBS layer after ensuring base layer works
         setTimeout(() => {
             if (gibsMap) {
                 console.log('Attempting to load GIBS Blue Marble layer...');
@@ -131,10 +169,10 @@ function initGIBSMap() {
                     switchGIBSLayer('blueMarble');
                 } catch (e) {
                     console.warn('GIBS layer failed to load:', e);
-                    console.log('Continuing with OpenStreetMap base layer');
+                    console.log('Continuing with base layer');
                 }
             }
-        }, 1000);
+        }, 3000);
     } catch (error) {
         console.error('Error initializing map:', error);
         mapContainer.innerHTML = `<div style="padding: 2rem; text-align: center; color: var(--text-secondary);">Error initializing map: ${error.message}</div>`;
@@ -178,8 +216,9 @@ function initGIBSMap() {
     setTimeout(() => {
         if (gibsMap && gibsMap.invalidateSize) {
             gibsMap.invalidateSize();
+            console.log('Map size invalidated');
         }
-    }, 100);
+    }, 200);
 }
 
 /**

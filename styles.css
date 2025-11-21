@@ -644,6 +644,18 @@ body {
     border: 2px solid var(--border-color);
     background-color: var(--bg-secondary);
     margin-bottom: 1rem;
+    position: relative;
+}
+
+/* Ensure Leaflet map container has proper styling */
+.map-container .leaflet-container {
+    width: 100% !important;
+    height: 100% !important;
+    background-color: #e8f4f8 !important; /* Light blue background while tiles load */
+}
+
+.map-container .leaflet-tile-container img {
+    max-width: none !important;
 }
 
 .map-info {
