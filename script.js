@@ -723,7 +723,52 @@ function applyFilters() {
             `${cat}: ${filteredEvents.filter(e => e.category === cat).length}`
         ).join(', '));
     
+    // Sort events: closest upcoming first, then future, then past (most recent past first)
+    filteredEvents = sortEventsByProximity(filteredEvents);
+    
     renderEvents();
+}
+
+/**
+ * Sort events by proximity: closest upcoming first, then future, then past (most recent first)
+ */
+function sortEventsByProximity(events) {
+    const now = new Date();
+    
+    // Separate events into upcoming and past
+    const upcoming = [];
+    const past = [];
+    
+    events.forEach(event => {
+        const eventDate = new Date(event.datetime);
+        const diff = eventDate - now;
+        
+        if (diff >= 0) {
+            // Upcoming event - store time until event
+            upcoming.push({
+                event: event,
+                timeUntil: diff
+            });
+        } else {
+            // Past event - store time since event (absolute value)
+            past.push({
+                event: event,
+                timeSince: Math.abs(diff)
+            });
+        }
+    });
+    
+    // Sort upcoming events by time until event (ascending - closest first)
+    upcoming.sort((a, b) => a.timeUntil - b.timeUntil);
+    
+    // Sort past events by time since event (ascending - most recent first, then older)
+    past.sort((a, b) => a.timeSince - b.timeSince);
+    
+    // Combine: upcoming first, then past
+    return [
+        ...upcoming.map(item => item.event),
+        ...past.map(item => item.event)
+    ];
 }
 
 /**
