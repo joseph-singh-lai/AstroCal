@@ -1,0 +1,25 @@
+# API Keys and Configuration
+config.js
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+
+# Node modules (if you add Node.js later)
+node_modules/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+

@@ -1,0 +1,1140 @@
+// Global state
+let allEvents = [];
+let filteredEvents = [];
+let selectedCategories = new Set(['meteor', 'planet', 'iss', 'workshop', 'apod', 'solar', 'natural']);
+
+// Location state
+let userLocation = null;
+let locationPermissionRequested = false;
+
+// La Brea, Trinidad & Tobago coordinates (fallback)
+const LA_BREA_COORDS = {
+    lat: 10.25,
+    lon: -61.63,
+    name: 'La Brea, Trinidad & Tobago'
+};
+
+// DOM Elements (will be initialized after DOM loads)
+let eventsContainer;
+let searchInput;
+let applyFiltersButton;
+let eventDetailSection;
+let filterCheckboxes;
+let locationButton;
+let locationStatus;
+let clearLocationButton;
+let refreshNASAButton;
+
+// Initialize app
+document.addEventListener('DOMContentLoaded', () => {
+    // Initialize DOM elements
+    eventsContainer = document.getElementById('eventsContainer');
+    searchInput = document.getElementById('searchInput');
+    applyFiltersButton = document.getElementById('applyFilters');
+    eventDetailSection = document.getElementById('eventDetail');
+    filterCheckboxes = document.querySelectorAll('.filter-checkbox input[type="checkbox"]');
+    locationButton = document.getElementById('locationButton');
+    locationStatus = document.getElementById('locationStatus');
+    clearLocationButton = document.getElementById('clearLocationButton');
+    refreshNASAButton = document.getElementById('refreshNASA');
+    
+    // Check if elements exist
+    if (!eventsContainer) {
+        console.error('Events container not found!');
+        return;
+    }
+    
+    // Check for saved location in localStorage
+    const savedLocation = localStorage.getItem('userLocation');
+    if (savedLocation) {
+        try {
+            userLocation = JSON.parse(savedLocation);
+            updateLocationStatus(userLocation);
+        } catch (e) {
+            console.error('Error parsing saved location:', e);
+            updateLocationStatus(LA_BREA_COORDS);
+        }
+    } else {
+        // Initialize with default location
+        updateLocationStatus(LA_BREA_COORDS);
+    }
+    
+    // Load all events in parallel
+    Promise.all([
+        loadEvents(),
+        loadISSPasses(),
+        loadNASAData()
+    ]).then(() => {
+        applyFilters();
+    }).catch(() => {
+        // Even if some fail, show what we have
+        if (allEvents.length > 0) {
+            applyFilters();
+        }
+    });
+    
+    setupEventListeners();
+    setupNavigation();
+});
+
+/**
+ * Setup navigation between sections
+ */
+function setupNavigation() {
+    const navButtons = document.querySelectorAll('.nav-button');
+    const sections = document.querySelectorAll('.content-section');
+
+    navButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const targetSection = button.getAttribute('data-section');
+
+            // Update active button
+            navButtons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+
+            // Update active section
+            sections.forEach(section => section.classList.remove('active'));
+            const targetElement = document.getElementById(`${targetSection}-section`);
+            if (targetElement) {
+                targetElement.classList.add('active');
+            }
+
+            // Initialize maps when their sections become active
+            if (targetSection === 'gibs') {
+                setTimeout(() => {
+                    if (typeof initGIBSMap === 'function') {
+                        if (!window.gibsMap) {
+                            initGIBSMap();
+                        } else {
+                            if (typeof updateGIBSMapLocation === 'function') {
+                                updateGIBSMapLocation();
+                            }
+                            // Invalidate size in case container was hidden
+                            if (window.gibsMap && window.gibsMap.invalidateSize) {
+                                window.gibsMap.invalidateSize();
+                            }
+                        }
+                    } else {
+                        console.error('initGIBSMap function not found');
+                    }
+                }, 300); // Increased delay to ensure container is visible
+            }
+
+            if (targetSection === 'sky') {
+                setTimeout(() => {
+                    if (typeof initSkyMap === 'function') {
+                        if (!window.skyMapInitialized) {
+                            initSkyMap();
+                        } else if (typeof renderSkyMap === 'function' && typeof updateVisibleEvents === 'function') {
+                            renderSkyMap();
+                            updateVisibleEvents();
+                        }
+                    }
+                }, 100);
+            }
+        });
+    });
+}
+
+/**
+ * Load events from JSON file
+ */
+async function loadEvents() {
+    try {
+        eventsContainer.innerHTML = '<div class="loading">Loading events</div>';
+        
+        const response = await fetch('data/events.json');
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        const staticEvents = data.events || [];
+        
+        console.log(`Loaded ${staticEvents.length} static events`);
+        
+        // Store static events (ISS passes will be added separately)
+        allEvents = staticEvents;
+        
+        // Sort events by datetime (earliest first)
+        allEvents.sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
+        
+        // Update global reference
+        window.allEvents = allEvents;
+        
+        return Promise.resolve();
+    } catch (error) {
+        console.error('Error loading events:', error);
+        const errorMessage = error.message || 'Unknown error';
+        const isCorsError = errorMessage.includes('CORS') || errorMessage.includes('Failed to fetch') || 
+                           window.location.protocol === 'file:';
+        
+        eventsContainer.innerHTML = `
+            <div class="no-events">
+                <div class="no-events-icon">⚠️</div>
+                <p><strong>Failed to load events</strong></p>
+                <p style="margin-top: 0.5rem; font-size: 0.9rem; opacity: 0.7;">${errorMessage}</p>
+                ${isCorsError ? `
+                    <div style="margin-top: 1.5rem; padding: 1rem; background: var(--card-bg); border-radius: 8px; border: 1px solid var(--border-color);">
+                        <p style="margin-bottom: 0.5rem;"><strong>💡 Solution:</strong></p>
+                        <p style="font-size: 0.9rem; margin-bottom: 0.5rem;">You need to run a local server. Try one of these:</p>
+                        <ul style="font-size: 0.85rem; margin-left: 1.5rem; line-height: 1.8;">
+                            <li><strong>Python:</strong> <code style="background: var(--bg-secondary); padding: 0.2rem 0.4rem; border-radius: 4px;">python -m http.server 8000</code></li>
+                            <li><strong>Node.js:</strong> <code style="background: var(--bg-secondary); padding: 0.2rem 0.4rem; border-radius: 4px;">npx http-server</code></li>
+                            <li><strong>VS Code:</strong> Use the "Live Server" extension</li>
+                        </ul>
+                        <p style="font-size: 0.85rem; margin-top: 0.5rem;">Then open <code style="background: var(--bg-secondary); padding: 0.2rem 0.4rem; border-radius: 4px;">http://localhost:8000</code></p>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }
+}
+
+/**
+ * Request user's location with permission
+ */
+function requestUserLocation() {
+    // Check browser support
+    if (!navigator.geolocation) {
+        alert('Geolocation is not supported by your browser. Using default location.');
+        return;
+    }
+
+    // Check if running on HTTPS or localhost (required for geolocation)
+    const isSecure = window.location.protocol === 'https:' || 
+                     window.location.hostname === 'localhost' || 
+                     window.location.hostname === '127.0.0.1';
+    
+    if (!isSecure && window.location.protocol !== 'file:') {
+        alert('Geolocation requires HTTPS or localhost. Please use a secure connection or run locally.');
+        return;
+    }
+
+    if (locationPermissionRequested) {
+        return; // Already requested
+    }
+
+    locationPermissionRequested = true;
+    locationButton.disabled = true;
+    locationButton.textContent = '📍 Requesting...';
+
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            // Success - got user location
+            userLocation = {
+                lat: position.coords.latitude,
+                lon: position.coords.longitude,
+                accuracy: position.coords.accuracy,
+                name: 'Your Location'
+            };
+
+            // Save to localStorage
+            localStorage.setItem('userLocation', JSON.stringify(userLocation));
+
+            updateLocationStatus(userLocation);
+            
+            // Reload ISS passes with new location
+            loadISSPasses().then(() => {
+                applyFilters();
+            });
+
+            // Update maps if they're initialized
+            if (typeof updateGIBSMapLocation === 'function') {
+                updateGIBSMapLocation();
+            }
+            if (typeof renderSkyMap === 'function') {
+                renderSkyMap();
+                updateVisibleEvents();
+            }
+
+            locationButton.textContent = '✅ Location Set';
+            locationButton.style.opacity = '0.7';
+        },
+        (error) => {
+            // Error - user denied or error occurred
+            locationPermissionRequested = false;
+            locationButton.disabled = false;
+            locationButton.textContent = '📍 Use My Location';
+
+            let errorMessage = 'Unable to get your location. ';
+            switch (error.code) {
+                case error.PERMISSION_DENIED:
+                    errorMessage += 'Location access denied. Using default location.';
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    errorMessage += 'Location information unavailable.';
+                    break;
+                case error.TIMEOUT:
+                    errorMessage += 'Location request timed out.';
+                    break;
+                default:
+                    errorMessage += 'An unknown error occurred.';
+                    break;
+            }
+
+            alert(errorMessage);
+            updateLocationStatus(LA_BREA_COORDS);
+        },
+        {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 300000 // Cache for 5 minutes
+        }
+    );
+}
+
+/**
+ * Update location status display
+ */
+function updateLocationStatus(location) {
+    if (!locationStatus) return;
+
+    if (location.name === 'Your Location') {
+        locationStatus.textContent = `📍 Using your location: ${location.lat.toFixed(4)}°, ${location.lon.toFixed(4)}°`;
+        locationStatus.className = 'location-status location-active';
+        // Show clear button when using custom location
+        if (clearLocationButton) {
+            clearLocationButton.style.display = 'block';
+        }
+    } else {
+        locationStatus.textContent = `📍 Using default location: ${location.name}`;
+        locationStatus.className = 'location-status';
+        // Hide clear button when using default
+        if (clearLocationButton) {
+            clearLocationButton.style.display = 'none';
+        }
+    }
+}
+
+/**
+ * Clear saved location and revert to default
+ */
+function clearSavedLocation() {
+    userLocation = null;
+    localStorage.removeItem('userLocation');
+    updateLocationStatus(LA_BREA_COORDS);
+    
+    // Reset location button
+    if (locationButton) {
+        locationPermissionRequested = false;
+        locationButton.disabled = false;
+        locationButton.textContent = '📍 Use My Location';
+        locationButton.style.opacity = '1';
+    }
+    
+    // Reload ISS passes with default location
+    loadISSPasses().then(() => {
+        applyFilters();
+    });
+}
+
+/**
+ * Get current location for ISS passes (user location or fallback)
+ */
+function getCurrentLocation() {
+    return userLocation || LA_BREA_COORDS;
+}
+
+// Make getCurrentLocation available globally for other scripts
+window.getCurrentLocation = getCurrentLocation;
+window.allEvents = allEvents;
+
+/**
+ * Load ISS passes from Open Notify API
+ */
+async function loadISSPasses() {
+    try {
+        const currentLocation = getCurrentLocation();
+        
+        // Fetch next 10 ISS passes for current location
+        // Try HTTPS first, fallback to HTTP
+        let url = `https://api.open-notify.org/iss-pass.json?lat=${currentLocation.lat}&lon=${currentLocation.lon}&n=10`;
+        
+        let response = await fetch(url, {
+            mode: 'cors',
+            credentials: 'omit'
+        });
+        
+        // If HTTPS fails, try HTTP (though it may have CORS issues)
+        if (!response.ok && response.status === 404) {
+            console.warn('HTTPS ISS API failed, trying HTTP...');
+            url = `http://api.open-notify.org/iss-pass.json?lat=${currentLocation.lat}&lon=${currentLocation.lon}&n=10`;
+            response = await fetch(url, {
+                mode: 'cors',
+                credentials: 'omit'
+            });
+        }
+        
+        if (!response.ok) {
+            throw new Error(`ISS API error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.message !== 'success') {
+            console.warn('ISS API returned non-success message:', data.message);
+            return;
+        }
+        
+        // Convert ISS pass data to event format
+        const issEvents = data.response.map((pass, index) => {
+            const risetime = new Date(pass.risetime * 1000); // Convert Unix timestamp to Date
+            const duration = pass.duration; // Duration in seconds
+            const setTime = new Date(risetime.getTime() + duration * 1000);
+            
+            // Format duration for display
+            const minutes = Math.floor(duration / 60);
+            const seconds = duration % 60;
+            const durationText = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+            
+            const currentLocation = getCurrentLocation();
+            const locationName = currentLocation.name || `${currentLocation.lat.toFixed(2)}°, ${currentLocation.lon.toFixed(2)}°`;
+            
+            return {
+                id: `iss-pass-${pass.risetime}`,
+                title: `ISS Pass Over ${locationName}`,
+                category: 'iss',
+                datetime: risetime.toISOString(),
+                description: `The International Space Station will be visible for ${durationText}. Look for a bright, fast-moving point of light crossing the sky. The ISS will rise at ${risetime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} and set at ${setTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}.`,
+                location: locationName,
+                visibility: {
+                    direction: 'Variable (check for specific pass)',
+                    peak: risetime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZoneName: 'short' }),
+                    elevation: 'Maximum visibility',
+                    duration: durationText
+                }
+            };
+        });
+        
+        console.log(`Loaded ${issEvents.length} ISS passes`);
+        
+        // Add ISS events to allEvents array
+        allEvents = [...allEvents, ...issEvents];
+        
+        // Sort all events by datetime (earliest first)
+        allEvents.sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
+        
+        // Update global reference
+        window.allEvents = allEvents;
+        
+        console.log(`Total events after ISS merge: ${allEvents.length}`);
+        
+        return Promise.resolve();
+        
+    } catch (error) {
+        // CORS or network errors are expected in some environments
+        const isCorsError = error.message.includes('CORS') || 
+                           error.message.includes('NetworkError') || 
+                           error.message.includes('Failed to fetch');
+        
+        if (isCorsError) {
+            console.warn('ISS API unavailable (CORS error). ISS passes require the API to be accessible.');
+        } else {
+            console.warn('Error loading ISS passes:', error.message);
+        }
+        
+        // Don't break the app - just log and continue
+        // Return resolved promise so Promise.all doesn't fail
+        return Promise.resolve();
+    }
+}
+
+/**
+ * Setup event listeners
+ */
+function setupEventListeners() {
+    // Search input
+    searchInput.addEventListener('input', debounce(() => {
+        applyFilters();
+    }, 300));
+
+    // Filter checkboxes
+    filterCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', () => {
+            updateSelectedCategories();
+        });
+    });
+
+    // Apply filters button
+    applyFiltersButton.addEventListener('click', () => {
+        applyFilters();
+    });
+
+    // Location button
+    if (locationButton) {
+        locationButton.addEventListener('click', requestUserLocation);
+    }
+
+    // Clear location button
+    if (clearLocationButton) {
+        clearLocationButton.addEventListener('click', clearSavedLocation);
+    }
+
+    // Refresh NASA data button
+    if (refreshNASAButton) {
+        refreshNASAButton.addEventListener('click', () => {
+            refreshNASAButton.disabled = true;
+            refreshNASAButton.textContent = '🔄 Refreshing...';
+            clearNASACache();
+            loadNASAData(true).then(() => {
+                refreshNASAButton.disabled = false;
+                refreshNASAButton.textContent = '🔄 Refresh NASA Data';
+                applyFilters();
+            });
+        });
+    }
+
+    // Close event detail when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!eventDetailSection.contains(e.target) && 
+            !e.target.closest('.event-card')) {
+            hideEventDetail();
+        }
+    });
+}
+
+/**
+ * Update selected categories from checkboxes
+ */
+function updateSelectedCategories() {
+    selectedCategories.clear();
+    filterCheckboxes.forEach(checkbox => {
+        if (checkbox.checked) {
+            selectedCategories.add(checkbox.value);
+        }
+    });
+}
+
+/**
+ * Apply filters and render events
+ */
+function applyFilters() {
+    updateSelectedCategories();
+    
+    const searchTerm = searchInput.value.toLowerCase().trim();
+    
+    filteredEvents = allEvents.filter(event => {
+        // Category filter
+        if (!selectedCategories.has(event.category)) {
+            return false;
+        }
+        
+        // Search filter
+        if (searchTerm) {
+            const searchableText = `
+                ${event.title} 
+                ${event.description} 
+                ${event.location || ''} 
+                ${event.category}
+            `.toLowerCase();
+            
+            if (!searchableText.includes(searchTerm)) {
+                return false;
+            }
+        }
+        
+        return true;
+    });
+    
+    renderEvents();
+}
+
+/**
+ * Render events to the DOM
+ */
+function renderEvents() {
+    if (filteredEvents.length === 0) {
+        eventsContainer.innerHTML = `
+            <div class="no-events">
+                <div class="no-events-icon">🔭</div>
+                <p>No events found matching your criteria.</p>
+                <p style="margin-top: 0.5rem; font-size: 0.9rem; opacity: 0.7;">Try adjusting your filters or search terms.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    // Check if ISS events are missing and show a note
+    const hasISSEvents = filteredEvents.some(e => e.category === 'iss');
+    const issCategorySelected = selectedCategories.has('iss');
+    let issNote = '';
+    
+    if (issCategorySelected && !hasISSEvents && allEvents.length > 0) {
+        const hasAnyISS = allEvents.some(e => e.category === 'iss');
+        if (!hasAnyISS) {
+            issNote = `
+                <div style="grid-column: 1 / -1; padding: 1rem; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 1rem;">
+                    <p style="color: var(--text-secondary); font-size: 0.9rem;">
+                        <strong>Note:</strong> ISS passes are currently unavailable due to API access restrictions. 
+                        Other events are still available.
+                    </p>
+                </div>
+            `;
+        }
+    }
+    
+    eventsContainer.innerHTML = issNote + filteredEvents.map(event => createEventCard(event)).join('');
+    
+    // Attach click handlers to event cards
+    document.querySelectorAll('.event-card').forEach((card, index) => {
+        card.addEventListener('click', () => {
+            // Adjust index if ISS note is present
+            const actualIndex = issNote ? index - 1 : index;
+            if (actualIndex >= 0 && actualIndex < filteredEvents.length) {
+                showEventDetail(filteredEvents[actualIndex]);
+            }
+        });
+    });
+}
+
+/**
+ * Create HTML for an event card
+ */
+function createEventCard(event) {
+    const date = new Date(event.datetime);
+    const formattedDate = formatDateTime(date);
+    const categoryClass = `category-${event.category}`;
+    const categoryLabel = getCategoryLabel(event.category);
+    
+    // Add image for APOD events
+    let imageHtml = '';
+    if (event.imageUrl && event.mediaType === 'image') {
+        imageHtml = `<img src="${escapeHtml(event.imageUrl)}" alt="${escapeHtml(event.title)}" class="event-image" loading="lazy">`;
+    }
+    
+    return `
+        <article class="event-card" role="listitem" tabindex="0" aria-label="${event.title}">
+            <div class="event-header">
+                <h3 class="event-title">${escapeHtml(event.title)}</h3>
+                <span class="event-category ${categoryClass}">${categoryLabel}</span>
+            </div>
+            ${imageHtml}
+            <div class="event-datetime">
+                📅 ${formattedDate}
+            </div>
+            <p class="event-description">${escapeHtml(event.description)}</p>
+            ${event.location ? `<div class="event-location">📍 ${escapeHtml(event.location)}</div>` : ''}
+            ${event.visibility ? createVisibilityInfo(event.visibility) : ''}
+            ${event.source ? `<div class="event-source">Source: ${escapeHtml(event.source)}</div>` : ''}
+        </article>
+    `;
+}
+
+/**
+ * Create visibility information HTML
+ */
+function createVisibilityInfo(visibility) {
+    let info = '<div class="event-visibility">';
+    
+    if (visibility.direction) {
+        info += `<div><strong>Direction:</strong> ${escapeHtml(visibility.direction)}</div>`;
+    }
+    if (visibility.peak) {
+        info += `<div><strong>Peak:</strong> ${escapeHtml(visibility.peak)}</div>`;
+    }
+    if (visibility.elevation) {
+        info += `<div><strong>Elevation:</strong> ${escapeHtml(visibility.elevation)}</div>`;
+    }
+    
+    info += '</div>';
+    return info;
+}
+
+/**
+ * Show event detail in the detail section
+ */
+function showEventDetail(event) {
+    const date = new Date(event.datetime);
+    const formattedDate = formatDateTime(date);
+    const categoryClass = `category-${event.category}`;
+    const categoryLabel = getCategoryLabel(event.category);
+    
+    // Add image for APOD events
+    let imageHtml = '';
+    if (event.imageUrl && event.mediaType === 'image') {
+        imageHtml = `
+            <div class="event-detail-image">
+                <img src="${escapeHtml(event.imageUrl)}" alt="${escapeHtml(event.title)}" loading="lazy">
+                ${event.hdImageUrl ? `<a href="${escapeHtml(event.hdImageUrl)}" target="_blank" class="hd-link">View HD Image</a>` : ''}
+            </div>
+        `;
+    }
+    
+    eventDetailSection.innerHTML = `
+        <h2>${escapeHtml(event.title)}</h2>
+        <div class="event-header">
+            <span class="event-category ${categoryClass}">${categoryLabel}</span>
+        </div>
+        ${imageHtml}
+        <div class="event-datetime">📅 ${formattedDate}</div>
+        ${event.location ? `<div class="event-location">📍 ${escapeHtml(event.location)}</div>` : ''}
+        <p class="event-description">${escapeHtml(event.description)}</p>
+        ${event.visibility ? createVisibilityInfo(event.visibility) : ''}
+        ${event.source ? `<div class="event-source">Source: ${escapeHtml(event.source)}</div>` : ''}
+    `;
+    
+    eventDetailSection.classList.add('active');
+    eventDetailSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+/**
+ * Hide event detail section
+ */
+function hideEventDetail() {
+    eventDetailSection.classList.remove('active');
+}
+
+/**
+ * Format datetime to readable string
+ */
+function formatDateTime(date) {
+    const options = {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZoneName: 'short'
+    };
+    
+    return date.toLocaleDateString('en-US', options);
+}
+
+/**
+ * Get human-readable category label
+ */
+function getCategoryLabel(category) {
+    const labels = {
+        'meteor': 'Meteor Shower',
+        'planet': 'Planet Visibility',
+        'iss': 'ISS Pass',
+        'workshop': 'Workshop',
+        'apod': 'NASA APOD',
+        'solar': 'Solar Event',
+        'natural': 'Natural Event'
+    };
+    return labels[category] || category;
+}
+
+/**
+ * Escape HTML to prevent XSS
+ */
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+/**
+ * Debounce function to limit function calls
+ */
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+/**
+ * Switch view (placeholder for future implementation)
+ */
+function switchView(viewType) {
+    // This function can be expanded to support different view modes
+    // (e.g., list view, calendar view, map view)
+    console.log(`Switching to ${viewType} view`);
+    // Implementation for future views
+}
+
+/**
+ * Check if cached NASA data is still valid
+ */
+function isCacheValid(cacheKey, maxAge) {
+    const cached = localStorage.getItem(cacheKey);
+    if (!cached) return false;
+    
+    try {
+        const data = JSON.parse(cached);
+        const age = Date.now() - data.timestamp;
+        return age < maxAge;
+    } catch (e) {
+        return false;
+    }
+}
+
+/**
+ * Get cached NASA data
+ */
+function getCachedData(cacheKey) {
+    try {
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) {
+            const data = JSON.parse(cached);
+            return data.data;
+        }
+    } catch (e) {
+        console.error('Error reading cache:', e);
+    }
+    return null;
+}
+
+/**
+ * Cache NASA data
+ */
+function setCachedData(cacheKey, data) {
+    try {
+        localStorage.setItem(cacheKey, JSON.stringify({
+            data: data,
+            timestamp: Date.now()
+        }));
+    } catch (e) {
+        console.error('Error caching data:', e);
+    }
+}
+
+/**
+ * Clear all NASA API cache
+ */
+function clearNASACache() {
+    localStorage.removeItem('nasa_apod');
+    localStorage.removeItem('nasa_donki');
+    localStorage.removeItem('nasa_eonet');
+    console.log('NASA cache cleared');
+}
+
+/**
+ * Load NASA APOD (Astronomy Picture of the Day)
+ */
+async function loadAPOD(forceRefresh = false) {
+    const cacheKey = 'nasa_apod';
+    const maxAge = NASA_API_CONFIG.cacheSettings.apod;
+    
+    // Check cache first
+    if (!forceRefresh && isCacheValid(cacheKey, maxAge)) {
+        const cached = getCachedData(cacheKey);
+        if (cached) {
+            console.log('Using cached APOD data');
+            return convertAPODToEvent(cached);
+        }
+    }
+    
+    try {
+        const url = `${NASA_API_CONFIG.baseUrl}/planetary/apod?api_key=${NASA_API_CONFIG.apiKey}`;
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+            throw new Error(`APOD API error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        // Cache the data
+        setCachedData(cacheKey, data);
+        
+        console.log('Loaded APOD:', data.title);
+        return convertAPODToEvent(data);
+    } catch (error) {
+        // Handle CORS and network errors gracefully
+        if (error.message.includes('CORS') || error.message.includes('NetworkError')) {
+            console.warn('APOD API unavailable (CORS error), using cache if available');
+        } else {
+            console.error('Error loading APOD:', error);
+        }
+        
+        // Try to use cached data even if expired
+        const cached = getCachedData(cacheKey);
+        if (cached) {
+            console.log('Using cached APOD data due to API unavailability');
+            return convertAPODToEvent(cached);
+        }
+        return null;
+    }
+}
+
+/**
+ * Convert APOD data to event format
+ */
+function convertAPODToEvent(apodData) {
+    return {
+        id: `apod-${apodData.date}`,
+        title: apodData.title || 'NASA Astronomy Picture of the Day',
+        category: 'apod',
+        datetime: `${apodData.date}T12:00:00Z`, // APOD is published at noon
+        description: apodData.explanation || 'Daily astronomy image from NASA.',
+        location: 'NASA',
+        imageUrl: apodData.url,
+        mediaType: apodData.media_type,
+        hdImageUrl: apodData.hdurl,
+        source: 'NASA APOD'
+    };
+}
+
+/**
+ * Load NASA DONKI Solar Events (Solar Flares, CMEs, etc.)
+ */
+async function loadDONKI(forceRefresh = false) {
+    const cacheKey = 'nasa_donki';
+    const maxAge = NASA_API_CONFIG.cacheSettings.donki;
+    
+    // Check cache first
+    if (!forceRefresh && isCacheValid(cacheKey, maxAge)) {
+        const cached = getCachedData(cacheKey);
+        if (cached && cached.length > 0) {
+            console.log('Using cached DONKI data');
+            return convertDONKIToEvents(cached);
+        }
+    }
+    
+    try {
+        const { startDate, endDate } = NASA_API_CONFIG.dateRanges.donki;
+        
+        // Fetch Solar Flares
+        const flrUrl = `${NASA_API_CONFIG.baseUrl}/DONKI/FLR?startDate=${startDate}&endDate=${endDate}&api_key=${NASA_API_CONFIG.apiKey}`;
+        const flrResponse = await fetch(flrUrl);
+        
+        let solarEvents = [];
+        
+        if (flrResponse.ok) {
+            const flrData = await flrResponse.json();
+            if (Array.isArray(flrData)) {
+                solarEvents = solarEvents.concat(flrData.map(event => ({
+                    ...event,
+                    type: 'solar_flare'
+                })));
+            }
+        }
+        
+        // Fetch CMEs (Coronal Mass Ejections)
+        const cmeUrl = `${NASA_API_CONFIG.baseUrl}/DONKI/CME?startDate=${startDate}&endDate=${endDate}&api_key=${NASA_API_CONFIG.apiKey}`;
+        const cmeResponse = await fetch(cmeUrl);
+        
+        if (cmeResponse.ok) {
+            const cmeData = await cmeResponse.json();
+            if (Array.isArray(cmeData)) {
+                solarEvents = solarEvents.concat(cmeData.map(event => ({
+                    ...event,
+                    type: 'cme'
+                })));
+            }
+        }
+        
+        // Cache the data
+        if (solarEvents.length > 0) {
+            setCachedData(cacheKey, solarEvents);
+        }
+        
+        console.log(`Loaded ${solarEvents.length} solar events from DONKI`);
+        return convertDONKIToEvents(solarEvents);
+    } catch (error) {
+        // Handle CORS and network errors gracefully
+        if (error.message.includes('CORS') || error.message.includes('NetworkError')) {
+            console.warn('DONKI API unavailable (CORS error), using cache if available');
+        } else {
+            console.error('Error loading DONKI data:', error);
+        }
+        
+        // Try to use cached data even if expired
+        const cached = getCachedData(cacheKey);
+        if (cached && cached.length > 0) {
+            console.log('Using cached DONKI data due to API unavailability');
+            return convertDONKIToEvents(cached);
+        }
+        return [];
+    }
+}
+
+/**
+ * Convert DONKI data to event format
+ */
+function convertDONKIToEvents(donkiData) {
+    if (!Array.isArray(donkiData) || donkiData.length === 0) {
+        return [];
+    }
+    
+    return donkiData.map(event => {
+        let datetime, title, description;
+        
+        if (event.type === 'solar_flare') {
+            datetime = event.peakTime || event.beginTime || new Date().toISOString();
+            title = `Solar Flare ${event.classType || 'Event'}`;
+            description = `Solar flare detected. Class: ${event.classType || 'Unknown'}. Source location: ${event.sourceLocation || 'Unknown'}.`;
+        } else if (event.type === 'cme') {
+            datetime = event.startTime || new Date().toISOString();
+            title = `Coronal Mass Ejection (CME)`;
+            description = `CME detected. Speed: ${event.speed || 'Unknown'} km/s. Type: ${event.cmeType || 'Unknown'}.`;
+        } else {
+            datetime = event.beginTime || new Date().toISOString();
+            title = `Solar Event`;
+            description = `Solar activity detected by NASA DONKI.`;
+        }
+        
+        return {
+            id: `donki-${event.flrID || event.activityID || Date.now()}-${Math.random()}`,
+            title: title,
+            category: 'solar',
+            datetime: datetime,
+            description: description,
+            location: 'Sun',
+            source: 'NASA DONKI',
+            eventType: event.type,
+            rawData: event
+        };
+    }).filter(event => event.datetime); // Filter out events without valid datetime
+}
+
+/**
+ * Load NASA EONET (Natural Events)
+ */
+async function loadEONET(forceRefresh = false) {
+    const cacheKey = 'nasa_eonet';
+    const maxAge = NASA_API_CONFIG.cacheSettings.eonet;
+    
+    // Check cache first
+    if (!forceRefresh && isCacheValid(cacheKey, maxAge)) {
+        const cached = getCachedData(cacheKey);
+        if (cached && cached.events && cached.events.length > 0) {
+            console.log('Using cached EONET data');
+            return convertEONETToEvents(cached.events);
+        }
+    }
+    
+    try {
+        const url = `${NASA_API_CONFIG.baseUrl}/EONET/events?days=${NASA_API_CONFIG.dateRanges.eonet.days}&api_key=${NASA_API_CONFIG.apiKey}`;
+        const response = await fetch(url, {
+            mode: 'cors',
+            credentials: 'omit'
+        });
+        
+        if (!response.ok) {
+            // 503 means service unavailable - use cache if available
+            if (response.status === 503) {
+                console.warn('EONET API unavailable (503), using cache if available');
+                const cached = getCachedData(cacheKey);
+                if (cached && cached.events && cached.events.length > 0) {
+                    console.log('Using expired cached EONET data due to service unavailability');
+                    return convertEONETToEvents(cached.events);
+                }
+            }
+            throw new Error(`EONET API error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        // Filter for astronomy-related events (fireballs, aurora, etc.)
+        const astronomyEvents = (data.events || []).filter(event => {
+            const categories = event.categories || [];
+            return categories.some(cat => 
+                cat.id === 18 || // Fireballs
+                cat.id === 19 || // Auroras
+                cat.id === 20    // Atmospheric events
+            );
+        });
+        
+        // Cache the data
+        if (astronomyEvents.length > 0) {
+            setCachedData(cacheKey, { events: astronomyEvents });
+        }
+        
+        console.log(`Loaded ${astronomyEvents.length} natural events from EONET`);
+        return convertEONETToEvents(astronomyEvents);
+    } catch (error) {
+        // CORS errors or service unavailability - handle gracefully
+        if (error.message.includes('CORS') || error.message.includes('NetworkError') || error.message.includes('503')) {
+            console.warn('EONET API unavailable (CORS or service error), using cache if available');
+        } else {
+            console.error('Error loading EONET data:', error);
+        }
+        
+        // Try to use cached data even if expired
+        const cached = getCachedData(cacheKey);
+        if (cached && cached.events && cached.events.length > 0) {
+            console.log('Using cached EONET data due to API unavailability');
+            return convertEONETToEvents(cached.events);
+        }
+        return [];
+    }
+}
+
+/**
+ * Convert EONET data to event format
+ */
+function convertEONETToEvents(eonetData) {
+    if (!Array.isArray(eonetData) || eonetData.length === 0) {
+        return [];
+    }
+    
+    return eonetData.map(event => {
+        const geometry = event.geometry && event.geometry[0];
+        const category = event.categories && event.categories[0];
+        
+        let location = 'Earth';
+        if (geometry && geometry.coordinates) {
+            location = `${geometry.coordinates[1].toFixed(2)}°, ${geometry.coordinates[0].toFixed(2)}°`;
+        }
+        
+        return {
+            id: `eonet-${event.id}`,
+            title: event.title || 'Natural Event',
+            category: 'natural',
+            datetime: geometry ? geometry.date : new Date().toISOString(),
+            description: `${category ? category.title + ': ' : ''}${event.title || 'Natural event detected by NASA EONET.'}`,
+            location: location,
+            source: 'NASA EONET',
+            eventType: category ? category.title : 'Natural Event',
+            rawData: event
+        };
+    }).filter(event => event.datetime); // Filter out events without valid datetime
+}
+
+/**
+ * Load all NASA data (APOD, DONKI, EONET)
+ */
+async function loadNASAData(forceRefresh = false) {
+    try {
+        const [apodEvent, donkiEvents, eonetEvents] = await Promise.all([
+            loadAPOD(forceRefresh),
+            loadDONKI(forceRefresh),
+            loadEONET(forceRefresh)
+        ]);
+        
+        const nasaEvents = [];
+        
+        // Add APOD if available
+        if (apodEvent) {
+            nasaEvents.push(apodEvent);
+        }
+        
+        // Add DONKI events
+        if (donkiEvents && donkiEvents.length > 0) {
+            nasaEvents.push(...donkiEvents);
+        }
+        
+        // Add EONET events
+        if (eonetEvents && eonetEvents.length > 0) {
+            nasaEvents.push(...eonetEvents);
+        }
+        
+        console.log(`Loaded ${nasaEvents.length} total NASA events`);
+        
+        // Add NASA events to allEvents array
+        allEvents = [...allEvents, ...nasaEvents];
+        
+        // Sort all events by datetime (earliest first)
+        allEvents.sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
+        
+        // Update global reference
+        window.allEvents = allEvents;
+        
+        return Promise.resolve();
+    } catch (error) {
+        console.error('Error loading NASA data:', error);
+        return Promise.resolve(); // Don't fail the whole app if NASA APIs fail
+    }
+}
+

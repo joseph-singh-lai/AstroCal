@@ -1,0 +1,136 @@
+{
+  "events": [
+    {
+      "id": "meteor-quadrantids",
+      "title": "Quadrantid Meteor Shower Peak",
+      "category": "meteor",
+      "datetime": "2025-01-03T23:00:00",
+      "description": "The Quadrantids meteor shower peaks around January 3–4. This is one of the year's earliest major showers.",
+      "visibility": {
+        "direction": "NE",
+        "peak": "High"
+      },
+      "location": "Dark-sky site around La Brea"
+    },
+    {
+      "id": "meteor-lyrids",
+      "title": "Lyrid Meteor Shower Peak",
+      "category": "meteor",
+      "datetime": "2025-04-22T03:00:00",
+      "description": "Lyrids are active around April 22, with rates of ~10–20 meteors per hour under good conditions.",
+      "visibility": {
+        "direction": "E",
+        "peak": "Moderate"
+      },
+      "location": "Open sky area"
+    },
+    {
+      "id": "meteor-eta-aquariids",
+      "title": "Eta Aquariid Meteor Shower Peak",
+      "category": "meteor",
+      "datetime": "2025-05-06T04:00:00",
+      "description": "The Eta Aquariids, associated with Halley's Comet, peak around May 5–6. Good for early-morning observing.",
+      "visibility": {
+        "direction": "S / E",
+        "peak": "Moderate"
+      },
+      "location": "Low-horizon viewing spot"
+    },
+    {
+      "id": "meteor-delta-aquariids",
+      "title": "Southern Delta Aquariid Meteor Shower",
+      "category": "meteor",
+      "datetime": "2025-07-28T02:00:00",
+      "description": "Delta Aquariids are active from late July to early August. One of the more southern-hemisphere-friendly showers.",
+      "visibility": {
+        "direction": "S",
+        "peak": "Low-to-Moderate"
+      },
+      "location": "Open southern horizon"
+    },
+    {
+      "id": "meteor-perseids",
+      "title": "Perseid Meteor Shower Peak",
+      "category": "meteor",
+      "datetime": "2025-08-12T22:00:00",
+      "description": "The Perseids peak around August 12–13. Under ideal conditions, you could see ~60–100+ meteors per hour.",
+      "visibility": {
+        "direction": "NE",
+        "peak": "High"
+      },
+      "location": "Dark sky viewing area"
+    },
+    {
+      "id": "meteor-orionids",
+      "title": "Orionid Meteor Shower Peak",
+      "category": "meteor",
+      "datetime": "2025-10-21T23:00:00",
+      "description": "Orionids peak around October 21–22. These are debris from Halley's Comet, and they often produce fast meteors.",
+      "visibility": {
+        "direction": "SE",
+        "peak": "Moderate"
+      },
+      "location": "Wide open sky area"
+    },
+    {
+      "id": "meteor-leonids",
+      "title": "Leonid Meteor Shower Peak",
+      "category": "meteor",
+      "datetime": "2025-11-17T23:00:00",
+      "description": "Leonids peak around November 17–18. Known for bright fireballs in some years.",
+      "visibility": {
+        "direction": "E",
+        "peak": "Moderate"
+      },
+      "location": "Backyard / field"
+    },
+    {
+      "id": "meteor-geminids",
+      "title": "Geminid Meteor Shower Peak",
+      "category": "meteor",
+      "datetime": "2025-12-13T23:00:00",
+      "description": "The Geminids are one of the richest annual showers, peaking December 13–14.",
+      "visibility": {
+        "direction": "E",
+        "peak": "High"
+      },
+      "location": "Dark-sky site near La Brea"
+    },
+    {
+      "id": "meteor-ursids",
+      "title": "Ursid Meteor Shower Peak",
+      "category": "meteor",
+      "datetime": "2025-12-22T22:00:00",
+      "description": "The Ursids become active and peak around December 21–22 in 2025.",
+      "visibility": {
+        "direction": "N",
+        "peak": "Low-Moderate"
+      },
+      "location": "Northern horizon clear sky"
+    },
+    {
+      "id": "planet-jupiter",
+      "title": "Jupiter Visible in Late Evening",
+      "category": "planet",
+      "datetime": "2025-08-13T21:00:00",
+      "description": "Jupiter is well-placed in the night sky for long periods after sunset in mid-2025, according to local sky-chart predictions.",
+      "visibility": {
+        "direction": "South-East",
+        "peak": "Evening"
+      },
+      "location": "Horizon direction: SE"
+    },
+    {
+      "id": "planet-saturn",
+      "title": "Saturn Visible Overnight",
+      "category": "planet",
+      "datetime": "2025-08-12T20:00:00",
+      "description": "Saturn rises early evening and stays visible for many hours, ideal for telescopic and binocular viewing.",
+      "visibility": {
+        "direction": "South-West",
+        "peak": "Late Night"
+      },
+      "location": "Low to mid elevation sky"
+    }
+  ]
+}
