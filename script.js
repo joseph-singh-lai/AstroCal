@@ -1524,8 +1524,8 @@ async function loadAstronomyEvents(lat, lon, forceRefresh = false) {
         const date = new Date().toISOString().split('T')[0];
         const timezone = 'America/Port_of_Spain';
         
-        // Build URL with correct endpoint (/v1/astronomy) and required date parameters
-        const url = `https://api.open-meteo.com/v1/astronomy?latitude=${lat}&longitude=${lon}` +
+        // Build URL with correct endpoint (/v1/forecast) and required date parameters
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
                     `&daily=sunrise,sunset,moonrise,moonset,moon_phase` +
                     `&timezone=${encodeURIComponent(timezone)}` +
                     `&start_date=${date}&end_date=${date}`;
