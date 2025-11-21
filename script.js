@@ -842,15 +842,30 @@ function createEventCard(event) {
         imageHtml = `<img src="${escapeHtml(event.imageUrl)}" alt="${escapeHtml(event.title)}" class="event-image" loading="lazy">`;
     }
     
+    // Calculate time until/since event
+    const timeInfo = getTimeUntilEvent(event.datetime);
+    const timeDisplay = formatTimeRemaining(timeInfo.timeRemaining, timeInfo.passed);
+    const timeClass = timeInfo.passed ? 'event-time-passed' : 'event-time-upcoming';
+    const timeIcon = timeInfo.passed ? '⏰' : '⏳';
+    
+    // Add passed indicator badge
+    const passedBadge = timeInfo.passed ? '<span class="event-passed-badge">Past Event</span>' : '';
+    
     return `
-        <article class="event-card" role="listitem" tabindex="0" aria-label="${event.title}">
+        <article class="event-card ${timeInfo.passed ? 'event-card-passed' : ''}" role="listitem" tabindex="0" aria-label="${event.title}" data-event-datetime="${event.datetime}">
             <div class="event-header">
                 <h3 class="event-title">${escapeHtml(event.title)}</h3>
-                <span class="event-category ${categoryClass}">${categoryLabel}</span>
+                <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                    ${passedBadge}
+                    <span class="event-category ${categoryClass}">${categoryLabel}</span>
+                </div>
             </div>
             ${imageHtml}
             <div class="event-datetime">
                 📅 ${formattedDate}
+            </div>
+            <div class="event-countdown ${timeClass}" data-event-datetime="${event.datetime}">
+                ${timeIcon} <span class="countdown-text">${timeDisplay}</span>
             </div>
             <p class="event-description">${escapeHtml(event.description)}</p>
             ${event.location ? `<div class="event-location">📍 ${escapeHtml(event.location)}</div>` : ''}
@@ -939,6 +954,73 @@ function formatDateTime(date) {
     };
     
     return date.toLocaleDateString('en-US', options);
+}
+
+/**
+ * Calculate time remaining until event (or time since if passed)
+ */
+function getTimeUntilEvent(eventDate) {
+    const now = new Date();
+    const event = new Date(eventDate);
+    const diff = event - now; // milliseconds
+    
+    if (diff < 0) {
+        // Event has passed
+        return {
+            passed: true,
+            timeRemaining: Math.abs(diff)
+        };
+    } else {
+        // Event is upcoming
+        return {
+            passed: false,
+            timeRemaining: diff
+        };
+    }
+}
+
+/**
+ * Format time remaining as human-readable string
+ */
+function formatTimeRemaining(timeRemaining, passed = false) {
+    const seconds = Math.floor(timeRemaining / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+    
+    if (passed) {
+        if (days > 0) {
+            return `${days} day${days !== 1 ? 's' : ''} ago`;
+        } else if (hours > 0) {
+            return `${hours} hour${hours !== 1 ? 's' : ''} ago`;
+        } else if (minutes > 0) {
+            return `${minutes} minute${minutes !== 1 ? 's' : ''} ago`;
+        } else {
+            return 'Just passed';
+        }
+    } else {
+        if (days > 0) {
+            const remainingHours = hours % 24;
+            if (remainingHours > 0) {
+                return `${days} day${days !== 1 ? 's' : ''}, ${remainingHours} hour${remainingHours !== 1 ? 's' : ''}`;
+            }
+            return `${days} day${days !== 1 ? 's' : ''}`;
+        } else if (hours > 0) {
+            const remainingMinutes = minutes % 60;
+            if (remainingMinutes > 0) {
+                return `${hours} hour${hours !== 1 ? 's' : ''}, ${remainingMinutes} minute${remainingMinutes !== 1 ? 's' : ''}`;
+            }
+            return `${hours} hour${hours !== 1 ? 's' : ''}`;
+        } else if (minutes > 0) {
+            const remainingSeconds = seconds % 60;
+            if (remainingSeconds > 0 && minutes < 10) {
+                return `${minutes} minute${minutes !== 1 ? 's' : ''}, ${remainingSeconds} second${remainingSeconds !== 1 ? 's' : ''}`;
+            }
+            return `${minutes} minute${minutes !== 1 ? 's' : ''}`;
+        } else {
+            return `${seconds} second${seconds !== 1 ? 's' : ''}`;
+        }
+    }
 }
 
 /**
