@@ -897,6 +897,55 @@ function getCategoryLabel(category) {
 }
 
 /**
+ * Update filter checkboxes dynamically based on actual event categories
+ */
+function updateFilterCheckboxes(actualCategories) {
+    const filterOptions = document.querySelector('.filter-options');
+    if (!filterOptions) return;
+    
+    // Category labels mapping
+    const categoryLabels = {
+        'meteor': 'Meteor Shower',
+        'planet': 'Planet Visibility',
+        'iss': 'ISS Passes (Real-time predictions)',
+        'apod': 'NASA APOD (Daily astronomy image)',
+        'solar': 'Solar Events (Flares & CMEs)',
+        'astronomy': 'Open-Meteo Astronomy (Moon phases & sun events)',
+        'natural': 'Natural Events (Fireballs & aurora)',
+        'workshop': 'Workshops (Educational events)'
+    };
+    
+    // Clear existing checkboxes
+    filterOptions.innerHTML = '';
+    
+    // Create checkboxes only for categories that have events
+    actualCategories.forEach(category => {
+        const label = document.createElement('label');
+        label.className = 'filter-checkbox';
+        
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.value = category;
+        checkbox.checked = selectedCategories.has(category);
+        
+        const span = document.createElement('span');
+        span.textContent = categoryLabels[category] || category;
+        
+        label.appendChild(checkbox);
+        label.appendChild(span);
+        filterOptions.appendChild(label);
+    });
+    
+    // Re-initialize filterCheckboxes reference
+    filterCheckboxes = document.querySelectorAll('.filter-checkbox input[type="checkbox"]');
+    
+    // Re-setup event listeners for new checkboxes
+    setupEventListeners();
+    
+    console.log(`Updated filter checkboxes for ${actualCategories.length} categories:`, actualCategories);
+}
+
+/**
  * Escape HTML to prevent XSS
  */
 function escapeHtml(text) {
@@ -1472,8 +1521,8 @@ async function loadAstronomyEvents(lat, lon, forceRefresh = false) {
         // Get timezone (Trinidad & Tobago)
         const timezone = 'America/Port_of_Spain';
         
-        // Build URL with required date parameters
-        const url = `https://api.open-meteo.com/v1/astronomy?latitude=${lat}&longitude=${lon}&daily=sunrise,sunset,moonrise,moonset,moon_phase&timezone=${timezone}&start_date=${today}&end_date=${today}`;
+        // Build URL with correct endpoint (/v1/astro) and required date parameters
+        const url = `https://api.open-meteo.com/v1/astro?latitude=${lat}&longitude=${lon}&daily=sunrise,sunset,moonrise,moonset,moon_phase&timezone=${timezone}&start_date=${today}&end_date=${today}`;
         
         console.log('Fetching astronomy data from Open-Meteo...');
         console.log('URL:', url);
