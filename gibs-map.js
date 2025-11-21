@@ -281,28 +281,40 @@ function switchGIBSLayer(layerKey) {
     });
     
     // Add tile error handler as event listener (not constructor option)
-    currentLayer.on('tileerror', function(error, tile) {
-        console.warn('GIBS tile error for:', layerConfig.name);
-        console.warn('Error details:', error);
+    // Note: Leaflet passes error object with tile property, not as separate parameter
+    currentLayer.on('tileerror', function(error) {
+        const tile = error.tile; // Tile is in the error object
+        const coords = error.coords; // Coords are also in the error object
         
-        // Check Network tab - tile might be blocked by CORS or 404
+        console.warn('GIBS tile error for:', layerConfig.name);
+        
+        // Try to get the failed URL
+        let failedUrl = null;
         if (tile && tile.src) {
-            console.log('Failed tile URL:', tile.src);
-        } else if (tile && tile.coords) {
-            // Tile might not have src yet, but we can reconstruct the URL
-            const coords = tile.coords;
+            failedUrl = tile.src;
+            console.log('Failed tile URL:', failedUrl);
+        } else if (coords) {
+            // Reconstruct URL from coordinates
             const level = coords.z;
             const maxRow = Math.pow(2, level) - 1;
             const invertedRow = maxRow - coords.y;
-            const failedUrl = baseUrl
+            failedUrl = baseUrl
                 .replace('{time}', time)
                 .replace('{level}', level)
                 .replace('{row}', invertedRow)
                 .replace('{col}', coords.x);
             console.log('Failed tile URL (reconstructed):', failedUrl);
             console.log('Tile coords:', coords);
-        } else {
-            console.warn('Tile error - tile object not available');
+        }
+        
+        // Log error type if available
+        if (error.error) {
+            console.warn('Error type:', error.error.message || error.error);
+        }
+        
+        // Check if this is a CORS or network error
+        if (failedUrl) {
+            console.log('Check Network tab for this URL to see if it\'s a CORS, 404, or other HTTP error');
         }
     });
 
