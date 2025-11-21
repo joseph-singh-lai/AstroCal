@@ -154,7 +154,22 @@ function setupNavigation() {
                             }
                             
                             console.log('Map object exists, type:', typeof window.gibsMap);
+                            console.log('Map object:', window.gibsMap);
+                            console.log('Is Leaflet Map?', window.gibsMap instanceof L.Map);
                             console.log('Map has invalidateSize:', typeof window.gibsMap.invalidateSize);
+                            
+                            // If map is not a proper Leaflet map, re-initialize it
+                            if (!(window.gibsMap instanceof L.Map) || typeof window.gibsMap.invalidateSize !== 'function') {
+                                console.warn('Map object is not a valid Leaflet map, re-initializing...');
+                                // Clear the invalid map object
+                                window.gibsMap = null;
+                                if (typeof window.gibsMapInitialized !== 'undefined') {
+                                    window.gibsMapInitialized = false;
+                                }
+                                // Re-initialize
+                                initGIBSMap();
+                                return;
+                            }
                             
                             try {
                                 // Force map to re-render by invalidating size multiple times

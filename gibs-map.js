@@ -78,9 +78,20 @@ function initGIBSMap() {
         return;
     }
     
-    if (gibsMap) {
-        console.log('GIBS map already initialized');
+    if (gibsMap && gibsMap instanceof L.Map) {
+        console.log('GIBS map already initialized and is valid Leaflet map');
+        // Still invalidate size in case container was hidden
+        if (gibsMap.invalidateSize) {
+            setTimeout(() => gibsMap.invalidateSize(), 100);
+        }
         return;
+    }
+    
+    // If gibsMap exists but isn't valid, clear it
+    if (gibsMap && !(gibsMap instanceof L.Map)) {
+        console.warn('Existing gibsMap is not a valid Leaflet map, clearing and re-initializing...');
+        gibsMap = null;
+        window.gibsMap = null;
     }
 
     // Check if Leaflet is loaded
@@ -209,8 +220,11 @@ function initGIBSMap() {
     }
 
     window.gibsMap = gibsMap; // Store globally
+    window.gibsMapInitialized = true; // Flag to track initialization
     mapInitializationAttempted = true;
     console.log('GIBS map initialized successfully');
+    console.log('Map instance check:', gibsMap instanceof L.Map);
+    console.log('Map has invalidateSize:', typeof gibsMap.invalidateSize === 'function');
     
     // Force a resize after initialization to ensure proper rendering
     setTimeout(() => {
