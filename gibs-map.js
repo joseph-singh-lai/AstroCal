@@ -6,55 +6,65 @@ let currentLayer = null;
 let mapInitializationAttempted = false;
 
 // GIBS tile layer URLs - Using correct WMTS format
+// Note: GIBS tiles may have CORS restrictions. Using NASA Worldview as alternative.
 const GIBS_LAYERS = {
     blueMarble: {
         name: 'Blue Marble (Day)',
+        // Using NASA Worldview which provides GIBS tiles through a CDN
         url: 'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/BlueMarble_ShadedRelief_Bathymetry/default/{time}/GoogleMapsCompatible_Level{level}/{level}/{row}/{col}.jpg',
         attribution: 'NASA Blue Marble',
         time: '2024-01-01',
-        format: 'jpg'
+        format: 'jpg',
+        // Alternative: Use NASA Worldview tile service
+        altUrl: 'https://map1.vis.earthdata.nasa.gov/wmts-geo/BlueMarble_ShadedRelief_Bathymetry/default/{time}/GoogleMapsCompatible_Level{level}/{level}/{row}/{col}.jpg'
     },
     blueMarbleNight: {
         name: 'Blue Marble (Night)',
         url: 'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_CityLights_2012/default/{time}/GoogleMapsCompatible_Level{level}/{level}/{row}/{col}.jpg',
         attribution: 'NASA VIIRS Night Lights',
         time: '2012-01-01',
-        format: 'jpg'
+        format: 'jpg',
+        altUrl: 'https://map1.vis.earthdata.nasa.gov/wmts-geo/VIIRS_CityLights_2012/default/{time}/GoogleMapsCompatible_Level{level}/{level}/{row}/{col}.jpg'
     },
     viirsDayNight: {
         name: 'VIIRS Day/Night Band',
         url: 'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_DayNightBand_ENCC/default/{time}/GoogleMapsCompatible_Level{level}/{level}/{row}/{col}.jpg',
         attribution: 'NASA VIIRS',
         time: new Date().toISOString().split('T')[0],
-        format: 'jpg'
+        format: 'jpg',
+        altUrl: 'https://map1.vis.earthdata.nasa.gov/wmts-geo/VIIRS_DayNightBand_ENCC/default/{time}/GoogleMapsCompatible_Level{level}/{level}/{row}/{col}.jpg'
     },
     modisTerra: {
         name: 'MODIS Terra True Color',
         url: 'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/{time}/GoogleMapsCompatible_Level{level}/{level}/{row}/{col}.jpg',
         attribution: 'NASA MODIS Terra',
         time: new Date().toISOString().split('T')[0],
-        format: 'jpg'
+        format: 'jpg',
+        altUrl: 'https://map1.vis.earthdata.nasa.gov/wmts-geo/MODIS_Terra_CorrectedReflectance_TrueColor/default/{time}/GoogleMapsCompatible_Level{level}/{level}/{row}/{col}.jpg'
     },
     modisAqua: {
         name: 'MODIS Aqua True Color',
         url: 'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Aqua_CorrectedReflectance_TrueColor/default/{time}/GoogleMapsCompatible_Level{level}/{level}/{row}/{col}.jpg',
         attribution: 'NASA MODIS Aqua',
         time: new Date().toISOString().split('T')[0],
-        format: 'jpg'
+        format: 'jpg',
+        altUrl: 'https://map1.vis.earthdata.nasa.gov/wmts-geo/MODIS_Aqua_CorrectedReflectance_TrueColor/default/{time}/GoogleMapsCompatible_Level{level}/{level}/{row}/{col}.jpg'
     },
     fires: {
         name: 'Active Fires',
         url: 'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/FIRMS/default/{time}/GoogleMapsCompatible_Level{level}/{level}/{row}/{col}.png',
         attribution: 'NASA FIRMS',
         time: new Date().toISOString().split('T')[0],
-        format: 'png'
+        format: 'png',
+        altUrl: 'https://map1.vis.earthdata.nasa.gov/wmts-geo/FIRMS/default/{time}/GoogleMapsCompatible_Level{level}/{level}/{row}/{col}.png'
     },
     aerosol: {
         name: 'Aerosol Index',
         url: 'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/OMI_Aerosol_Index/default/{time}/GoogleMapsCompatible_Level{level}/{level}/{row}/{col}.png',
         attribution: 'NASA OMI',
         time: new Date().toISOString().split('T')[0],
-        format: 'png'
+        format: 'png',
+        altUrl: 'https://map1.vis.earthdata.nasa.gov/wmts-geo/OMI_Aerosol_Index/default/{time}/GoogleMapsCompatible_Level{level}/{level}/{row}/{col}.png'
     }
 };
 
@@ -86,6 +96,13 @@ function initGIBSMap() {
     const defaultZoom = 8;
 
     try {
+        // Ensure container has dimensions
+        if (mapContainer.offsetHeight === 0 || mapContainer.offsetWidth === 0) {
+            console.warn('Map container has no dimensions, setting defaults');
+            mapContainer.style.height = '600px';
+            mapContainer.style.width = '100%';
+        }
+
         // Create map
         gibsMap = L.map('gibsMap', {
             center: [defaultLat, defaultLon],
@@ -93,33 +110,31 @@ function initGIBSMap() {
             minZoom: 1,
             maxZoom: 8,
             attributionControl: true,
-            crs: L.CRS.EPSG3857 // Web Mercator projection
+            crs: L.CRS.EPSG3857, // Web Mercator projection
+            zoomControl: true
         });
 
-        // Try to add GIBS layer, but immediately fallback to OpenStreetMap
-        // GIBS has CORS issues and complex URL requirements
-        // Using OpenStreetMap as primary, with option to try GIBS later
-        try {
-            // Use OpenStreetMap as primary (more reliable)
-            currentLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap contributors | <a href="https://www.openstreetmap.org/copyright">OSM</a>',
-                maxZoom: 19
-            });
-            currentLayer.addTo(gibsMap);
-            
-            // Try GIBS in background (may fail due to CORS)
-            setTimeout(() => {
+        // Start with OpenStreetMap as reliable fallback
+        currentLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors | <a href="https://www.openstreetmap.org/copyright">OSM</a>',
+            maxZoom: 19,
+            subdomains: 'abc'
+        });
+        currentLayer.addTo(gibsMap);
+        console.log('Map initialized with OpenStreetMap base layer');
+        
+        // Try to load GIBS layer after a short delay to ensure map is rendered
+        setTimeout(() => {
+            if (gibsMap) {
+                console.log('Attempting to load GIBS Blue Marble layer...');
                 try {
                     switchGIBSLayer('blueMarble');
-                    console.log('GIBS layer loaded successfully');
                 } catch (e) {
-                    console.warn('GIBS layer unavailable (CORS or service issue), using OpenStreetMap');
+                    console.warn('GIBS layer failed to load:', e);
+                    console.log('Continuing with OpenStreetMap base layer');
                 }
-            }, 500);
-        } catch (e) {
-            console.error('Error setting up map layer:', e);
-            mapContainer.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--text-secondary);">Error loading map. Please refresh the page.</div>';
-        }
+            }
+        }, 1000);
     } catch (error) {
         console.error('Error initializing map:', error);
         mapContainer.innerHTML = `<div style="padding: 2rem; text-align: center; color: var(--text-secondary);">Error initializing map: ${error.message}</div>`;
@@ -202,9 +217,11 @@ function switchGIBSLayer(layerKey) {
     const time = layerConfig.time || new Date().toISOString().split('T')[0];
     
     // Use Leaflet's tileLayer with custom getTileUrl
-    // Note: GIBS WMTS uses a specific URL format
+    // Try alternative URL first (NASA Worldview CDN), fallback to main GIBS URL
+    const baseUrl = layerConfig.altUrl || layerConfig.url;
+    
     currentLayer = L.tileLayer('', {
-        attribution: `© ${layerConfig.attribution}`,
+        attribution: `© ${layerConfig.attribution} | NASA GIBS`,
         maxZoom: 8,
         minZoom: 1,
         tileSize: 256,
@@ -220,26 +237,86 @@ function switchGIBSLayer(layerKey) {
                 const maxRow = Math.pow(2, level) - 1;
                 const invertedRow = maxRow - row;
                 
-                let url = layerConfig.url
+                // Try alternative URL format first (more reliable)
+                let url = baseUrl
                     .replace('{time}', time)
                     .replace('{level}', level)
                     .replace('{row}', invertedRow)
                     .replace('{col}', col);
                 
-                // Debug: uncomment to see tile URLs
-                // console.log('GIBS tile URL:', url);
                 return url;
             } catch (e) {
                 console.error('Error generating tile URL:', e);
                 return '';
             }
         },
-        crossOrigin: true, // Handle CORS
+        crossOrigin: 'anonymous', // Handle CORS
         errorTileUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
     });
 
-    currentLayer.addTo(gibsMap);
-    console.log('Switched to layer:', layerConfig.name);
+    // Add layer with error handling
+    try {
+        currentLayer.addTo(gibsMap);
+        console.log('Switched to layer:', layerConfig.name);
+        
+        // Monitor tile loading
+        let tileLoadAttempts = 0;
+        const checkTileLoading = setInterval(() => {
+            if (!currentLayer || !gibsMap) {
+                clearInterval(checkTileLoading);
+                return;
+            }
+            
+            tileLoadAttempts++;
+            if (currentLayer._tiles) {
+                const tiles = Object.values(currentLayer._tiles);
+                const loadedTiles = tiles.filter(t => t.loaded || t.complete).length;
+                const errorTiles = tiles.filter(t => t.classList && t.classList.contains('leaflet-error-tile')).length;
+                
+                if (tileLoadAttempts === 3) {
+                    console.log(`Layer ${layerConfig.name}: ${loadedTiles} tiles loaded, ${errorTiles} errors`);
+                }
+                
+                // If many errors and using altUrl, try main URL
+                if (tileLoadAttempts >= 5 && errorTiles > loadedTiles && baseUrl === layerConfig.altUrl && layerConfig.url) {
+                    console.warn('Many tile errors detected, trying main GIBS URL format...');
+                    clearInterval(checkTileLoading);
+                    // Remove current layer and try with main URL
+                    gibsMap.removeLayer(currentLayer);
+                    const mainUrl = layerConfig.url;
+                    const newLayer = L.tileLayer('', {
+                        attribution: `© ${layerConfig.attribution} | NASA GIBS`,
+                        maxZoom: 8,
+                        minZoom: 1,
+                        tileSize: 256,
+                        getTileUrl: function(coords) {
+                            const level = coords.z;
+                            const maxRow = Math.pow(2, level) - 1;
+                            const invertedRow = maxRow - coords.y;
+                            return mainUrl
+                                .replace('{time}', time)
+                                .replace('{level}', level)
+                                .replace('{row}', invertedRow)
+                                .replace('{col}', coords.x);
+                        },
+                        crossOrigin: 'anonymous',
+                        errorTileUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
+                    });
+                    currentLayer = newLayer;
+                    newLayer.addTo(gibsMap);
+                }
+                
+                // Stop checking after 10 attempts
+                if (tileLoadAttempts >= 10) {
+                    clearInterval(checkTileLoading);
+                }
+            }
+        }, 1000);
+    } catch (e) {
+        console.error('Error adding layer to map:', e);
+        // Fallback to OSM
+        switchGIBSLayer('osm');
+    }
 }
 
 /**
