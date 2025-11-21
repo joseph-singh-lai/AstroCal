@@ -442,6 +442,11 @@ body {
     color: white;
 }
 
+.category-astronomy {
+    background-color: #9b59b6;
+    color: white;
+}
+
 .event-datetime {
     color: var(--accent-primary);
     font-weight: 500;
