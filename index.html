@@ -58,74 +58,78 @@
         <main class="main-content">
             <!-- Events Section -->
             <section id="events-section" class="content-section active">
-            <section class="controls-section">
-                <div class="search-container">
-                    <input 
-                        type="text" 
-                        id="searchInput" 
-                        class="search-input" 
-                        placeholder="Search events..."
-                        aria-label="Search events"
-                    >
-                </div>
+                <div class="events-layout">
+                    <aside class="filter-panel">
+                        <h2>Filters</h2>
+                        <div class="filter-options">
+                            <label class="filter-checkbox">
+                                <input type="checkbox" value="meteor" checked>
+                                <span>Meteor Showers</span>
+                            </label>
+                            <label class="filter-checkbox">
+                                <input type="checkbox" value="planet" checked>
+                                <span>Planet Visibility</span>
+                            </label>
+                            <label class="filter-checkbox">
+                                <input type="checkbox" value="iss" checked>
+                                <span>ISS Passes</span>
+                            </label>
+                            <label class="filter-checkbox">
+                                <input type="checkbox" value="apod" checked>
+                                <span>NASA APOD</span>
+                            </label>
+                            <label class="filter-checkbox">
+                                <input type="checkbox" value="solar" checked>
+                                <span>Solar Events</span>
+                            </label>
+                            <label class="filter-checkbox">
+                                <input type="checkbox" value="astronomy" checked>
+                                <span>Astronomy</span>
+                            </label>
+                        </div>
+                        <button id="applyFilters" class="apply-button">Apply</button>
+                        <button id="refreshNASA" class="apply-button" style="margin-top: 0.5rem; background-color: var(--accent-secondary); font-size: 0.9rem; padding: 0.625rem;">
+                            🔄 Refresh
+                        </button>
+                    </aside>
 
-                <div class="location-container">
-                    <div class="location-info">
-                        <div class="location-status-wrapper">
-                            <span id="locationStatus" class="location-status">📍 Using default location: La Brea, Trinidad & Tobago</span>
-                            <span class="location-privacy">Your location is only used locally and never shared with external services.</span>
-                        </div>
-                        <div class="location-buttons">
-                            <button id="locationButton" class="location-button" aria-label="Request location access">
-                                📍 Use My Location
-                            </button>
-                            <button id="clearLocationButton" class="location-button location-button-secondary" aria-label="Clear saved location" style="display: none;">
-                                🔄 Reset
-                            </button>
-                        </div>
+                    <div class="events-content">
+                        <section class="controls-section">
+                            <div class="search-container">
+                                <input 
+                                    type="text" 
+                                    id="searchInput" 
+                                    class="search-input" 
+                                    placeholder="Search events..."
+                                    aria-label="Search events"
+                                >
+                            </div>
+
+                            <div class="location-container">
+                                <div class="location-info">
+                                    <div class="location-status-wrapper">
+                                        <span id="locationStatus" class="location-status">📍 Using default location: La Brea, Trinidad & Tobago</span>
+                                        <span class="location-privacy">Your location is only used locally and never shared with external services.</span>
+                                    </div>
+                                    <div class="location-buttons">
+                                        <button id="locationButton" class="location-button" aria-label="Request location access">
+                                            📍 Use My Location
+                                        </button>
+                                        <button id="clearLocationButton" class="location-button location-button-secondary" aria-label="Clear saved location" style="display: none;">
+                                            🔄 Reset
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="events-section">
+                            <div id="eventsContainer" class="events-container" role="list">
+                                <!-- Events will be dynamically rendered here -->
+                            </div>
+                        </section>
                     </div>
                 </div>
-
-                <aside class="filter-panel">
-                    <h2>Filter by Category</h2>
-                    <div class="filter-options">
-                        <label class="filter-checkbox">
-                            <input type="checkbox" value="meteor" checked>
-                            <span>Meteor Showers (Annual peaks)</span>
-                        </label>
-                        <label class="filter-checkbox">
-                            <input type="checkbox" value="planet" checked>
-                            <span>Planet Visibility (Oppositions & conjunctions)</span>
-                        </label>
-                        <label class="filter-checkbox">
-                            <input type="checkbox" value="iss" checked>
-                            <span>ISS Passes (Real-time predictions)</span>
-                        </label>
-                        <label class="filter-checkbox">
-                            <input type="checkbox" value="apod" checked>
-                            <span>NASA APOD (Daily astronomy image)</span>
-                        </label>
-                        <label class="filter-checkbox">
-                            <input type="checkbox" value="solar" checked>
-                            <span>Solar Events (Flares & CMEs)</span>
-                        </label>
-                        <label class="filter-checkbox">
-                            <input type="checkbox" value="astronomy" checked>
-                            <span>Open-Meteo Astronomy (Moon phases & sun events)</span>
-                        </label>
-                    </div>
-                    <button id="applyFilters" class="apply-button">Apply Filters</button>
-                    <button id="refreshNASA" class="apply-button" style="margin-top: 0.5rem; background-color: var(--accent-secondary);">
-                        🔄 Refresh NASA Data
-                    </button>
-                </aside>
-            </section>
-
-            <section class="events-section">
-                <div id="eventsContainer" class="events-container" role="list">
-                    <!-- Events will be dynamically rendered here -->
-                </div>
-            </section>
 
             <section id="eventDetail" class="event-detail-section" aria-live="polite">
                 <!-- Event details will be populated dynamically -->
