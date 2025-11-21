@@ -258,23 +258,27 @@ function switchGIBSLayer(layerKey) {
                 const maxRow = Math.pow(2, level) - 1;
                 const invertedRow = maxRow - row;
                 
-                // Try alternative URL format first (more reliable)
-                let url = baseUrl
+                // Build the actual GIBS tile URL
+                const gibsUrl = baseUrl
                     .replace('{time}', time)
                     .replace('{level}', level)
                     .replace('{row}', invertedRow)
                     .replace('{col}', col);
                 
-                // Debug: log tile URLs to check format (limit to first 5 to avoid spam)
+                // Use Vercel serverless function as CORS proxy
+                const proxyUrl = `/api/gibs-tile?url=${encodeURIComponent(gibsUrl)}`;
+                
+                // Debug: log first few tile URLs
                 if (!this._loggedUrls) {
                     this._loggedUrls = 0;
                 }
-                if (this._loggedUrls < 5) {
-                    console.log(`GIBS tile URL [${this._loggedUrls}]:`, url);
+                if (this._loggedUrls < 3) {
+                    console.log(`GIBS tile [${this._loggedUrls}]:`, gibsUrl);
+                    console.log(`Proxied through:`, proxyUrl);
                     this._loggedUrls++;
                 }
                 
-                return url;
+                return proxyUrl;
             } catch (e) {
                 console.error('Error generating tile URL:', e);
                 return '';
