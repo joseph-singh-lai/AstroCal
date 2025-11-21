@@ -257,7 +257,7 @@ function setupNavigation() {
                     } else {
                         console.error('initGIBSMap function not found');
                     }
-                }, 500); // Delay to ensure container is visible and rendered
+                }, 100); // Minimal delay - container should be visible immediately when section is active
             }
 
             if (targetSection === 'sky') {

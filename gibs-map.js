@@ -125,12 +125,11 @@ function initGIBSMap() {
             zoomControl: true
         });
 
-        // Start directly with GIBS Blue Marble - it's working!
-        // If GIBS fails, we'll fall back to OpenStreetMap
-        console.log('Attempting to load GIBS Blue Marble layer directly...');
+        // Start directly with GIBS Blue Marble - load immediately
+        console.log('Loading GIBS Blue Marble layer...');
         try {
             switchGIBSLayer('blueMarble');
-            console.log('GIBS Blue Marble layer loaded successfully');
+            console.log('GIBS Blue Marble layer added');
         } catch (e) {
             console.warn('GIBS layer failed, falling back to OpenStreetMap:', e);
             // Fallback to OpenStreetMap if GIBS fails
@@ -143,13 +142,10 @@ function initGIBSMap() {
             console.log('Map initialized with OpenStreetMap fallback');
         }
         
-        // Force map to resize and render after container becomes visible
-        setTimeout(() => {
-            if (gibsMap) {
-                console.log('Invalidating map size...');
-                gibsMap.invalidateSize();
-            }
-        }, 500);
+        // Invalidate size immediately (no delay needed if container is visible)
+        if (gibsMap && gibsMap.invalidateSize) {
+            gibsMap.invalidateSize();
+        }
     } catch (error) {
         console.error('Error initializing map:', error);
         mapContainer.innerHTML = `<div style="padding: 2rem; text-align: center; color: var(--text-secondary);">Error initializing map: ${error.message}</div>`;
@@ -245,6 +241,10 @@ function switchGIBSLayer(layerKey) {
         minZoom: 1,
         tileSize: 256,
         zoomOffset: 0,
+        // Optimize tile loading
+        keepBuffer: 2, // Keep fewer tiles in buffer for faster loading
+        updateWhenIdle: false, // Update tiles while panning
+        updateWhenZooming: false, // Update tiles while zooming
         getTileUrl: function(coords) {
             try {
                 // Convert Leaflet coords to GIBS WMTS format
@@ -278,59 +278,17 @@ function switchGIBSLayer(layerKey) {
         currentLayer.addTo(gibsMap);
         console.log('Switched to layer:', layerConfig.name);
         
-        // Monitor tile loading
-        let tileLoadAttempts = 0;
-        const checkTileLoading = setInterval(() => {
-            if (!currentLayer || !gibsMap) {
-                clearInterval(checkTileLoading);
-                return;
-            }
-            
-            tileLoadAttempts++;
-            if (currentLayer._tiles) {
+        // Lightweight tile loading check (only once after a short delay)
+        setTimeout(() => {
+            if (currentLayer && currentLayer._tiles) {
                 const tiles = Object.values(currentLayer._tiles);
                 const loadedTiles = tiles.filter(t => t.loaded || t.complete).length;
-                const errorTiles = tiles.filter(t => t.classList && t.classList.contains('leaflet-error-tile')).length;
-                
-                if (tileLoadAttempts === 3) {
-                    console.log(`Layer ${layerConfig.name}: ${loadedTiles} tiles loaded, ${errorTiles} errors`);
-                }
-                
-                // If many errors and using altUrl, try main URL
-                if (tileLoadAttempts >= 5 && errorTiles > loadedTiles && baseUrl === layerConfig.altUrl && layerConfig.url) {
-                    console.warn('Many tile errors detected, trying main GIBS URL format...');
-                    clearInterval(checkTileLoading);
-                    // Remove current layer and try with main URL
-                    gibsMap.removeLayer(currentLayer);
-                    const mainUrl = layerConfig.url;
-                    const newLayer = L.tileLayer('', {
-                        attribution: `© ${layerConfig.attribution} | NASA GIBS`,
-                        maxZoom: 8,
-                        minZoom: 1,
-                        tileSize: 256,
-                        getTileUrl: function(coords) {
-                            const level = coords.z;
-                            const maxRow = Math.pow(2, level) - 1;
-                            const invertedRow = maxRow - coords.y;
-                            return mainUrl
-                                .replace('{time}', time)
-                                .replace('{level}', level)
-                                .replace('{row}', invertedRow)
-                                .replace('{col}', coords.x);
-                        },
-                        crossOrigin: 'anonymous',
-                        errorTileUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
-                    });
-                    currentLayer = newLayer;
-                    newLayer.addTo(gibsMap);
-                }
-                
-                // Stop checking after 10 attempts
-                if (tileLoadAttempts >= 10) {
-                    clearInterval(checkTileLoading);
+                const totalTiles = tiles.length;
+                if (totalTiles > 0) {
+                    console.log(`Layer ${layerConfig.name}: ${loadedTiles}/${totalTiles} tiles loaded`);
                 }
             }
-        }, 1000);
+        }, 1500);
     } catch (e) {
         console.error('Error adding layer to map:', e);
         // Fallback to OSM
