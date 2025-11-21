@@ -1406,15 +1406,23 @@ async function loadAstronomyData(forceRefresh = false) {
             const afterCount = allEvents.length;
             
             console.log(`Added ${astronomyEvents.length} Open-Meteo Astronomy events (${beforeCount} → ${afterCount})`);
+            console.log('Astronomy events sample:', astronomyEvents.slice(0, 2));
             
             // Sort all events by datetime
             allEvents.sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
             window.allEvents = allEvents;
             
+            // Debug: Log all categories after adding astronomy events
+            const categories = [...new Set(allEvents.map(e => e.category))];
+            console.log('All event categories after adding astronomy:', categories);
+            console.log('Astronomy events count:', allEvents.filter(e => e.category === 'astronomy').length);
+            
             // Re-apply filters if this is called after initial load
             if (beforeCount > 0) {
                 applyFilters();
             }
+        } else {
+            console.warn('No astronomy events loaded from Open-Meteo. Check API response above.');
         }
         
         return Promise.resolve();
