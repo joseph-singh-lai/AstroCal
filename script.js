@@ -13,7 +13,7 @@ function getNASAConfig() {
 // Global state
 let allEvents = [];
 let filteredEvents = [];
-let selectedCategories = new Set(['meteor', 'planet', 'iss', 'workshop', 'apod', 'solar', 'natural']);
+let selectedCategories = new Set(['meteor', 'planet', 'iss', 'workshop', 'apod', 'solar', 'natural', 'astronomy']);
 
 // Location state
 let userLocation = null;
@@ -871,7 +871,8 @@ function getCategoryLabel(category) {
         'workshop': 'Workshop',
         'apod': 'NASA APOD',
         'solar': 'Solar Event',
-        'natural': 'Natural Event'
+        'natural': 'Natural Event',
+        'astronomy': 'Astronomy API'
     };
     return labels[category] || category;
 }
@@ -1452,38 +1453,140 @@ async function loadAstronomyEvents(lat, lon, forceRefresh = false) {
             throw new Error('Could not create auth header');
         }
         
-        // Get current date for events
-        const today = new Date();
         const events = [];
+        const today = new Date();
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 30); // Get data for next 30 days
         
-        // Try to get moon phase information
-        // Note: Adjust endpoints based on actual Astronomy API documentation
+        // 1. Get Moon Phase information
         try {
-            // Example endpoint - adjust based on actual API
-            const moonPhaseUrl = `${config.baseUrl}/moon-phase?latitude=${lat}&longitude=${lon}&date=${today.toISOString().split('T')[0]}`;
+            const moonPhaseUrl = `${config.baseUrl}/studio/moon-phase`;
+            const moonPhaseBody = {
+                format: 'json',
+                style: {
+                    moonStyle: {
+                        phase: {
+                            show: true
+                        }
+                    }
+                },
+                observer: {
+                    latitude: lat,
+                    longitude: lon,
+                    date: today.toISOString().split('T')[0]
+                },
+                view: {
+                    type: 'landscape-simple',
+                    parameters: {
+                        position: {
+                            equatorial: {
+                                rightAscension: 0,
+                                declination: 0
+                            }
+                        }
+                    }
+                }
+            };
             
-            console.log('Fetching from Astronomy API:', moonPhaseUrl);
-            
-            const response = await fetch(moonPhaseUrl, {
-                method: 'GET',
+            console.log('Fetching moon phase from Astronomy API...');
+            const moonResponse = await fetch(moonPhaseUrl, {
+                method: 'POST',
                 headers: {
                     'Authorization': authHeader,
                     'Content-Type': 'application/json'
                 },
+                body: JSON.stringify(moonPhaseBody),
                 mode: 'cors',
                 credentials: 'omit'
             });
             
-            if (response.ok) {
-                const data = await response.json();
-                console.log('Astronomy API response:', data);
-                // Convert to events based on API response structure
-                // This will need to be adjusted based on actual API response
+            if (moonResponse.ok) {
+                const moonData = await moonResponse.json();
+                console.log('Moon phase response:', moonData);
+                
+                // Convert moon phase to event
+                if (moonData.data && moonData.data.phase) {
+                    const phase = moonData.data.phase.current || moonData.data.phase;
+                    const phaseName = phase.name || 'Moon Phase';
+                    const illumination = phase.illumination || phase.phase_value * 100 || 0;
+                    
+                    events.push({
+                        id: `astronomy-moon-${today.toISOString().split('T')[0]}`,
+                        title: `Moon Phase: ${phaseName}`,
+                        category: 'astronomy',
+                        datetime: `${today.toISOString().split('T')[0]}T12:00:00Z`,
+                        description: `Current moon phase: ${phaseName}. Illumination: ${illumination.toFixed(1)}%`,
+                        location: `Lat: ${lat.toFixed(2)}°, Lon: ${lon.toFixed(2)}°`,
+                        source: 'Astronomy API',
+                        moonPhase: phaseName,
+                        illumination: illumination,
+                        rawData: moonData
+                    });
+                }
             } else {
-                console.warn('Astronomy API request failed:', response.status, response.statusText);
+                console.warn('Moon phase request failed:', moonResponse.status, moonResponse.statusText);
             }
         } catch (e) {
-            console.warn('Astronomy API request error:', e);
+            console.warn('Moon phase request error:', e);
+        }
+        
+        // 2. Get Planet Positions (for major planets)
+        try {
+            const planetsUrl = `${config.baseUrl}/bodies/positions`;
+            const planetsBody = {
+                id: "sun,moon,mercury,venus,mars,jupiter,saturn,uranus,neptune",
+                latitude: lat,
+                longitude: lon,
+                from_date: today.toISOString().split('T')[0],
+                to_date: tomorrow.toISOString().split('T')[0],
+                elevation: 0,
+                time: "12:00:00"
+            };
+            
+            console.log('Fetching planet positions from Astronomy API...');
+            const planetsResponse = await fetch(planetsUrl, {
+                method: 'POST',
+                headers: {
+                    'Authorization': authHeader,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(planetsBody),
+                mode: 'cors',
+                credentials: 'omit'
+            });
+            
+            if (planetsResponse.ok) {
+                const planetsData = await planetsResponse.json();
+                console.log('Planet positions response:', planetsData);
+                
+                // Convert planet positions to events
+                if (planetsData.data && planetsData.data.table && planetsData.data.table.rows) {
+                    planetsData.data.table.rows.forEach((row, index) => {
+                        if (row.cells && row.cells.length > 0) {
+                            const body = row.cells[0].name || `Planet ${index + 1}`;
+                            const position = row.cells[1];
+                            
+                            if (position && position.position) {
+                                events.push({
+                                    id: `astronomy-planet-${body.toLowerCase()}-${today.toISOString().split('T')[0]}`,
+                                    title: `${body} Position`,
+                                    category: 'astronomy',
+                                    datetime: `${today.toISOString().split('T')[0]}T12:00:00Z`,
+                                    description: `${body} position: RA ${position.position.horizonal?.altitude?.string || 'N/A'}, Dec ${position.position.horizonal?.azimuth?.string || 'N/A'}`,
+                                    location: `Lat: ${lat.toFixed(2)}°, Lon: ${lon.toFixed(2)}°`,
+                                    source: 'Astronomy API',
+                                    body: body,
+                                    rawData: position
+                                });
+                            }
+                        }
+                    });
+                }
+            } else {
+                console.warn('Planet positions request failed:', planetsResponse.status, planetsResponse.statusText);
+            }
+        } catch (e) {
+            console.warn('Planet positions request error:', e);
         }
         
         // Cache the events
