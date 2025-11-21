@@ -480,6 +480,64 @@ body {
     gap: 0.5rem;
 }
 
+.event-countdown {
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+.event-time-upcoming {
+    background-color: rgba(74, 144, 226, 0.15);
+    color: var(--accent-primary);
+    border: 1px solid rgba(74, 144, 226, 0.3);
+}
+
+.event-time-passed {
+    background-color: rgba(148, 163, 184, 0.15);
+    color: var(--text-secondary);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    opacity: 0.7;
+}
+
+.countdown-text {
+    font-variant-numeric: tabular-nums;
+}
+
+.event-passed-badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    background-color: rgba(148, 163, 184, 0.2);
+    color: var(--text-secondary);
+    border: 1px solid rgba(148, 163, 184, 0.4);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.event-card-passed {
+    opacity: 0.85;
+    position: relative;
+}
+
+.event-card-passed::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--text-secondary), transparent);
+    opacity: 0.5;
+}
+
 .event-description {
     color: var(--text-secondary);
     margin-bottom: 0.5rem;

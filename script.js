@@ -772,6 +772,59 @@ function renderEvents() {
             }
         });
     });
+    
+    // Start countdown timers for all event cards
+    startCountdownTimers();
+}
+
+/**
+ * Start countdown timers for all visible event cards
+ */
+function startCountdownTimers() {
+    // Clear any existing interval
+    if (window.countdownInterval) {
+        clearInterval(window.countdownInterval);
+    }
+    
+    // Update countdowns immediately
+    updateCountdowns();
+    
+    // Update countdowns every second
+    window.countdownInterval = setInterval(updateCountdowns, 1000);
+}
+
+/**
+ * Update countdown displays for all visible event cards
+ */
+function updateCountdowns() {
+    document.querySelectorAll('.event-countdown').forEach(countdownEl => {
+        const eventDateTime = countdownEl.getAttribute('data-event-datetime');
+        if (!eventDateTime) return;
+        
+        const timeInfo = getTimeUntilEvent(eventDateTime);
+        const timeDisplay = formatTimeRemaining(timeInfo.timeRemaining, timeInfo.passed);
+        const timeClass = timeInfo.passed ? 'event-time-passed' : 'event-time-upcoming';
+        const timeIcon = timeInfo.passed ? '⏰' : '⏳';
+        
+        // Update the countdown element
+        countdownEl.className = `event-countdown ${timeClass}`;
+        const textSpan = countdownEl.querySelector('.countdown-text');
+        if (textSpan) {
+            textSpan.textContent = timeDisplay;
+        } else {
+            countdownEl.innerHTML = `${timeIcon} <span class="countdown-text">${timeDisplay}</span>`;
+        }
+        
+        // Update parent card class if event passed
+        const card = countdownEl.closest('.event-card');
+        if (card) {
+            if (timeInfo.passed) {
+                card.classList.add('event-card-passed');
+            } else {
+                card.classList.remove('event-card-passed');
+            }
+        }
+    });
 }
 
 /**
