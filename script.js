@@ -1471,6 +1471,7 @@ async function loadAstronomyEvents(lat, lon, forceRefresh = false) {
         
         console.log('Fetching astronomy data from Open-Meteo...');
         console.log('URL:', url);
+        console.log('Date:', today);
         
         const response = await fetch(url, {
             mode: 'cors',
@@ -1480,11 +1481,13 @@ async function loadAstronomyEvents(lat, lon, forceRefresh = false) {
         if (!response.ok) {
             const errorText = await response.text();
             console.error('Open-Meteo API error response:', errorText);
+            console.error('Response status:', response.status);
             throw new Error(`Open-Meteo API error! status: ${response.status}`);
         }
         
         const data = await response.json();
         console.log('Open-Meteo Astronomy response:', data);
+        console.log('Daily data available:', !!data.daily);
         
         if (data.daily && data.daily.time && data.daily.time.length > 0) {
             // Process today's data (first entry)
@@ -1494,7 +1497,7 @@ async function loadAstronomyEvents(lat, lon, forceRefresh = false) {
             
             // Sunrise Event
             if (daily.sunrise && daily.sunrise[todayIndex]) {
-                events.push({
+                const sunriseEvent = {
                     id: `astronomy-sunrise-${date}`,
                     title: 'Sunrise',
                     category: 'astronomy',
@@ -1502,12 +1505,14 @@ async function loadAstronomyEvents(lat, lon, forceRefresh = false) {
                     description: 'Local sunrise time for your location.',
                     location: `Lat: ${lat.toFixed(2)}°, Lon: ${lon.toFixed(2)}°`,
                     source: 'Open-Meteo Astronomy'
-                });
+                };
+                events.push(sunriseEvent);
+                console.log('Astronomy event created: Sunrise');
             }
             
             // Sunset Event
             if (daily.sunset && daily.sunset[todayIndex]) {
-                events.push({
+                const sunsetEvent = {
                     id: `astronomy-sunset-${date}`,
                     title: 'Sunset',
                     category: 'astronomy',
@@ -1515,7 +1520,9 @@ async function loadAstronomyEvents(lat, lon, forceRefresh = false) {
                     description: 'Local sunset time for your location.',
                     location: `Lat: ${lat.toFixed(2)}°, Lon: ${lon.toFixed(2)}°`,
                     source: 'Open-Meteo Astronomy'
-                });
+                };
+                events.push(sunsetEvent);
+                console.log('Astronomy event created: Sunset');
             }
             
             // Moon Phase Event
@@ -1552,7 +1559,7 @@ async function loadAstronomyEvents(lat, lon, forceRefresh = false) {
                     illumination = 50 - ((moonPhase - 0.75) / 0.25) * 50;
                 }
                 
-                events.push({
+                const moonPhaseEvent = {
                     id: `astronomy-moon-${date}`,
                     title: `Moon Phase: ${phaseName}`,
                     category: 'astronomy',
@@ -1563,12 +1570,14 @@ async function loadAstronomyEvents(lat, lon, forceRefresh = false) {
                     moonPhase: phaseName,
                     illumination: illumination,
                     moonPhaseValue: moonPhase
-                });
+                };
+                events.push(moonPhaseEvent);
+                console.log('Astronomy event created: Moon Phase');
             }
             
             // Moonrise Event
             if (daily.moonrise && daily.moonrise[todayIndex]) {
-                events.push({
+                const moonriseEvent = {
                     id: `astronomy-moonrise-${date}`,
                     title: 'Moonrise',
                     category: 'astronomy',
@@ -1576,12 +1585,14 @@ async function loadAstronomyEvents(lat, lon, forceRefresh = false) {
                     description: 'Local moonrise time for your location.',
                     location: `Lat: ${lat.toFixed(2)}°, Lon: ${lon.toFixed(2)}°`,
                     source: 'Open-Meteo Astronomy'
-                });
+                };
+                events.push(moonriseEvent);
+                console.log('Astronomy event created: Moonrise');
             }
             
             // Moonset Event
             if (daily.moonset && daily.moonset[todayIndex]) {
-                events.push({
+                const moonsetEvent = {
                     id: `astronomy-moonset-${date}`,
                     title: 'Moonset',
                     category: 'astronomy',
@@ -1589,7 +1600,9 @@ async function loadAstronomyEvents(lat, lon, forceRefresh = false) {
                     description: 'Local moonset time for your location.',
                     location: `Lat: ${lat.toFixed(2)}°, Lon: ${lon.toFixed(2)}°`,
                     source: 'Open-Meteo Astronomy'
-                });
+                };
+                events.push(moonsetEvent);
+                console.log('Astronomy event created: Moonset');
             }
         }
         
