@@ -259,11 +259,12 @@ function switchGIBSLayer(layerKey) {
                 const invertedRow = maxRow - row;
                 
                 // Build the actual GIBS tile URL
-                const gibsUrl = baseUrl
-                    .replace('{time}', time)
-                    .replace('{level}', level)
-                    .replace('{row}', invertedRow)
-                    .replace('{col}', col);
+                // Replace all placeholders - need to replace {level} multiple times if it appears multiple times
+                let gibsUrl = baseUrl
+                    .replace(/{time}/g, time)
+                    .replace(/{level}/g, level)  // Use global replace in case {level} appears multiple times
+                    .replace(/{row}/g, invertedRow)
+                    .replace(/{col}/g, col);
                 
                 // Use Vercel serverless function as CORS proxy
                 const proxyUrl = `/api/gibs-tile?url=${encodeURIComponent(gibsUrl)}`;
@@ -306,10 +307,10 @@ function switchGIBSLayer(layerKey) {
                 const maxRow = Math.pow(2, level) - 1;
                 const invertedRow = maxRow - coords.y;
                 const failedUrl = baseUrl
-                    .replace('{time}', time)
-                    .replace('{level}', level)
-                    .replace('{row}', invertedRow)
-                    .replace('{col}', coords.x);
+                    .replace(/{time}/g, time)
+                    .replace(/{level}/g, level)  // Use global replace
+                    .replace(/{row}/g, invertedRow)
+                    .replace(/{col}/g, coords.x);
                 console.log('Failed tile URL:', failedUrl);
                 console.log('Tile coords:', coords);
                 console.log('⚠️ Check Network tab for this URL - likely CORS, 404, or authentication required');
