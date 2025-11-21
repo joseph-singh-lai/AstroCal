@@ -1528,8 +1528,8 @@ async function loadAstronomyEvents(lat, lon, forceRefresh = false) {
         // Get timezone (Trinidad & Tobago)
         const timezone = 'America/Port_of_Spain';
         
-        // Build URL with correct endpoint (/v1/astro) and required date parameters
-        const url = `https://api.open-meteo.com/v1/astro?latitude=${lat}&longitude=${lon}&daily=sunrise,sunset,moonrise,moonset,moon_phase&timezone=${timezone}&start_date=${today}&end_date=${today}`;
+        // Build URL with correct endpoint (/v1/forecast) and required date parameters
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=sunrise,sunset,moonrise,moonset,moon_phase&timezone=${timezone}&start_date=${today}&end_date=${today}`;
         
         console.log('Fetching astronomy data from Open-Meteo...');
         console.log('URL:', url);
