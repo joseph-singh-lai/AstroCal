@@ -1,3 +1,15 @@
+// Helper function to get NASA API config
+function getNASAConfig() {
+    if (typeof NASA_API_CONFIG !== 'undefined') {
+        return NASA_API_CONFIG;
+    }
+    if (typeof window !== 'undefined' && window.NASA_API_CONFIG) {
+        return window.NASA_API_CONFIG;
+    }
+    console.error('NASA_API_CONFIG is not defined. Make sure config.js is loaded before script.js');
+    return null;
+}
+
 // Global state
 let allEvents = [];
 let filteredEvents = [];
@@ -509,6 +521,10 @@ function applyFilters() {
     
     const searchTerm = searchInput.value.toLowerCase().trim();
     
+    console.log('Applying filters...');
+    console.log('Selected categories:', Array.from(selectedCategories));
+    console.log('Total events before filter:', allEvents.length);
+    
     filteredEvents = allEvents.filter(event => {
         // Category filter
         if (!selectedCategories.has(event.category)) {
@@ -531,6 +547,12 @@ function applyFilters() {
         
         return true;
     });
+    
+    console.log('Filtered events count:', filteredEvents.length);
+    console.log('Filtered events by category:', 
+        [...new Set(filteredEvents.map(e => e.category))].map(cat => 
+            `${cat}: ${filteredEvents.filter(e => e.category === cat).length}`
+        ).join(', '));
     
     renderEvents();
 }
@@ -807,33 +829,44 @@ function clearNASACache() {
  * Load NASA APOD (Astronomy Picture of the Day)
  */
 async function loadAPOD(forceRefresh = false) {
+    const config = getNASAConfig();
+    if (!config) return null;
+    
     const cacheKey = 'nasa_apod';
-    const maxAge = NASA_API_CONFIG.cacheSettings.apod;
+    const maxAge = config.cacheSettings.apod;
     
     // Check cache first
     if (!forceRefresh && isCacheValid(cacheKey, maxAge)) {
         const cached = getCachedData(cacheKey);
         if (cached) {
             console.log('Using cached APOD data');
-            return convertAPODToEvent(cached);
+            const event = convertAPODToEvent(cached);
+            console.log('APOD event created:', event);
+            return event;
         }
     }
     
     try {
-        const url = `${NASA_API_CONFIG.baseUrl}/planetary/apod?api_key=${NASA_API_CONFIG.apiKey}`;
-        const response = await fetch(url);
+        const url = `${config.baseUrl}/planetary/apod?api_key=${config.apiKey}`;
+        console.log('Fetching APOD from:', url);
+        const response = await fetch(url, {
+            mode: 'cors',
+            credentials: 'omit'
+        });
         
         if (!response.ok) {
             throw new Error(`APOD API error! status: ${response.status}`);
         }
         
         const data = await response.json();
+        console.log('APOD API response:', data);
         
         // Cache the data
         setCachedData(cacheKey, data);
         
-        console.log('Loaded APOD:', data.title);
-        return convertAPODToEvent(data);
+        const event = convertAPODToEvent(data);
+        console.log('Loaded APOD:', data.title, 'Event:', event);
+        return event;
     } catch (error) {
         // Handle CORS and network errors gracefully
         if (error.message.includes('CORS') || error.message.includes('NetworkError')) {
@@ -874,8 +907,11 @@ function convertAPODToEvent(apodData) {
  * Load NASA DONKI Solar Events (Solar Flares, CMEs, etc.)
  */
 async function loadDONKI(forceRefresh = false) {
+    const config = getNASAConfig();
+    if (!config) return [];
+    
     const cacheKey = 'nasa_donki';
-    const maxAge = NASA_API_CONFIG.cacheSettings.donki;
+    const maxAge = config.cacheSettings.donki;
     
     // Check cache first
     if (!forceRefresh && isCacheValid(cacheKey, maxAge)) {
@@ -887,36 +923,50 @@ async function loadDONKI(forceRefresh = false) {
     }
     
     try {
-        const { startDate, endDate } = NASA_API_CONFIG.dateRanges.donki;
+        const { startDate, endDate } = config.dateRanges.donki;
         
         // Fetch Solar Flares
-        const flrUrl = `${NASA_API_CONFIG.baseUrl}/DONKI/FLR?startDate=${startDate}&endDate=${endDate}&api_key=${NASA_API_CONFIG.apiKey}`;
-        const flrResponse = await fetch(flrUrl);
+        const flrUrl = `${config.baseUrl}/DONKI/FLR?startDate=${startDate}&endDate=${endDate}&api_key=${config.apiKey}`;
+        console.log('Fetching DONKI Solar Flares from:', flrUrl);
+        const flrResponse = await fetch(flrUrl, {
+            mode: 'cors',
+            credentials: 'omit'
+        });
         
         let solarEvents = [];
         
         if (flrResponse.ok) {
             const flrData = await flrResponse.json();
-            if (Array.isArray(flrData)) {
+            console.log('DONKI FLR response:', flrData);
+            if (Array.isArray(flrData) && flrData.length > 0) {
                 solarEvents = solarEvents.concat(flrData.map(event => ({
                     ...event,
                     type: 'solar_flare'
                 })));
             }
+        } else {
+            console.warn('DONKI FLR failed:', flrResponse.status, flrResponse.statusText);
         }
         
         // Fetch CMEs (Coronal Mass Ejections)
-        const cmeUrl = `${NASA_API_CONFIG.baseUrl}/DONKI/CME?startDate=${startDate}&endDate=${endDate}&api_key=${NASA_API_CONFIG.apiKey}`;
-        const cmeResponse = await fetch(cmeUrl);
+        const cmeUrl = `${config.baseUrl}/DONKI/CME?startDate=${startDate}&endDate=${endDate}&api_key=${config.apiKey}`;
+        console.log('Fetching DONKI CMEs from:', cmeUrl);
+        const cmeResponse = await fetch(cmeUrl, {
+            mode: 'cors',
+            credentials: 'omit'
+        });
         
         if (cmeResponse.ok) {
             const cmeData = await cmeResponse.json();
-            if (Array.isArray(cmeData)) {
+            console.log('DONKI CME response:', cmeData);
+            if (Array.isArray(cmeData) && cmeData.length > 0) {
                 solarEvents = solarEvents.concat(cmeData.map(event => ({
                     ...event,
                     type: 'cme'
                 })));
             }
+        } else {
+            console.warn('DONKI CME failed:', cmeResponse.status, cmeResponse.statusText);
         }
         
         // Cache the data
@@ -987,8 +1037,11 @@ function convertDONKIToEvents(donkiData) {
  * Load NASA EONET (Natural Events)
  */
 async function loadEONET(forceRefresh = false) {
+    const config = getNASAConfig();
+    if (!config) return [];
+    
     const cacheKey = 'nasa_eonet';
-    const maxAge = NASA_API_CONFIG.cacheSettings.eonet;
+    const maxAge = config.cacheSettings.eonet;
     
     // Check cache first
     if (!forceRefresh && isCacheValid(cacheKey, maxAge)) {
@@ -1000,7 +1053,7 @@ async function loadEONET(forceRefresh = false) {
     }
     
     try {
-        const url = `${NASA_API_CONFIG.baseUrl}/EONET/events?days=${NASA_API_CONFIG.dateRanges.eonet.days}&api_key=${NASA_API_CONFIG.apiKey}`;
+        const url = `${config.baseUrl}/EONET/events?days=${config.dateRanges.eonet.days}&api_key=${config.apiKey}`;
         const response = await fetch(url, {
             mode: 'cors',
             credentials: 'omit'
@@ -1092,39 +1145,72 @@ function convertEONETToEvents(eonetData) {
  */
 async function loadNASAData(forceRefresh = false) {
     try {
+        console.log('=== Loading NASA Data ===');
         const [apodEvent, donkiEvents, eonetEvents] = await Promise.all([
             loadAPOD(forceRefresh),
             loadDONKI(forceRefresh),
             loadEONET(forceRefresh)
         ]);
         
+        console.log('NASA API results:', {
+            apod: apodEvent ? '✓' : '✗',
+            donki: donkiEvents ? `${donkiEvents.length} events` : '✗',
+            eonet: eonetEvents ? `${eonetEvents.length} events` : '✗'
+        });
+        
         const nasaEvents = [];
         
         // Add APOD if available
         if (apodEvent) {
             nasaEvents.push(apodEvent);
+            console.log('Added APOD event:', apodEvent.title);
+        } else {
+            console.warn('No APOD event returned');
         }
         
         // Add DONKI events
         if (donkiEvents && donkiEvents.length > 0) {
             nasaEvents.push(...donkiEvents);
+            console.log(`Added ${donkiEvents.length} DONKI events`);
+        } else {
+            console.warn('No DONKI events returned');
         }
         
         // Add EONET events
         if (eonetEvents && eonetEvents.length > 0) {
             nasaEvents.push(...eonetEvents);
+            console.log(`Added ${eonetEvents.length} EONET events`);
+        } else {
+            console.warn('No EONET events returned');
         }
         
         console.log(`Loaded ${nasaEvents.length} total NASA events`);
+        console.log('NASA events details:', nasaEvents);
         
         // Add NASA events to allEvents array
+        const beforeCount = allEvents.length;
         allEvents = [...allEvents, ...nasaEvents];
+        const afterCount = allEvents.length;
+        
+        console.log(`Events count: ${beforeCount} → ${afterCount} (added ${nasaEvents.length} NASA events)`);
         
         // Sort all events by datetime (earliest first)
         allEvents.sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
         
         // Update global reference
         window.allEvents = allEvents;
+        
+        // Debug: Log all event categories
+        const categories = [...new Set(allEvents.map(e => e.category))];
+        console.log('Available event categories:', categories);
+        console.log('Total events by category:', 
+            categories.map(cat => `${cat}: ${allEvents.filter(e => e.category === cat).length}`).join(', '));
+        
+        // If this is called after initial load, re-apply filters to show new events
+        if (beforeCount > 0) {
+            console.log('Re-applying filters after NASA data load...');
+            applyFilters();
+        }
         
         return Promise.resolve();
     } catch (error) {
