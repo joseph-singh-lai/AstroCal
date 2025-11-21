@@ -265,9 +265,13 @@ function switchGIBSLayer(layerKey) {
                     .replace('{row}', invertedRow)
                     .replace('{col}', col);
                 
-                // Debug: log first few tile URLs to check format
-                if (coords.x === 0 && coords.y === 0) {
-                    console.log('Sample GIBS tile URL:', url);
+                // Debug: log tile URLs to check format (limit to first 5 to avoid spam)
+                if (!this._loggedUrls) {
+                    this._loggedUrls = 0;
+                }
+                if (this._loggedUrls < 5) {
+                    console.log(`GIBS tile URL [${this._loggedUrls}]:`, url);
+                    this._loggedUrls++;
                 }
                 
                 return url;
@@ -282,39 +286,33 @@ function switchGIBSLayer(layerKey) {
     
     // Add tile error handler as event listener (not constructor option)
     // Note: Leaflet passes error object with tile property, not as separate parameter
+    let errorCount = 0;
     currentLayer.on('tileerror', function(error) {
+        errorCount++;
         const tile = error.tile; // Tile is in the error object
         const coords = error.coords; // Coords are also in the error object
         
-        console.warn('GIBS tile error for:', layerConfig.name);
-        
-        // Try to get the failed URL
-        let failedUrl = null;
-        if (tile && tile.src) {
-            failedUrl = tile.src;
-            console.log('Failed tile URL:', failedUrl);
-        } else if (coords) {
-            // Reconstruct URL from coordinates
-            const level = coords.z;
-            const maxRow = Math.pow(2, level) - 1;
-            const invertedRow = maxRow - coords.y;
-            failedUrl = baseUrl
-                .replace('{time}', time)
-                .replace('{level}', level)
-                .replace('{row}', invertedRow)
-                .replace('{col}', coords.x);
-            console.log('Failed tile URL (reconstructed):', failedUrl);
-            console.log('Tile coords:', coords);
-        }
-        
-        // Log error type if available
-        if (error.error) {
-            console.warn('Error type:', error.error.message || error.error);
-        }
-        
-        // Check if this is a CORS or network error
-        if (failedUrl) {
-            console.log('Check Network tab for this URL to see if it\'s a CORS, 404, or other HTTP error');
+        // Only log first few errors to avoid spam
+        if (errorCount <= 3) {
+            console.warn(`GIBS tile error #${errorCount} for:`, layerConfig.name);
+            
+            // Reconstruct URL from coordinates (more reliable than tile.src which might be error placeholder)
+            if (coords) {
+                const level = coords.z;
+                const maxRow = Math.pow(2, level) - 1;
+                const invertedRow = maxRow - coords.y;
+                const failedUrl = baseUrl
+                    .replace('{time}', time)
+                    .replace('{level}', level)
+                    .replace('{row}', invertedRow)
+                    .replace('{col}', coords.x);
+                console.log('Failed tile URL:', failedUrl);
+                console.log('Tile coords:', coords);
+                console.log('⚠️ Check Network tab for this URL - likely CORS, 404, or authentication required');
+            } else if (tile && tile.src && !tile.src.startsWith('data:')) {
+                // Only log if it's not the error placeholder
+                console.log('Failed tile URL (from tile.src):', tile.src);
+            }
         }
     });
 
