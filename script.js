@@ -71,14 +71,24 @@ document.addEventListener('DOMContentLoaded', () => {
         updateLocationStatus(LA_BREA_COORDS);
     }
     
+    // Initialize checkboxes to match default selectedCategories
+    filterCheckboxes.forEach(checkbox => {
+        if (selectedCategories.has(checkbox.value)) {
+            checkbox.checked = true;
+        }
+    });
+    
     // Load all events in parallel
     Promise.all([
         loadEvents(),
         loadISSPasses(),
         loadNASAData()
     ]).then(() => {
+        console.log('All events loaded. Total:', allEvents.length);
+        console.log('Event categories:', [...new Set(allEvents.map(e => e.category))]);
         applyFilters();
-    }).catch(() => {
+    }).catch((error) => {
+        console.error('Error loading events:', error);
         // Even if some fail, show what we have
         if (allEvents.length > 0) {
             applyFilters();
@@ -506,11 +516,15 @@ function setupEventListeners() {
  */
 function updateSelectedCategories() {
     selectedCategories.clear();
+    const checkedBoxes = [];
     filterCheckboxes.forEach(checkbox => {
         if (checkbox.checked) {
             selectedCategories.add(checkbox.value);
+            checkedBoxes.push(checkbox.value);
         }
     });
+    console.log('Checkbox states:', Array.from(filterCheckboxes).map(cb => ({ value: cb.value, checked: cb.checked })));
+    console.log('Selected categories from checkboxes:', checkedBoxes);
 }
 
 /**
@@ -524,6 +538,14 @@ function applyFilters() {
     console.log('Applying filters...');
     console.log('Selected categories:', Array.from(selectedCategories));
     console.log('Total events before filter:', allEvents.length);
+    
+    // Debug: Show all event categories
+    const eventCategories = {};
+    allEvents.forEach(event => {
+        eventCategories[event.category] = (eventCategories[event.category] || 0) + 1;
+    });
+    console.log('Events by category:', eventCategories);
+    console.log('Sample events:', allEvents.slice(0, 3).map(e => ({ title: e.title, category: e.category })));
     
     filteredEvents = allEvents.filter(event => {
         // Category filter
