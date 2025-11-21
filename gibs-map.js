@@ -125,21 +125,19 @@ function initGIBSMap() {
             zoomControl: true
         });
 
-        // Start directly with GIBS Blue Marble - load immediately
-        console.log('Loading GIBS Blue Marble layer...');
-        try {
-            switchGIBSLayer('blueMarble');
-            console.log('GIBS Blue Marble layer added');
-        } catch (e) {
-            console.warn('GIBS layer failed, falling back to OpenStreetMap:', e);
-            // Fallback to OpenStreetMap if GIBS fails
-            currentLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap contributors | <a href="https://www.openstreetmap.org/copyright">OSM</a>',
-                maxZoom: 19,
-                subdomains: 'abc'
-            });
-            currentLayer.addTo(gibsMap);
-            console.log('Map initialized with OpenStreetMap fallback');
+        // Start with OpenStreetMap by default (reliable and fast)
+        currentLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors | <a href="https://www.openstreetmap.org/copyright">OSM</a>',
+            maxZoom: 19,
+            subdomains: 'abc'
+        });
+        currentLayer.addTo(gibsMap);
+        console.log('Map initialized with OpenStreetMap (default)');
+        
+        // Update layer selector to show OSM is selected
+        const layerSelect = document.getElementById('layerSelect');
+        if (layerSelect) {
+            layerSelect.value = 'osm';
         }
         
         // Invalidate size immediately (no delay needed if container is visible)
