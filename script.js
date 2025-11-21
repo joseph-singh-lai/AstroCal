@@ -1459,76 +1459,101 @@ async function loadAstronomyEvents(lat, lon, forceRefresh = false) {
     
     try {
         const events = [];
-        const today = new Date();
-        const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 7); // Get data for next 7 days
         
-        // Format dates for API
-        const startDate = today.toISOString().split('T')[0];
-        const endDate = tomorrow.toISOString().split('T')[0];
-        
-        // Get timezone (approximate for Trinidad & Tobago)
+        // Get timezone (Trinidad & Tobago)
         const timezone = 'America/Port_of_Spain';
         
-        // Fetch astronomy data from Open-Meteo
-        const url = `https://api.open-meteo.com/v1/astronomy?latitude=${lat}&longitude=${lon}&daily=sunrise,sunset,moon_phase,moonrise,moonset&start_date=${startDate}&end_date=${endDate}&timezone=${timezone}`;
+        // Build URL with correct parameters (no start_date/end_date for astronomy endpoint)
+        const url = `https://api.open-meteo.com/v1/astronomy?latitude=${lat}&longitude=${lon}&daily=sunrise,sunset,moonrise,moonset,moon_phase&timezone=${timezone}`;
         
         console.log('Fetching astronomy data from Open-Meteo...');
+        console.log('URL:', url);
+        
         const response = await fetch(url, {
             mode: 'cors',
             credentials: 'omit'
         });
         
         if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Open-Meteo API error response:', errorText);
             throw new Error(`Open-Meteo API error! status: ${response.status}`);
         }
         
         const data = await response.json();
         console.log('Open-Meteo Astronomy response:', data);
         
-        if (data.daily) {
-            // Process today's data
+        if (data.daily && data.daily.time && data.daily.time.length > 0) {
+            // Process today's data (first entry)
             const daily = data.daily;
             const todayIndex = 0;
+            const date = data.daily.time[todayIndex];
+            
+            // Sunrise Event
+            if (daily.sunrise && daily.sunrise[todayIndex]) {
+                events.push({
+                    id: `astronomy-sunrise-${date}`,
+                    title: 'Sunrise',
+                    category: 'astronomy',
+                    datetime: daily.sunrise[todayIndex],
+                    description: 'Local sunrise time for your location.',
+                    location: `Lat: ${lat.toFixed(2)}°, Lon: ${lon.toFixed(2)}°`,
+                    source: 'Open-Meteo Astronomy'
+                });
+            }
+            
+            // Sunset Event
+            if (daily.sunset && daily.sunset[todayIndex]) {
+                events.push({
+                    id: `astronomy-sunset-${date}`,
+                    title: 'Sunset',
+                    category: 'astronomy',
+                    datetime: daily.sunset[todayIndex],
+                    description: 'Local sunset time for your location.',
+                    location: `Lat: ${lat.toFixed(2)}°, Lon: ${lon.toFixed(2)}°`,
+                    source: 'Open-Meteo Astronomy'
+                });
+            }
             
             // Moon Phase Event
             if (daily.moon_phase && daily.moon_phase[todayIndex] !== undefined) {
                 const moonPhase = daily.moon_phase[todayIndex];
-                const phaseNames = {
-                    0: 'New Moon',
-                    0.25: 'First Quarter',
-                    0.5: 'Full Moon',
-                    0.75: 'Last Quarter'
-                };
                 
-                // Find closest phase name
-                let phaseName = 'Waxing';
-                let closestPhase = 0;
-                for (const [phase, name] of Object.entries(phaseNames)) {
-                    if (Math.abs(moonPhase - parseFloat(phase)) < Math.abs(moonPhase - closestPhase)) {
-                        closestPhase = parseFloat(phase);
-                        phaseName = name;
-                    }
-                }
+                // Determine phase name based on moon phase value (0-1)
+                let phaseName = 'New Moon';
+                let illumination = 0;
                 
-                // Determine waxing/waning
-                if (moonPhase > 0 && moonPhase < 0.25) {
+                if (moonPhase === 0 || moonPhase === 1) {
+                    phaseName = 'New Moon';
+                    illumination = 0;
+                } else if (moonPhase > 0 && moonPhase < 0.25) {
                     phaseName = 'Waxing Crescent';
+                    illumination = (moonPhase / 0.25) * 50;
+                } else if (moonPhase === 0.25) {
+                    phaseName = 'First Quarter';
+                    illumination = 50;
                 } else if (moonPhase > 0.25 && moonPhase < 0.5) {
                     phaseName = 'Waxing Gibbous';
+                    illumination = 50 + ((moonPhase - 0.25) / 0.25) * 50;
+                } else if (moonPhase === 0.5) {
+                    phaseName = 'Full Moon';
+                    illumination = 100;
                 } else if (moonPhase > 0.5 && moonPhase < 0.75) {
                     phaseName = 'Waning Gibbous';
+                    illumination = 100 - ((moonPhase - 0.5) / 0.25) * 50;
+                } else if (moonPhase === 0.75) {
+                    phaseName = 'Last Quarter';
+                    illumination = 50;
                 } else if (moonPhase > 0.75 && moonPhase < 1) {
                     phaseName = 'Waning Crescent';
+                    illumination = 50 - ((moonPhase - 0.75) / 0.25) * 50;
                 }
                 
-                const illumination = Math.abs(Math.cos(2 * Math.PI * moonPhase)) * 100;
-                
                 events.push({
-                    id: `astronomy-moon-${startDate}`,
+                    id: `astronomy-moon-${date}`,
                     title: `Moon Phase: ${phaseName}`,
                     category: 'astronomy',
-                    datetime: `${startDate}T12:00:00Z`,
+                    datetime: `${date}T12:00:00Z`,
                     description: `Current moon phase: ${phaseName}. Illumination: ${illumination.toFixed(1)}%`,
                     location: `Lat: ${lat.toFixed(2)}°, Lon: ${lon.toFixed(2)}°`,
                     source: 'Open-Meteo Astronomy',
@@ -1538,51 +1563,27 @@ async function loadAstronomyEvents(lat, lon, forceRefresh = false) {
                 });
             }
             
-            // Sunrise/Sunset Events
-            if (daily.sunrise && daily.sunrise[todayIndex]) {
-                events.push({
-                    id: `astronomy-sunrise-${startDate}`,
-                    title: 'Sunrise',
-                    category: 'astronomy',
-                    datetime: daily.sunrise[todayIndex],
-                    description: `Sunrise time for your location.`,
-                    location: `Lat: ${lat.toFixed(2)}°, Lon: ${lon.toFixed(2)}°`,
-                    source: 'Open-Meteo Astronomy'
-                });
-            }
-            
-            if (daily.sunset && daily.sunset[todayIndex]) {
-                events.push({
-                    id: `astronomy-sunset-${startDate}`,
-                    title: 'Sunset',
-                    category: 'astronomy',
-                    datetime: daily.sunset[todayIndex],
-                    description: `Sunset time for your location.`,
-                    location: `Lat: ${lat.toFixed(2)}°, Lon: ${lon.toFixed(2)}°`,
-                    source: 'Open-Meteo Astronomy'
-                });
-            }
-            
-            // Moonrise/Moonset Events
+            // Moonrise Event
             if (daily.moonrise && daily.moonrise[todayIndex]) {
                 events.push({
-                    id: `astronomy-moonrise-${startDate}`,
+                    id: `astronomy-moonrise-${date}`,
                     title: 'Moonrise',
                     category: 'astronomy',
                     datetime: daily.moonrise[todayIndex],
-                    description: `Moonrise time for your location.`,
+                    description: 'Local moonrise time for your location.',
                     location: `Lat: ${lat.toFixed(2)}°, Lon: ${lon.toFixed(2)}°`,
                     source: 'Open-Meteo Astronomy'
                 });
             }
             
+            // Moonset Event
             if (daily.moonset && daily.moonset[todayIndex]) {
                 events.push({
-                    id: `astronomy-moonset-${startDate}`,
+                    id: `astronomy-moonset-${date}`,
                     title: 'Moonset',
                     category: 'astronomy',
                     datetime: daily.moonset[todayIndex],
-                    description: `Moonset time for your location.`,
+                    description: 'Local moonset time for your location.',
                     location: `Lat: ${lat.toFixed(2)}°, Lon: ${lon.toFixed(2)}°`,
                     source: 'Open-Meteo Astronomy'
                 });
