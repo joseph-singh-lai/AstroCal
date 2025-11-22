@@ -129,12 +129,64 @@ body::after {
     }
 }
 
-/* Animated Planets - More Visible */
-.planet-1, .planet-2, .planet-3, .planet-4, .planet-5, .planet-6 {
+/* Central Sun */
+.sun {
     position: fixed;
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, 
+        rgba(255, 255, 200, 0.9) 0%,
+        rgba(255, 220, 100, 0.8) 20%,
+        rgba(255, 180, 50, 0.7) 40%,
+        rgba(255, 140, 0, 0.6) 60%,
+        rgba(255, 100, 0, 0.5) 80%,
+        rgba(200, 80, 0, 0.4) 100%);
+    box-shadow: 
+        0 0 80px rgba(255, 255, 200, 0.8),
+        0 0 120px rgba(255, 220, 100, 0.6),
+        0 0 160px rgba(255, 180, 50, 0.4),
+        0 0 200px rgba(255, 140, 0, 0.3),
+        inset -20px -20px 40px rgba(255, 140, 0, 0.4);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 0;
+    animation: sunPulse 4s ease-in-out infinite;
+    filter: blur(0.5px);
+}
+
+@keyframes sunPulse {
+    0%, 100% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 0.9;
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(1.05);
+        opacity: 1;
+    }
+}
+
+/* Orbital Container for Planets */
+.orbit-container {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 1px;
+    height: 1px;
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* Animated Planets - Orbital Movement */
+.planet-1, .planet-2, .planet-3, .planet-4, .planet-5, .planet-6 {
+    position: absolute;
     border-radius: 50%;
     pointer-events: none;
     z-index: 0;
+    transform-origin: center;
 }
 
 .planet-1 {
@@ -142,9 +194,9 @@ body::after {
     height: 120px;
     background: radial-gradient(circle at 30% 30%, rgba(255, 215, 0, 0.7), rgba(255, 140, 0, 0.5), rgba(255, 100, 0, 0.3));
     box-shadow: 0 0 60px rgba(255, 215, 0, 0.6), 0 0 100px rgba(255, 140, 0, 0.3), inset -15px -15px 30px rgba(255, 140, 0, 0.3);
-    top: 10%;
-    left: -150px;
-    animation: planetMove1 25s linear infinite;
+    top: -60px;
+    left: -60px;
+    animation: orbit1 20s linear infinite, planetRotate 15s linear infinite;
     filter: blur(1px);
 }
 
@@ -153,10 +205,10 @@ body::after {
     height: 90px;
     background: radial-gradient(circle at 30% 30%, rgba(157, 124, 232, 0.8), rgba(107, 141, 214, 0.6), rgba(99, 102, 241, 0.4));
     box-shadow: 0 0 50px rgba(157, 124, 232, 0.7), 0 0 80px rgba(107, 141, 214, 0.4), inset -12px -12px 25px rgba(107, 141, 214, 0.4);
-    top: 60%;
-    left: -150px;
-    animation: planetMove2 30s linear infinite;
-    animation-delay: -5s;
+    top: -45px;
+    left: -45px;
+    animation: orbit2 25s linear infinite, planetRotate 12s linear infinite reverse;
+    animation-delay: -3s;
     filter: blur(0.8px);
 }
 
@@ -165,10 +217,10 @@ body::after {
     height: 150px;
     background: radial-gradient(circle at 30% 30%, rgba(107, 141, 214, 0.7), rgba(99, 102, 241, 0.5), rgba(79, 70, 229, 0.3));
     box-shadow: 0 0 70px rgba(107, 141, 214, 0.6), 0 0 120px rgba(99, 102, 241, 0.3), inset -18px -18px 35px rgba(99, 102, 241, 0.3);
-    top: 30%;
-    right: -200px;
-    animation: planetMove3 35s linear infinite;
-    animation-delay: -10s;
+    top: -75px;
+    left: -75px;
+    animation: orbit3 30s linear infinite, planetRotate 18s linear infinite;
+    animation-delay: -6s;
     filter: blur(1.2px);
 }
 
@@ -177,10 +229,10 @@ body::after {
     height: 100px;
     background: radial-gradient(circle at 30% 30%, rgba(255, 215, 0, 0.6), rgba(255, 200, 0, 0.4), rgba(255, 180, 0, 0.3));
     box-shadow: 0 0 55px rgba(255, 215, 0, 0.5), 0 0 90px rgba(255, 200, 0, 0.3), inset -12px -12px 25px rgba(255, 200, 0, 0.25);
-    top: 75%;
-    right: -150px;
-    animation: planetMove4 28s linear infinite;
-    animation-delay: -15s;
+    top: -50px;
+    left: -50px;
+    animation: orbit4 22s linear infinite, planetRotate 14s linear infinite reverse;
+    animation-delay: -9s;
     filter: blur(0.8px);
 }
 
@@ -189,10 +241,10 @@ body::after {
     height: 80px;
     background: radial-gradient(circle at 30% 30%, rgba(236, 72, 153, 0.7), rgba(219, 39, 119, 0.5), rgba(190, 24, 93, 0.3));
     box-shadow: 0 0 45px rgba(236, 72, 153, 0.6), 0 0 75px rgba(219, 39, 119, 0.3), inset -10px -10px 20px rgba(219, 39, 119, 0.3);
-    top: 45%;
-    left: -150px;
-    animation: planetMove5 32s linear infinite;
-    animation-delay: -8s;
+    top: -40px;
+    left: -40px;
+    animation: orbit5 18s linear infinite, planetRotate 10s linear infinite;
+    animation-delay: -12s;
     filter: blur(0.7px);
 }
 
@@ -201,10 +253,10 @@ body::after {
     height: 110px;
     background: radial-gradient(circle at 30% 30%, rgba(34, 197, 94, 0.6), rgba(22, 163, 74, 0.4), rgba(21, 128, 61, 0.3));
     box-shadow: 0 0 60px rgba(34, 197, 94, 0.5), 0 0 95px rgba(22, 163, 74, 0.3), inset -13px -13px 26px rgba(22, 163, 74, 0.25);
-    top: 20%;
-    right: -150px;
-    animation: planetMove6 27s linear infinite;
-    animation-delay: -12s;
+    top: -55px;
+    left: -55px;
+    animation: orbit6 24s linear infinite, planetRotate 16s linear infinite reverse;
+    animation-delay: -15s;
     filter: blur(0.9px);
 }
 
@@ -267,111 +319,68 @@ body::after {
     transform: rotate(60deg);
 }
 
-@keyframes planetMove1 {
+/* Orbital Animations - Circular Orbits */
+@keyframes orbit1 {
     0% {
-        transform: translateX(0) translateY(0);
-    }
-    25% {
-        transform: translateX(calc(100vw + 200px)) translateY(50px);
-    }
-    50% {
-        transform: translateX(calc(100vw + 200px)) translateY(100px);
-    }
-    75% {
-        transform: translateX(calc(100vw + 200px)) translateY(50px);
+        transform: rotate(0deg) translateX(250px) rotate(0deg);
     }
     100% {
-        transform: translateX(0) translateY(0);
+        transform: rotate(360deg) translateX(250px) rotate(-360deg);
     }
 }
 
-@keyframes planetMove2 {
+@keyframes orbit2 {
     0% {
-        transform: translateX(0) translateY(0);
-    }
-    25% {
-        transform: translateX(calc(100vw + 200px)) translateY(-30px);
-    }
-    50% {
-        transform: translateX(calc(100vw + 200px)) translateY(-60px);
-    }
-    75% {
-        transform: translateX(calc(100vw + 200px)) translateY(-30px);
+        transform: rotate(0deg) translateX(320px) rotate(0deg);
     }
     100% {
-        transform: translateX(0) translateY(0);
+        transform: rotate(360deg) translateX(320px) rotate(-360deg);
     }
 }
 
-@keyframes planetMove3 {
+@keyframes orbit3 {
     0% {
-        transform: translateX(0) translateY(0);
-    }
-    25% {
-        transform: translateX(calc(-100vw - 200px)) translateY(40px);
-    }
-    50% {
-        transform: translateX(calc(-100vw - 200px)) translateY(80px);
-    }
-    75% {
-        transform: translateX(calc(-100vw - 200px)) translateY(40px);
+        transform: rotate(0deg) translateX(400px) rotate(0deg);
     }
     100% {
-        transform: translateX(0) translateY(0);
+        transform: rotate(360deg) translateX(400px) rotate(-360deg);
     }
 }
 
-@keyframes planetMove4 {
+@keyframes orbit4 {
     0% {
-        transform: translateX(0) translateY(0);
-    }
-    25% {
-        transform: translateX(calc(-100vw - 200px)) translateY(-50px);
-    }
-    50% {
-        transform: translateX(calc(-100vw - 200px)) translateY(-100px);
-    }
-    75% {
-        transform: translateX(calc(-100vw - 200px)) translateY(-50px);
+        transform: rotate(0deg) translateX(280px) rotate(0deg);
     }
     100% {
-        transform: translateX(0) translateY(0);
+        transform: rotate(360deg) translateX(280px) rotate(-360deg);
     }
 }
 
-@keyframes planetMove5 {
+@keyframes orbit5 {
     0% {
-        transform: translateX(0) translateY(0);
-    }
-    25% {
-        transform: translateX(calc(100vw + 200px)) translateY(40px);
-    }
-    50% {
-        transform: translateX(calc(100vw + 200px)) translateY(80px);
-    }
-    75% {
-        transform: translateX(calc(100vw + 200px)) translateY(40px);
+        transform: rotate(0deg) translateX(200px) rotate(0deg);
     }
     100% {
-        transform: translateX(0) translateY(0);
+        transform: rotate(360deg) translateX(200px) rotate(-360deg);
     }
 }
 
-@keyframes planetMove6 {
+@keyframes orbit6 {
     0% {
-        transform: translateX(0) translateY(0);
-    }
-    25% {
-        transform: translateX(calc(-100vw - 200px)) translateY(30px);
-    }
-    50% {
-        transform: translateX(calc(-100vw - 200px)) translateY(60px);
-    }
-    75% {
-        transform: translateX(calc(-100vw - 200px)) translateY(30px);
+        transform: rotate(0deg) translateX(360px) rotate(0deg);
     }
     100% {
-        transform: translateX(0) translateY(0);
+        transform: rotate(360deg) translateX(360px) rotate(-360deg);
+    }
+}
+
+/* Planet Self-Rotation */
+@keyframes planetRotate {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
     }
 }
 
