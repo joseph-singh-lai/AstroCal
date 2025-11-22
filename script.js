@@ -26,6 +26,54 @@ const LA_BREA_COORDS = {
     name: 'La Brea, Trinidad & Tobago'
 };
 
+/* ============================
+   Stellarium Web Sky Map
+   ============================ */
+
+let stellariumFrame = null;
+let geoButton = null;
+
+// Default location (La Brea)
+let skyLat = 10.25;
+let skyLon = -61.63;
+
+function updateSkyMap(lat, lon) {
+    if (stellariumFrame) {
+        stellariumFrame.src = `https://stellarium-web.org/sky#lat=${lat}&lng=${lon}&fov=60`;
+    }
+}
+
+function initStellariumSkyMap() {
+    stellariumFrame = document.getElementById("stellarium-frame");
+    geoButton = document.getElementById("use-geolocation");
+
+    if (!stellariumFrame || !geoButton) {
+        return;
+    }
+
+    // Initialize with default location
+    updateSkyMap(skyLat, skyLon);
+
+    // Handle geolocation button
+    geoButton.addEventListener("click", () => {
+        if (!navigator.geolocation) {
+            alert("Geolocation not supported.");
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                skyLat = pos.coords.latitude;
+                skyLon = pos.coords.longitude;
+                updateSkyMap(skyLat, skyLon);
+            },
+            () => {
+                alert("Unable to retrieve your location.");
+            }
+        );
+    });
+}
+
 // DOM Elements (will be initialized after DOM loads)
 let eventsContainer;
 let searchInput;
