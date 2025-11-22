@@ -129,56 +129,142 @@ body::after {
     }
 }
 
-/* Animated Planets */
-.planet-1, .planet-2, .planet-3, .planet-4 {
+/* Animated Planets - More Visible */
+.planet-1, .planet-2, .planet-3, .planet-4, .planet-5, .planet-6 {
     position: fixed;
     border-radius: 50%;
     pointer-events: none;
     z-index: 0;
-    filter: blur(0.5px);
 }
 
 .planet-1 {
-    width: 80px;
-    height: 80px;
-    background: radial-gradient(circle at 30% 30%, rgba(255, 215, 0, 0.4), rgba(255, 140, 0, 0.3), transparent);
-    box-shadow: 0 0 40px rgba(255, 215, 0, 0.3), inset -10px -10px 20px rgba(255, 140, 0, 0.2);
+    width: 120px;
+    height: 120px;
+    background: radial-gradient(circle at 30% 30%, rgba(255, 215, 0, 0.7), rgba(255, 140, 0, 0.5), rgba(255, 100, 0, 0.3));
+    box-shadow: 0 0 60px rgba(255, 215, 0, 0.6), 0 0 100px rgba(255, 140, 0, 0.3), inset -15px -15px 30px rgba(255, 140, 0, 0.3);
     top: 10%;
-    left: -100px;
+    left: -150px;
     animation: planetMove1 25s linear infinite;
+    filter: blur(1px);
 }
 
 .planet-2 {
-    width: 60px;
-    height: 60px;
-    background: radial-gradient(circle at 30% 30%, rgba(157, 124, 232, 0.5), rgba(107, 141, 214, 0.4), transparent);
-    box-shadow: 0 0 30px rgba(157, 124, 232, 0.4), inset -8px -8px 15px rgba(107, 141, 214, 0.3);
+    width: 90px;
+    height: 90px;
+    background: radial-gradient(circle at 30% 30%, rgba(157, 124, 232, 0.8), rgba(107, 141, 214, 0.6), rgba(99, 102, 241, 0.4));
+    box-shadow: 0 0 50px rgba(157, 124, 232, 0.7), 0 0 80px rgba(107, 141, 214, 0.4), inset -12px -12px 25px rgba(107, 141, 214, 0.4);
     top: 60%;
-    left: -100px;
+    left: -150px;
     animation: planetMove2 30s linear infinite;
     animation-delay: -5s;
+    filter: blur(0.8px);
 }
 
 .planet-3 {
-    width: 100px;
-    height: 100px;
-    background: radial-gradient(circle at 30% 30%, rgba(107, 141, 214, 0.4), rgba(99, 102, 241, 0.3), transparent);
-    box-shadow: 0 0 50px rgba(107, 141, 214, 0.3), inset -12px -12px 25px rgba(99, 102, 241, 0.2);
+    width: 150px;
+    height: 150px;
+    background: radial-gradient(circle at 30% 30%, rgba(107, 141, 214, 0.7), rgba(99, 102, 241, 0.5), rgba(79, 70, 229, 0.3));
+    box-shadow: 0 0 70px rgba(107, 141, 214, 0.6), 0 0 120px rgba(99, 102, 241, 0.3), inset -18px -18px 35px rgba(99, 102, 241, 0.3);
     top: 30%;
-    right: -100px;
+    right: -200px;
     animation: planetMove3 35s linear infinite;
     animation-delay: -10s;
+    filter: blur(1.2px);
 }
 
 .planet-4 {
-    width: 70px;
-    height: 70px;
-    background: radial-gradient(circle at 30% 30%, rgba(255, 215, 0, 0.3), rgba(255, 200, 0, 0.25), transparent);
-    box-shadow: 0 0 35px rgba(255, 215, 0, 0.25), inset -9px -9px 18px rgba(255, 200, 0, 0.15);
+    width: 100px;
+    height: 100px;
+    background: radial-gradient(circle at 30% 30%, rgba(255, 215, 0, 0.6), rgba(255, 200, 0, 0.4), rgba(255, 180, 0, 0.3));
+    box-shadow: 0 0 55px rgba(255, 215, 0, 0.5), 0 0 90px rgba(255, 200, 0, 0.3), inset -12px -12px 25px rgba(255, 200, 0, 0.25);
     top: 75%;
-    right: -100px;
+    right: -150px;
     animation: planetMove4 28s linear infinite;
     animation-delay: -15s;
+    filter: blur(0.8px);
+}
+
+.planet-5 {
+    width: 80px;
+    height: 80px;
+    background: radial-gradient(circle at 30% 30%, rgba(236, 72, 153, 0.7), rgba(219, 39, 119, 0.5), rgba(190, 24, 93, 0.3));
+    box-shadow: 0 0 45px rgba(236, 72, 153, 0.6), 0 0 75px rgba(219, 39, 119, 0.3), inset -10px -10px 20px rgba(219, 39, 119, 0.3);
+    top: 45%;
+    left: -150px;
+    animation: planetMove5 32s linear infinite;
+    animation-delay: -8s;
+    filter: blur(0.7px);
+}
+
+.planet-6 {
+    width: 110px;
+    height: 110px;
+    background: radial-gradient(circle at 30% 30%, rgba(34, 197, 94, 0.6), rgba(22, 163, 74, 0.4), rgba(21, 128, 61, 0.3));
+    box-shadow: 0 0 60px rgba(34, 197, 94, 0.5), 0 0 95px rgba(22, 163, 74, 0.3), inset -13px -13px 26px rgba(22, 163, 74, 0.25);
+    top: 20%;
+    right: -150px;
+    animation: planetMove6 27s linear infinite;
+    animation-delay: -12s;
+    filter: blur(0.9px);
+}
+
+/* Galaxies/Nebulae */
+.galaxy-1, .galaxy-2, .galaxy-3 {
+    position: fixed;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.4;
+}
+
+.galaxy-1 {
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(ellipse 60% 40% at 50% 50%, 
+        rgba(157, 124, 232, 0.5) 0%, 
+        rgba(107, 141, 214, 0.3) 30%, 
+        rgba(99, 102, 241, 0.2) 50%, 
+        transparent 70%);
+    box-shadow: 0 0 100px rgba(157, 124, 232, 0.4), 0 0 150px rgba(107, 141, 214, 0.2);
+    top: 5%;
+    left: -200px;
+    animation: galaxyMove1 40s linear infinite;
+    filter: blur(3px);
+    transform: rotate(45deg);
+}
+
+.galaxy-2 {
+    width: 250px;
+    height: 250px;
+    background: radial-gradient(ellipse 50% 35% at 50% 50%, 
+        rgba(236, 72, 153, 0.4) 0%, 
+        rgba(219, 39, 119, 0.3) 25%, 
+        rgba(190, 24, 93, 0.2) 45%, 
+        transparent 65%);
+    box-shadow: 0 0 90px rgba(236, 72, 153, 0.3), 0 0 130px rgba(219, 39, 119, 0.2);
+    top: 50%;
+    right: -200px;
+    animation: galaxyMove2 45s linear infinite;
+    animation-delay: -15s;
+    filter: blur(2.5px);
+    transform: rotate(-30deg);
+}
+
+.galaxy-3 {
+    width: 200px;
+    height: 200px;
+    background: radial-gradient(ellipse 55% 38% at 50% 50%, 
+        rgba(107, 141, 214, 0.5) 0%, 
+        rgba(99, 102, 241, 0.3) 28%, 
+        rgba(79, 70, 229, 0.2) 48%, 
+        transparent 68%);
+    box-shadow: 0 0 80px rgba(107, 141, 214, 0.4), 0 0 120px rgba(99, 102, 241, 0.2);
+    top: 80%;
+    left: -200px;
+    animation: galaxyMove3 38s linear infinite;
+    animation-delay: -20s;
+    filter: blur(2px);
+    transform: rotate(60deg);
 }
 
 @keyframes planetMove1 {
@@ -250,6 +336,78 @@ body::after {
     }
     100% {
         transform: translateX(0) translateY(0);
+    }
+}
+
+@keyframes planetMove5 {
+    0% {
+        transform: translateX(0) translateY(0);
+    }
+    25% {
+        transform: translateX(calc(100vw + 200px)) translateY(40px);
+    }
+    50% {
+        transform: translateX(calc(100vw + 200px)) translateY(80px);
+    }
+    75% {
+        transform: translateX(calc(100vw + 200px)) translateY(40px);
+    }
+    100% {
+        transform: translateX(0) translateY(0);
+    }
+}
+
+@keyframes planetMove6 {
+    0% {
+        transform: translateX(0) translateY(0);
+    }
+    25% {
+        transform: translateX(calc(-100vw - 200px)) translateY(30px);
+    }
+    50% {
+        transform: translateX(calc(-100vw - 200px)) translateY(60px);
+    }
+    75% {
+        transform: translateX(calc(-100vw - 200px)) translateY(30px);
+    }
+    100% {
+        transform: translateX(0) translateY(0);
+    }
+}
+
+@keyframes galaxyMove1 {
+    0% {
+        transform: translateX(0) translateY(0) rotate(45deg);
+    }
+    50% {
+        transform: translateX(calc(100vw + 400px)) translateY(100px) rotate(225deg);
+    }
+    100% {
+        transform: translateX(0) translateY(0) rotate(405deg);
+    }
+}
+
+@keyframes galaxyMove2 {
+    0% {
+        transform: translateX(0) translateY(0) rotate(-30deg);
+    }
+    50% {
+        transform: translateX(calc(-100vw - 400px)) translateY(-80px) rotate(150deg);
+    }
+    100% {
+        transform: translateX(0) translateY(0) rotate(330deg);
+    }
+}
+
+@keyframes galaxyMove3 {
+    0% {
+        transform: translateX(0) translateY(0) rotate(60deg);
+    }
+    50% {
+        transform: translateX(calc(100vw + 400px)) translateY(-60px) rotate(240deg);
+    }
+    100% {
+        transform: translateX(0) translateY(0) rotate(420deg);
     }
 }
 
