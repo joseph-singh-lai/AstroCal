@@ -1,18 +1,28 @@
-/* CSS Variables for Theme */
+/* CSS Variables for Astronomy Theme */
 :root {
-    --bg-primary: #1a1a2e;
-    --bg-secondary: #16213e;
-    --bg-tertiary: #0f3460;
-    --text-primary: #eaeaea;
-    --text-secondary: #b8b8b8;
-    --accent-primary: #4a90e2;
-    --accent-secondary: #5cb85c;
-    --accent-warning: #f0ad4e;
-    --border-color: #2d3748;
-    --card-bg: #2a2a3e;
-    --card-hover: #333350;
-    --shadow: rgba(0, 0, 0, 0.3);
-    --shadow-hover: rgba(0, 0, 0, 0.5);
+    /* Deep space background - dark navy with purple tones */
+    --bg-primary: #0a0e27;
+    --bg-secondary: #1a1f3a;
+    --bg-tertiary: #252b4a;
+    
+    /* Text colors - soft whites and light grays */
+    --text-primary: #f0f4ff;
+    --text-secondary: #b8c5e0;
+    
+    /* Astronomy accent colors - cosmic blues, purples, and golds */
+    --accent-primary: #6b8dd6; /* Star blue */
+    --accent-secondary: #9d7ce8; /* Nebula purple */
+    --accent-warning: #ffd700; /* Star gold */
+    --accent-nebula: #c77dff; /* Deep space purple */
+    
+    /* Borders and cards - subtle cosmic tones */
+    --border-color: #2a3458;
+    --card-bg: #1e2438;
+    --card-hover: #2a3150;
+    
+    /* Shadows with subtle color tints */
+    --shadow: rgba(0, 0, 0, 0.4);
+    --shadow-hover: rgba(107, 141, 214, 0.2);
 }
 
 /* Reset and Base Styles */
@@ -40,20 +50,25 @@ body {
 
 /* Header Styles */
 .main-header {
-    background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+    background: linear-gradient(135deg, #1a1f3a 0%, #252b4a 50%, #1e2438 100%);
     padding: 2rem 1rem;
     text-align: center;
-    box-shadow: 0 2px 10px var(--shadow);
+    box-shadow: 0 2px 20px rgba(107, 141, 214, 0.15), 0 0 40px rgba(157, 124, 232, 0.1);
     position: sticky;
     top: 0;
     z-index: 100;
+    border-bottom: 1px solid rgba(107, 141, 214, 0.2);
 }
 
 .header-content h1 {
     font-size: 2.5rem;
     margin-bottom: 0.5rem;
     color: var(--text-primary);
-    text-shadow: 2px 2px 4px var(--shadow);
+    text-shadow: 0 0 10px rgba(107, 141, 214, 0.5), 0 0 20px rgba(157, 124, 232, 0.3), 2px 2px 4px var(--shadow);
+    background: linear-gradient(135deg, #f0f4ff 0%, #b8c5e0 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
 .location-subtitle {
@@ -84,14 +99,16 @@ body {
 }
 
 .nav-button:hover {
-    background-color: rgba(255, 255, 255, 0.15);
+    background-color: rgba(107, 141, 214, 0.2);
     border-color: var(--accent-primary);
+    box-shadow: 0 0 15px rgba(107, 141, 214, 0.3);
 }
 
 .nav-button.active {
-    background-color: var(--accent-primary);
+    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
     border-color: var(--accent-primary);
     color: white;
+    box-shadow: 0 0 20px rgba(107, 141, 214, 0.4);
 }
 
 /* Main Content */
@@ -332,8 +349,9 @@ body {
 }
 
 .apply-button:hover {
-    background-color: #3a7bc8;
+    background: linear-gradient(135deg, #5a7dc6 0%, #8b6dd6 100%);
     transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(107, 141, 214, 0.4);
 }
 
 .apply-button:active {
@@ -389,13 +407,14 @@ body {
     left: 0;
     width: 4px;
     height: 100%;
-    background-color: var(--accent-primary);
+    background: linear-gradient(180deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
     transition: width 0.3s ease;
+    box-shadow: 0 0 10px rgba(107, 141, 214, 0.5);
 }
 
 .event-card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 8px 20px var(--shadow-hover);
+    box-shadow: 0 8px 25px rgba(107, 141, 214, 0.3), 0 0 30px rgba(157, 124, 232, 0.2);
     background-color: var(--card-hover);
     border-color: var(--accent-primary);
 }
@@ -432,43 +451,51 @@ body {
 }
 
 .category-meteor {
-    background-color: #8b5cf6;
+    background: linear-gradient(135deg, #9d7ce8 0%, #c77dff 100%);
     color: white;
+    box-shadow: 0 2px 10px rgba(157, 124, 232, 0.4);
 }
 
 .category-planet {
-    background-color: #f59e0b;
-    color: white;
+    background: linear-gradient(135deg, #ffd700 0%, #ffaa00 100%);
+    color: #0a0e27;
+    box-shadow: 0 2px 10px rgba(255, 215, 0, 0.4);
 }
 
 .category-iss {
-    background-color: #3b82f6;
+    background: linear-gradient(135deg, #6b8dd6 0%, #8ba3e8 100%);
     color: white;
+    box-shadow: 0 2px 10px rgba(107, 141, 214, 0.4);
 }
 
 .category-workshop {
-    background-color: #ef4444;
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
     color: white;
+    box-shadow: 0 2px 10px rgba(255, 107, 107, 0.4);
 }
 
 .category-apod {
-    background-color: #6366f1;
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
     color: white;
+    box-shadow: 0 2px 10px rgba(99, 102, 241, 0.4);
 }
 
 .category-solar {
-    background-color: #f97316;
+    background: linear-gradient(135deg, #ff8c42 0%, #ff6b35 100%);
     color: white;
+    box-shadow: 0 2px 10px rgba(255, 140, 66, 0.4);
 }
 
 .category-natural {
-    background-color: #14b8a6;
+    background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%);
     color: white;
+    box-shadow: 0 2px 10px rgba(78, 205, 196, 0.4);
 }
 
 .category-astronomy {
-    background-color: #9b59b6;
+    background: linear-gradient(135deg, #9d7ce8 0%, #c77dff 100%);
     color: white;
+    box-shadow: 0 2px 10px rgba(157, 124, 232, 0.4);
 }
 
 .event-datetime {
@@ -478,6 +505,7 @@ body {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    text-shadow: 0 0 8px rgba(107, 141, 214, 0.4);
 }
 
 .event-countdown {
@@ -493,9 +521,10 @@ body {
 }
 
 .event-time-upcoming {
-    background-color: rgba(74, 144, 226, 0.15);
+    background: linear-gradient(135deg, rgba(107, 141, 214, 0.2) 0%, rgba(157, 124, 232, 0.15) 100%);
     color: var(--accent-primary);
-    border: 1px solid rgba(74, 144, 226, 0.3);
+    border: 1px solid rgba(107, 141, 214, 0.4);
+    box-shadow: 0 0 10px rgba(107, 141, 214, 0.2);
 }
 
 .event-time-passed {
@@ -656,11 +685,12 @@ body {
 
 /* Footer */
 .main-footer {
-    background-color: var(--bg-secondary);
+    background: linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
     padding: 2rem 1rem;
     text-align: center;
-    border-top: 1px solid var(--border-color);
+    border-top: 1px solid rgba(107, 141, 214, 0.2);
     margin-top: auto;
+    box-shadow: 0 -2px 20px rgba(0, 0, 0, 0.3);
 }
 
 .main-footer p {
@@ -728,10 +758,11 @@ body {
     height: 600px;
     border-radius: 12px;
     overflow: hidden;
-    border: 2px solid var(--border-color);
+    border: 2px solid rgba(107, 141, 214, 0.3);
     background-color: var(--bg-secondary);
     margin-bottom: 1rem;
     position: relative;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), inset 0 0 50px rgba(107, 141, 214, 0.1);
 }
 
 /* Ensure Leaflet map container has proper styling */
@@ -810,10 +841,11 @@ body {
     height: 600px;
     border-radius: 12px;
     overflow: hidden;
-    border: 2px solid var(--border-color);
-    background: radial-gradient(ellipse at center, #1a1a2e 0%, #0a0a1a 100%);
+    border: 2px solid rgba(107, 141, 214, 0.3);
+    background: radial-gradient(ellipse at center, #1e2438 0%, #0a0e27 50%, #050810 100%);
     position: relative;
     margin-bottom: 1rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), inset 0 0 100px rgba(157, 124, 232, 0.1);
 }
 
 #skyCanvas {
@@ -826,13 +858,15 @@ body {
     position: absolute;
     top: 1rem;
     left: 1rem;
-    background-color: rgba(26, 26, 46, 0.9);
+    background: linear-gradient(135deg, rgba(30, 36, 56, 0.95) 0%, rgba(26, 31, 58, 0.95) 100%);
     padding: 0.75rem 1rem;
     border-radius: 8px;
     color: var(--text-primary);
     font-size: 0.9rem;
-    border: 1px solid var(--border-color);
+    border: 1px solid rgba(107, 141, 214, 0.3);
     max-width: 300px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5), 0 0 20px rgba(107, 141, 214, 0.2);
+    backdrop-filter: blur(10px);
 }
 
 .sky-legend {
