@@ -1,0 +1,8 @@
+application id - astronomy api - astrocal:
+95875ee4-2471-4b8e-970f-4d11d9ce0ea7
+
+application secret - astronomy api - astrocal:
+7d3127a493c01e1484bc248b1b20ea4bc93b42c7efcfda31cff18cd782529855976fc03aa34088efff1d05aa87e10b3a0b33ba48ac1b1dd813ae1a323f00659429d3b48b3cf74ff30ed9d9b2b413d7575fc3d60e7f1124980249dc0815c2e5acf709ed3e029e94c8333b729aeca88daa
+
+NASA API key:
+X2dVwncjWkOz6OrVnWpO16W5eWE6NaAXz3BHH67Q
