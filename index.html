@@ -164,22 +164,23 @@
                 
                 <div class="map-controls">
                     <div class="layer-controls">
-                        <label for="layerSelect">Satellite Layer:</label>
-                        <select id="layerSelect" class="layer-select">
-                            <option value="osm">OpenStreetMap (Default)</option>
-                            <option value="blueMarble">Blue Marble (Day) - NASA GIBS</option>
-                            <option value="blueMarbleNight">Night Lights (2020) - NASA GIBS</option>
-                            <option value="modisTerra">MODIS Terra True Color - NASA GIBS</option>
-                            <option value="modisAqua">MODIS Aqua True Color - NASA GIBS</option>
-                            <option value="fires">Active Fires - NASA GIBS</option>
-                            <option value="aerosol">Aerosol Index - NASA GIBS</option>
+                        <label for="gibs-layer-select" class="label">Choose Satellite Layer:</label>
+                        <select id="gibs-layer-select" class="layer-select">
+                            <option value="MODIS_Terra_CorrectedReflectance_TrueColor">MODIS Terra – True Color</option>
+                            <option value="MODIS_Aqua_CorrectedReflectance_TrueColor">MODIS Aqua – True Color</option>
+                            <option value="VIIRS_SNPP_CorrectedReflectance_TrueColor">VIIRS SNPP – True Color</option>
+                            <option value="GOES-East_ABI_GeoColor">GOES-East – GeoColor</option>
+                            <option value="VIIRS_SNPP_DayNightBand_At_Sensor_Radiance">VIIRS – Night Lights (DNB)</option>
+                            <option value="MODIS_Terra_Aerosol">MODIS Terra – Aerosols</option>
+                            <option value="MODIS_Aqua_Cloud_Top_Temperature_Day">MODIS Aqua – Cloud Top Temp</option>
+                            <option value="MODIS_Terra_Thermal_Anomalies_250m">MODIS Terra – Fire/Heat</option>
                         </select>
                     </div>
                     <button id="centerMapButton" class="map-button">📍 Center on My Location</button>
                     <button id="centerDefaultButton" class="map-button">📍 Center on La Brea</button>
                 </div>
                 
-                <div id="gibsMap" class="map-container"></div>
+                <div id="gibs-map" class="map-container" style="height: 500px; margin-top: 1rem; border-radius: 10px; overflow: hidden;"></div>
                 <div class="map-info">
                     <p>Pan and zoom to explore satellite imagery. Use the layer selector to switch between different views.</p>
                 </div>
@@ -189,45 +190,19 @@
             <section id="sky-section" class="content-section">
                 <div class="section-header">
                     <h2>⭐ Interactive Sky Map</h2>
-                    <p class="section-description">Explore the night sky over your location</p>
+                    <p class="section-description">Explore the night sky over your location using Stellarium Web</p>
                 </div>
                 
                 <div class="sky-controls">
-                    <div class="sky-control-group">
-                        <label for="skyTimeSelect">View Time:</label>
-                        <input type="datetime-local" id="skyTimeSelect" class="sky-input">
-                        <button id="useCurrentTime" class="sky-button">Now</button>
-                    </div>
-                    <div class="sky-control-group">
-                        <label>
-                            <input type="checkbox" id="showConstellations" checked>
-                            Show Constellations
-                        </label>
-                        <label>
-                            <input type="checkbox" id="showPlanets" checked>
-                            Show Planets
-                        </label>
-                        <label>
-                            <input type="checkbox" id="showStars" checked>
-                            Show Stars
-                        </label>
-                    </div>
-                    <button id="centerSkyMapButton" class="sky-button">📍 Use My Location</button>
+                    <button id="use-geolocation" class="sky-button">📍 Use My Location</button>
                 </div>
                 
-                <div id="skyMap" class="sky-map-container">
-                    <canvas id="skyCanvas"></canvas>
-                    <div id="skyInfo" class="sky-info">
-                        <p>Click on objects in the sky map to learn more</p>
-                    </div>
-                </div>
-                
-                <div class="sky-legend">
-                    <h3>Visible Events</h3>
-                    <div id="visibleEvents" class="visible-events-list">
-                        <!-- Will be populated with events visible at current time -->
-                    </div>
-                </div>
+                <iframe
+                    id="stellarium-frame"
+                    src="https://stellarium-web.org/sky#lat=10.25&lng=-61.63&fov=60"
+                    style="width: 100%; height: 500px; border: none; border-radius: 10px; margin-top: 1rem;"
+                    allowfullscreen>
+                </iframe>
             </section>
         </main>
 
