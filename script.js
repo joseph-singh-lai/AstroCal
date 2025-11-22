@@ -269,16 +269,7 @@ function setupNavigation() {
             }
 
             if (targetSection === 'sky') {
-                setTimeout(() => {
-                    if (typeof initSkyMap === 'function') {
-                        if (!window.skyMapInitialized) {
-                            initSkyMap();
-                        } else if (typeof renderSkyMap === 'function' && typeof updateVisibleEvents === 'function') {
-                            renderSkyMap();
-                            updateVisibleEvents();
-                        }
-                    }
-                }, 100);
+                // Stellarium iframe is already loaded, no initialization needed
             }
         });
     });
@@ -393,9 +384,9 @@ function requestUserLocation() {
             if (typeof updateGIBSMapLocation === 'function') {
                 updateGIBSMapLocation();
             }
-            if (typeof renderSkyMap === 'function') {
-                renderSkyMap();
-                updateVisibleEvents();
+            // Update Stellarium sky map location
+            if (stellariumFrame) {
+                updateSkyMap(userLocation.lat, userLocation.lon);
             }
 
             locationButton.textContent = '✅ Location Set';
