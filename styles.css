@@ -1070,7 +1070,7 @@ body {
         grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     }
 
-    /* Filter panel sticky positioning handled in main .filter-panel rule */
+    .filter-panel {
         max-height: calc(100vh - 140px);
         overflow-y: auto;
     }
