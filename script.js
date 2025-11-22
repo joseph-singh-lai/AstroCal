@@ -39,39 +39,51 @@ let skyLon = -61.63;
 
 function updateSkyMap(lat, lon) {
     if (stellariumFrame) {
-        stellariumFrame.src = `https://stellarium-web.org/sky#lat=${lat}&lng=${lon}&fov=60`;
+        const newSrc = `https://stellarium-web.org/sky#lat=${lat}&lng=${lon}&fov=60`;
+        console.log('Updating Stellarium sky map to:', newSrc);
+        stellariumFrame.src = newSrc;
+    } else {
+        console.warn('Stellarium frame not found');
     }
 }
 
 function initStellariumSkyMap() {
-    stellariumFrame = document.getElementById("stellarium-frame");
-    geoButton = document.getElementById("use-geolocation");
+    // Wait a bit for DOM to be fully ready
+    setTimeout(() => {
+        stellariumFrame = document.getElementById("stellarium-frame");
+        geoButton = document.getElementById("use-geolocation");
 
-    if (!stellariumFrame || !geoButton) {
-        return;
-    }
-
-    // Initialize with default location
-    updateSkyMap(skyLat, skyLon);
-
-    // Handle geolocation button
-    geoButton.addEventListener("click", () => {
-        if (!navigator.geolocation) {
-            alert("Geolocation not supported.");
+        if (!stellariumFrame) {
+            console.warn("Stellarium frame not found");
             return;
         }
 
-        navigator.geolocation.getCurrentPosition(
-            (pos) => {
-                skyLat = pos.coords.latitude;
-                skyLon = pos.coords.longitude;
-                updateSkyMap(skyLat, skyLon);
-            },
-            () => {
-                alert("Unable to retrieve your location.");
-            }
-        );
-    });
+        // Ensure iframe has src set (it should already be in HTML, but ensure it's set)
+        if (!stellariumFrame.src || stellariumFrame.src === 'about:blank') {
+            updateSkyMap(skyLat, skyLon);
+        }
+
+        // Handle geolocation button if it exists
+        if (geoButton) {
+            geoButton.addEventListener("click", () => {
+                if (!navigator.geolocation) {
+                    alert("Geolocation not supported.");
+                    return;
+                }
+
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                        skyLat = pos.coords.latitude;
+                        skyLon = pos.coords.longitude;
+                        updateSkyMap(skyLat, skyLon);
+                    },
+                    () => {
+                        alert("Unable to retrieve your location.");
+                    }
+                );
+            });
+        }
+    }, 100);
 }
 
 // DOM Elements (will be initialized after DOM loads)
