@@ -28,12 +28,26 @@ if (-not (Test-Path $stellariumPath)) {
 # Setup emsdk
 Write-Host "Setting up Emscripten SDK..." -ForegroundColor Yellow
 Push-Location $emsdkPath
+
+# Install and activate emsdk
 .\emsdk install latest
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Warning: emsdk install may have issues, continuing..." -ForegroundColor Yellow
+}
+
 .\emsdk activate latest
-$env:EMSDK = (Resolve-Path .).Path
-$env:EMSDK_NODE = "$env:EMSDK\node\14.15.5_64bit\bin\node.exe"
-$env:EMSDK_PYTHON = "$env:EMSDK\python\3.9.2_64bit\python.exe"
-$env:PATH = "$env:EMSDK;$env:EMSDK\upstream\emscripten;$env:EMSDK\node\14.15.5_64bit\bin;$env:EMSDK\python\3.9.2_64bit;$env:PATH"
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Warning: emsdk activate may have issues, continuing..." -ForegroundColor Yellow
+}
+
+# Activate emsdk environment
+.\emsdk_env.bat
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Warning: Failed to run emsdk_env.bat, setting environment manually..." -ForegroundColor Yellow
+    $env:EMSDK = (Resolve-Path .).Path
+    $env:PATH = "$env:EMSDK;$env:EMSDK\upstream\emscripten;$env:PATH"
+}
+
 Pop-Location
 
 # Check for SCons
@@ -48,33 +62,57 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host "Building Stellarium Web Engine..." -ForegroundColor Yellow
 Push-Location $stellariumPath
 
-# Use scons directly instead of make (Windows doesn't have make by default)
-# Check if we're in emsdk environment
+# Ensure emsdk environment is active
 if (-not $env:EMSDK) {
     Write-Host "Activating Emscripten environment..." -ForegroundColor Yellow
     Push-Location $emsdkPath
-    .\emsdk activate latest
     .\emsdk_env.bat
     Pop-Location
 }
 
-# Build using scons
+# Build using scons (not make - Windows doesn't have make)
 Write-Host "Running scons to build JavaScript version..." -ForegroundColor Yellow
-scons target=js
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "Error: Build failed. Trying alternative build method..." -ForegroundColor Yellow
-    # Try with explicit emscripten path
-    $emccPath = Join-Path $emsdkPath "upstream\emscripten\emcc.bat"
-    if (Test-Path $emccPath) {
-        $env:PATH = "$emsdkPath\upstream\emscripten;$env:PATH"
-        scons target=js
-    }
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "Error: Build failed" -ForegroundColor Red
-        Pop-Location
-        exit 1
+Write-Host "This may take 10-30 minutes depending on your system..." -ForegroundColor Cyan
+
+# Try different scons command variations
+$buildSuccess = $false
+
+# Method 1: scons target=js
+Write-Host "Trying: scons target=js" -ForegroundColor Cyan
+scons target=js 2>&1 | Out-Null
+if ($LASTEXITCODE -eq 0) {
+    $buildSuccess = $true
+}
+
+# Method 2: scons js (if target=js doesn't work)
+if (-not $buildSuccess) {
+    Write-Host "Trying: scons js" -ForegroundColor Cyan
+    scons js 2>&1 | Out-Null
+    if ($LASTEXITCODE -eq 0) {
+        $buildSuccess = $true
     }
 }
+
+# Method 3: Just scons (builds default target)
+if (-not $buildSuccess) {
+    Write-Host "Trying: scons (default target)" -ForegroundColor Cyan
+    scons 2>&1 | Out-Null
+    if ($LASTEXITCODE -eq 0) {
+        $buildSuccess = $true
+    }
+}
+
+if (-not $buildSuccess) {
+    Write-Host "Error: Build failed with all methods" -ForegroundColor Red
+    Write-Host "Please check:" -ForegroundColor Yellow
+    Write-Host "  1. Emscripten is properly installed and activated" -ForegroundColor Yellow
+    Write-Host "  2. SCons is installed (pip install scons)" -ForegroundColor Yellow
+    Write-Host "  3. Try building manually: cd stellarium-web-engine && scons target=js" -ForegroundColor Yellow
+    Pop-Location
+    exit 1
+}
+
+Write-Host "Build completed successfully!" -ForegroundColor Green
 Pop-Location
 
 # Copy built files to project
