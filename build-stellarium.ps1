@@ -40,12 +40,38 @@ if ($LASTEXITCODE -ne 0) {
     Write-Host "Warning: emsdk activate may have issues, continuing..." -ForegroundColor Yellow
 }
 
-# Activate emsdk environment
-.\emsdk_env.bat
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "Warning: Failed to run emsdk_env.bat, setting environment manually..." -ForegroundColor Yellow
-    $env:EMSDK = (Resolve-Path .).Path
-    $env:PATH = "$env:EMSDK;$env:EMSDK\upstream\emscripten;$env:PATH"
+# Get the emsdk path
+$emsdkRoot = (Resolve-Path .).Path
+$emscriptenPath = Join-Path $emsdkRoot "upstream\emscripten"
+
+# Set required Emscripten environment variables
+$env:EMSDK = $emsdkRoot
+$env:EMSCRIPTEN = $emscriptenPath
+$env:EMSCRIPTEN_TOOL_PATH = $emscriptenPath
+
+# Add to PATH
+$env:PATH = "$emscriptenPath;$emsdkRoot;$env:PATH"
+
+# Try to run emsdk_env.bat to get additional environment variables
+if (Test-Path ".\emsdk_env.bat") {
+    Write-Host "Activating emsdk environment..." -ForegroundColor Cyan
+    # Source the batch file to get environment variables
+    cmd /c ".\emsdk_env.bat && set" | ForEach-Object {
+        if ($_ -match "^([^=]+)=(.*)$") {
+            $name = $matches[1]
+            $value = $matches[2]
+            [System.Environment]::SetEnvironmentVariable($name, $value, "Process")
+        }
+    }
+}
+
+# Verify emcc is available
+$emccPath = Join-Path $emscriptenPath "emcc.bat"
+if (Test-Path $emccPath) {
+    Write-Host "Emscripten found at: $emscriptenPath" -ForegroundColor Green
+} else {
+    Write-Host "Warning: emcc.bat not found at expected location" -ForegroundColor Yellow
+    Write-Host "Expected: $emccPath" -ForegroundColor Yellow
 }
 
 Pop-Location
@@ -62,13 +88,19 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host "Building Stellarium Web Engine..." -ForegroundColor Yellow
 Push-Location $stellariumPath
 
-# Ensure emsdk environment is active
-if (-not $env:EMSDK) {
-    Write-Host "Activating Emscripten environment..." -ForegroundColor Yellow
-    Push-Location $emsdkPath
-    .\emsdk_env.bat
-    Pop-Location
+# Verify Emscripten environment is set
+if (-not $env:EMSCRIPTEN_TOOL_PATH) {
+    Write-Host "Setting Emscripten environment variables..." -ForegroundColor Yellow
+    $emsdkRoot = (Resolve-Path $emsdkPath).Path
+    $emscriptenPath = Join-Path $emsdkRoot "upstream\emscripten"
+    $env:EMSDK = $emsdkRoot
+    $env:EMSCRIPTEN = $emscriptenPath
+    $env:EMSCRIPTEN_TOOL_PATH = $emscriptenPath
+    $env:PATH = "$emscriptenPath;$emsdkRoot;$env:PATH"
 }
+
+Write-Host "EMSCRIPTEN_TOOL_PATH: $env:EMSCRIPTEN_TOOL_PATH" -ForegroundColor Cyan
+Write-Host "EMSDK: $env:EMSDK" -ForegroundColor Cyan
 
 # Build using scons (not make - Windows doesn't have make)
 Write-Host "Running scons to build JavaScript version..." -ForegroundColor Yellow
