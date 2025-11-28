@@ -44,7 +44,7 @@ if ($LASTEXITCODE -ne 0) {
 $emsdkRoot = (Resolve-Path .).Path
 $emscriptenPath = Join-Path $emsdkRoot "upstream\emscripten"
 
-# Set required Emscripten environment variables
+# Set required Emscripten environment variables BEFORE running emsdk_env.bat
 $env:EMSDK = $emsdkRoot
 $env:EMSCRIPTEN = $emscriptenPath
 $env:EMSCRIPTEN_TOOL_PATH = $emscriptenPath
@@ -55,14 +55,21 @@ $env:PATH = "$emscriptenPath;$emsdkRoot;$env:PATH"
 # Try to run emsdk_env.bat to get additional environment variables
 if (Test-Path ".\emsdk_env.bat") {
     Write-Host "Activating emsdk environment..." -ForegroundColor Cyan
-    # Source the batch file to get environment variables
-    cmd /c ".\emsdk_env.bat && set" | ForEach-Object {
+    # Run emsdk_env.bat and capture environment variables
+    $envOutput = cmd /c ".\emsdk_env.bat >nul 2>&1 && set" 2>&1
+    $envOutput | ForEach-Object {
         if ($_ -match "^([^=]+)=(.*)$") {
             $name = $matches[1]
             $value = $matches[2]
-            [System.Environment]::SetEnvironmentVariable($name, $value, "Process")
+            Set-Item -Path "env:$name" -Value $value
         }
     }
+}
+
+# Ensure EMSCRIPTEN_TOOL_PATH is set (required by SConstruct)
+if (-not $env:EMSCRIPTEN_TOOL_PATH) {
+    $env:EMSCRIPTEN_TOOL_PATH = $emscriptenPath
+    Write-Host "Manually set EMSCRIPTEN_TOOL_PATH: $emscriptenPath" -ForegroundColor Yellow
 }
 
 # Verify emcc is available
