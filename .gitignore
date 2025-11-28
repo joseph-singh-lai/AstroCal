@@ -2,6 +2,12 @@
 config.js
 api-info-DO-NOT-DELETE.txt
 
+# Stellarium Web Engine build files
+stellarium-build/
+emsdk/
+stellarium-web-engine/
+*.wasm
+
 # OS files
 .DS_Store
 Thumbs.db
