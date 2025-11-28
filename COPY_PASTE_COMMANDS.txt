@@ -1,0 +1,40 @@
+# Copy-Paste Commands for Manual Build
+# Run these commands one at a time in PowerShell
+
+# ============================================
+# STEP 1: Navigate to emsdk directory
+# ============================================
+cd C:\Users\Admin\Desktop\AstroCal\emsdk
+
+# ============================================
+# STEP 2: Activate emsdk
+# ============================================
+python emsdk.py activate latest
+.\emsdk_env.bat
+
+# ============================================
+# STEP 3: Set environment variables (COPY THIS ENTIRE BLOCK)
+# ============================================
+$emsdkPath = Get-Location
+$emscriptenPath = Join-Path $emsdkPath "upstream\emscripten"
+$env:EMSDK = $emsdkPath
+$env:EMSCRIPTEN = $emscriptenPath
+$env:EMSCRIPTEN_TOOL_PATH = $emscriptenPath
+$env:PATH = "$emscriptenPath;$emsdkPath;$env:PATH"
+
+# ============================================
+# STEP 4: Verify it worked
+# ============================================
+echo $env:EMSCRIPTEN_TOOL_PATH
+# Should show: C:\Users\Admin\Desktop\AstroCal\emsdk\upstream\emscripten
+
+# ============================================
+# STEP 5: Navigate to stellarium directory
+# ============================================
+cd ..\stellarium-web-engine
+
+# ============================================
+# STEP 6: Build
+# ============================================
+scons target=js
+
