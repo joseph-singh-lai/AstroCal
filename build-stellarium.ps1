@@ -47,25 +47,78 @@ if ($LASTEXITCODE -ne 0) {
 # Build stellarium-web-engine
 Write-Host "Building Stellarium Web Engine..." -ForegroundColor Yellow
 Push-Location $stellariumPath
-make js
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "Error: Build failed" -ForegroundColor Red
+
+# Use scons directly instead of make (Windows doesn't have make by default)
+# Check if we're in emsdk environment
+if (-not $env:EMSDK) {
+    Write-Host "Activating Emscripten environment..." -ForegroundColor Yellow
+    Push-Location $emsdkPath
+    .\emsdk activate latest
+    .\emsdk_env.bat
     Pop-Location
-    exit 1
+}
+
+# Build using scons
+Write-Host "Running scons to build JavaScript version..." -ForegroundColor Yellow
+scons target=js
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Error: Build failed. Trying alternative build method..." -ForegroundColor Yellow
+    # Try with explicit emscripten path
+    $emccPath = Join-Path $emsdkPath "upstream\emscripten\emcc.bat"
+    if (Test-Path $emccPath) {
+        $env:PATH = "$emsdkPath\upstream\emscripten;$env:PATH"
+        scons target=js
+    }
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "Error: Build failed" -ForegroundColor Red
+        Pop-Location
+        exit 1
+    }
 }
 Pop-Location
 
 # Copy built files to project
 Write-Host "Copying built files..." -ForegroundColor Yellow
 $staticJsPath = "$stellariumPath\html\static\js"
-if (Test-Path $staticJsPath) {
-    New-Item -ItemType Directory -Force -Path ".\stellarium-build" | Out-Null
-    Copy-Item "$staticJsPath\stellarium-web-engine.js" -Destination ".\stellarium-build\" -Force
-    Copy-Item "$staticJsPath\stellarium-web-engine.wasm" -Destination ".\stellarium-build\" -Force
-    Write-Host "Build complete! Files copied to .\stellarium-build\" -ForegroundColor Green
-} else {
-    Write-Host "Warning: Built files not found in expected location" -ForegroundColor Yellow
-    Write-Host "Please check: $staticJsPath" -ForegroundColor Yellow
+$buildPath = "$stellariumPath\build"
+
+# Check multiple possible locations for built files
+$possibleLocations = @(
+    "$staticJsPath",
+    "$buildPath\html\static\js",
+    "$stellariumPath\html\js",
+    "$stellariumPath\build\js"
+)
+
+$foundFiles = $false
+foreach ($location in $possibleLocations) {
+    if (Test-Path $location) {
+        Write-Host "Checking location: $location" -ForegroundColor Cyan
+        $jsFile = Get-ChildItem -Path $location -Filter "stellarium-web-engine.js" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+        $wasmFile = Get-ChildItem -Path $location -Filter "stellarium-web-engine.wasm" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+        
+        if ($jsFile -and $wasmFile) {
+            New-Item -ItemType Directory -Force -Path ".\stellarium-build" | Out-Null
+            Copy-Item $jsFile.FullName -Destination ".\stellarium-build\stellarium-web-engine.js" -Force
+            Copy-Item $wasmFile.FullName -Destination ".\stellarium-build\stellarium-web-engine.wasm" -Force
+            Write-Host "Build complete! Files copied to .\stellarium-build\" -ForegroundColor Green
+            Write-Host "  - stellarium-web-engine.js" -ForegroundColor Green
+            Write-Host "  - stellarium-web-engine.wasm" -ForegroundColor Green
+            $foundFiles = $true
+            break
+        }
+    }
+}
+
+if (-not $foundFiles) {
+    Write-Host "Warning: Built files not found in expected locations" -ForegroundColor Yellow
+    Write-Host "Searched in:" -ForegroundColor Yellow
+    foreach ($location in $possibleLocations) {
+        Write-Host "  - $location" -ForegroundColor Yellow
+    }
+    Write-Host "`nPlease check the build output or try building manually:" -ForegroundColor Yellow
+    Write-Host "  cd stellarium-web-engine" -ForegroundColor Cyan
+    Write-Host "  scons target=js" -ForegroundColor Cyan
 }
 
 Write-Host "=== Build Complete ===" -ForegroundColor Green

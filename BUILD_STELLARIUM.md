@@ -48,7 +48,15 @@ pip install scons
 cd ..
 git clone https://github.com/Stellarium/stellarium-web-engine.git
 cd stellarium-web-engine
-make js
+
+# Activate emsdk environment first
+cd ..\emsdk
+.\emsdk activate latest
+.\emsdk_env.bat
+cd ..\stellarium-web-engine
+
+# Build using scons (not make - Windows doesn't have make)
+scons target=js
 ```
 
 ### 4. Copy Built Files
@@ -88,8 +96,9 @@ These files will be integrated into `sky-map.html`.
 ## Troubleshooting
 
 ### "make: command not found"
-- Install Make for Windows or use WSL
-- Or use `scons` directly instead of `make js`
+- **Windows doesn't have `make` by default**
+- Use `scons target=js` instead of `make js`
+- The build script has been updated to use `scons` directly
 
 ### "emsdk: command not found"
 - Make sure you've activated emsdk: `.\emsdk activate latest`
