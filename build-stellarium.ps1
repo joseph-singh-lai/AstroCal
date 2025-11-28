@@ -3,46 +3,95 @@
 
 Write-Host "=== Stellarium Web Engine Build Setup ===" -ForegroundColor Cyan
 
+# Get absolute paths
+$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+if (-not $scriptDir) {
+    $scriptDir = Get-Location
+}
+
 # Check if emsdk exists
-$emsdkPath = ".\emsdk"
+$emsdkPath = Join-Path $scriptDir "emsdk"
 if (-not (Test-Path $emsdkPath)) {
     Write-Host "Cloning Emscripten SDK..." -ForegroundColor Yellow
+    Write-Host "Target directory: $emsdkPath" -ForegroundColor Cyan
+    Push-Location $scriptDir
     git clone https://github.com/emscripten-core/emsdk.git
     if ($LASTEXITCODE -ne 0) {
         Write-Host "Error: Failed to clone emsdk" -ForegroundColor Red
+        Pop-Location
         exit 1
     }
+    Pop-Location
+}
+
+# Verify emsdk was cloned
+if (-not (Test-Path $emsdkPath)) {
+    Write-Host "Error: emsdk directory not found after cloning: $emsdkPath" -ForegroundColor Red
+    exit 1
 }
 
 # Check if stellarium-web-engine exists
-$stellariumPath = ".\stellarium-web-engine"
+$stellariumPath = Join-Path $scriptDir "stellarium-web-engine"
 if (-not (Test-Path $stellariumPath)) {
     Write-Host "Cloning Stellarium Web Engine..." -ForegroundColor Yellow
+    Write-Host "Target directory: $stellariumPath" -ForegroundColor Cyan
+    Push-Location $scriptDir
     git clone https://github.com/Stellarium/stellarium-web-engine.git
     if ($LASTEXITCODE -ne 0) {
         Write-Host "Error: Failed to clone stellarium-web-engine" -ForegroundColor Red
+        Pop-Location
         exit 1
     }
+    Pop-Location
+}
+
+# Verify stellarium-web-engine was cloned
+if (-not (Test-Path $stellariumPath)) {
+    Write-Host "Error: stellarium-web-engine directory not found after cloning: $stellariumPath" -ForegroundColor Red
+    exit 1
 }
 
 # Setup emsdk
 Write-Host "Setting up Emscripten SDK..." -ForegroundColor Yellow
+Write-Host "Working directory: $emsdkPath" -ForegroundColor Cyan
+
+if (-not (Test-Path $emsdkPath)) {
+    Write-Host "Error: emsdk path does not exist: $emsdkPath" -ForegroundColor Red
+    exit 1
+}
+
 Push-Location $emsdkPath
 
+# Check if emsdk.py exists
+if (-not (Test-Path ".\emsdk.py")) {
+    Write-Host "Error: emsdk.py not found in $emsdkPath" -ForegroundColor Red
+    Write-Host "The emsdk directory may be incomplete. Try deleting it and re-running the script." -ForegroundColor Yellow
+    Pop-Location
+    exit 1
+}
+
 # Install and activate emsdk
-.\emsdk install latest
+Write-Host "Installing Emscripten SDK (this may take a while)..." -ForegroundColor Yellow
+python emsdk.py install latest
 if ($LASTEXITCODE -ne 0) {
     Write-Host "Warning: emsdk install may have issues, continuing..." -ForegroundColor Yellow
 }
 
-.\emsdk activate latest
+Write-Host "Activating Emscripten SDK..." -ForegroundColor Yellow
+python emsdk.py activate latest
 if ($LASTEXITCODE -ne 0) {
     Write-Host "Warning: emsdk activate may have issues, continuing..." -ForegroundColor Yellow
 }
 
-# Get the emsdk path
+# Get the emsdk path (absolute)
 $emsdkRoot = (Resolve-Path .).Path
 $emscriptenPath = Join-Path $emsdkRoot "upstream\emscripten"
+
+Write-Host "Emscripten path: $emscriptenPath" -ForegroundColor Cyan
+if (-not (Test-Path $emscriptenPath)) {
+    Write-Host "Warning: Emscripten path does not exist yet: $emscriptenPath" -ForegroundColor Yellow
+    Write-Host "This is normal if emsdk is still installing..." -ForegroundColor Yellow
+}
 
 # Set required Emscripten environment variables BEFORE running emsdk_env.bat
 $env:EMSDK = $emsdkRoot
@@ -53,10 +102,11 @@ $env:EMSCRIPTEN_TOOL_PATH = $emscriptenPath
 $env:PATH = "$emscriptenPath;$emsdkRoot;$env:PATH"
 
 # Try to run emsdk_env.bat to get additional environment variables
-if (Test-Path ".\emsdk_env.bat") {
+$emsdkEnvBat = Join-Path $emsdkRoot "emsdk_env.bat"
+if (Test-Path $emsdkEnvBat) {
     Write-Host "Activating emsdk environment..." -ForegroundColor Cyan
     # Run emsdk_env.bat and capture environment variables
-    $envOutput = cmd /c ".\emsdk_env.bat >nul 2>&1 && set" 2>&1
+    $envOutput = cmd /c "`"$emsdkEnvBat`" >nul 2>&1 && set" 2>&1
     $envOutput | ForEach-Object {
         if ($_ -match "^([^=]+)=(.*)$") {
             $name = $matches[1]
@@ -64,6 +114,8 @@ if (Test-Path ".\emsdk_env.bat") {
             Set-Item -Path "env:$name" -Value $value
         }
     }
+} else {
+    Write-Host "Warning: emsdk_env.bat not found at: $emsdkEnvBat" -ForegroundColor Yellow
 }
 
 # Ensure EMSCRIPTEN_TOOL_PATH is set (required by SConstruct)
@@ -93,12 +145,29 @@ if ($LASTEXITCODE -ne 0) {
 
 # Build stellarium-web-engine
 Write-Host "Building Stellarium Web Engine..." -ForegroundColor Yellow
+Write-Host "Working directory: $stellariumPath" -ForegroundColor Cyan
+
+if (-not (Test-Path $stellariumPath)) {
+    Write-Host "Error: stellarium-web-engine path does not exist: $stellariumPath" -ForegroundColor Red
+    exit 1
+}
+
 Push-Location $stellariumPath
+
+# Check if SConstruct exists
+if (-not (Test-Path ".\SConstruct")) {
+    Write-Host "Error: SConstruct not found in $stellariumPath" -ForegroundColor Red
+    Write-Host "The stellarium-web-engine directory may be incomplete. Try deleting it and re-running the script." -ForegroundColor Yellow
+    Pop-Location
+    exit 1
+}
 
 # Verify Emscripten environment is set
 if (-not $env:EMSCRIPTEN_TOOL_PATH) {
     Write-Host "Setting Emscripten environment variables..." -ForegroundColor Yellow
-    $emsdkRoot = (Resolve-Path $emsdkPath).Path
+    if (-not $emsdkRoot) {
+        $emsdkRoot = (Resolve-Path $emsdkPath).Path
+    }
     $emscriptenPath = Join-Path $emsdkRoot "upstream\emscripten"
     $env:EMSDK = $emsdkRoot
     $env:EMSCRIPTEN = $emscriptenPath
@@ -106,8 +175,10 @@ if (-not $env:EMSCRIPTEN_TOOL_PATH) {
     $env:PATH = "$emscriptenPath;$emsdkRoot;$env:PATH"
 }
 
-Write-Host "EMSCRIPTEN_TOOL_PATH: $env:EMSCRIPTEN_TOOL_PATH" -ForegroundColor Cyan
-Write-Host "EMSDK: $env:EMSDK" -ForegroundColor Cyan
+Write-Host "Environment variables:" -ForegroundColor Cyan
+Write-Host "  EMSCRIPTEN_TOOL_PATH: $env:EMSCRIPTEN_TOOL_PATH" -ForegroundColor Cyan
+Write-Host "  EMSDK: $env:EMSDK" -ForegroundColor Cyan
+Write-Host "  EMSCRIPTEN: $env:EMSCRIPTEN" -ForegroundColor Cyan
 
 # Build using scons (not make - Windows doesn't have make)
 Write-Host "Running scons to build JavaScript version..." -ForegroundColor Yellow
@@ -156,15 +227,16 @@ Pop-Location
 
 # Copy built files to project
 Write-Host "Copying built files..." -ForegroundColor Yellow
-$staticJsPath = "$stellariumPath\html\static\js"
-$buildPath = "$stellariumPath\build"
+$staticJsPath = Join-Path $stellariumPath "html\static\js"
+$buildPath = Join-Path $stellariumPath "build"
+$buildOutputDir = Join-Path $scriptDir "stellarium-build"
 
 # Check multiple possible locations for built files
 $possibleLocations = @(
-    "$staticJsPath",
-    "$buildPath\html\static\js",
-    "$stellariumPath\html\js",
-    "$stellariumPath\build\js"
+    $staticJsPath,
+    (Join-Path $buildPath "html\static\js"),
+    (Join-Path $stellariumPath "html\js"),
+    (Join-Path $stellariumPath "build\js")
 )
 
 $foundFiles = $false
@@ -175,10 +247,11 @@ foreach ($location in $possibleLocations) {
         $wasmFile = Get-ChildItem -Path $location -Filter "stellarium-web-engine.wasm" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
         
         if ($jsFile -and $wasmFile) {
-            New-Item -ItemType Directory -Force -Path ".\stellarium-build" | Out-Null
-            Copy-Item $jsFile.FullName -Destination ".\stellarium-build\stellarium-web-engine.js" -Force
-            Copy-Item $wasmFile.FullName -Destination ".\stellarium-build\stellarium-web-engine.wasm" -Force
-            Write-Host "Build complete! Files copied to .\stellarium-build\" -ForegroundColor Green
+            Write-Host "Found built files in: $($jsFile.DirectoryName)" -ForegroundColor Green
+            New-Item -ItemType Directory -Force -Path $buildOutputDir | Out-Null
+            Copy-Item $jsFile.FullName -Destination (Join-Path $buildOutputDir "stellarium-web-engine.js") -Force
+            Copy-Item $wasmFile.FullName -Destination (Join-Path $buildOutputDir "stellarium-web-engine.wasm") -Force
+            Write-Host "Build complete! Files copied to: $buildOutputDir" -ForegroundColor Green
             Write-Host "  - stellarium-web-engine.js" -ForegroundColor Green
             Write-Host "  - stellarium-web-engine.wasm" -ForegroundColor Green
             $foundFiles = $true
