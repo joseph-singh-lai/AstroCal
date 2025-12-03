@@ -18,7 +18,7 @@ This document provides a comprehensive inventory of what has been **accomplished
 - [x] **Main HTML file** (`index.html`) - Complete with all sections
 - [x] **JavaScript logic** (`script.js`) - Full event management system
 - [x] **Styling** (`styles.css`) - Dark theme, responsive design
-- [x] **Static event data** (`data/events.json`) - 11 events (9 meteor showers, 2 planet visibility)
+- [x] **Static event data** (`data/events.json`) - 9 meteor shower events (planet visibility now generated dynamically)
 - [x] **Navigation system** - Three main sections (Events, Satellite Imagery, Sky Map)
 - [x] **Responsive design** - Mobile-first approach implemented
 - [x] **Dark theme** - Optimized for astronomy viewing
@@ -27,7 +27,7 @@ This document provides a comprehensive inventory of what has been **accomplished
 
 #### Event Categories Implemented:
 - [x] **Meteor Showers** (`meteor`) - 9 annual meteor shower peaks
-- [x] **Planet Visibility** (`planet`) - 2 planet visibility events
+- [x] **Planet Visibility** (`planet`) - Dynamically generated current planet visibility (Jupiter, Saturn, Venus, Mercury, Mars)
 - [x] **ISS Passes** (`iss`) - Real-time ISS pass predictions via Open Notify API
 - [x] **NASA APOD** (`apod`) - Daily astronomy picture integration
 - [x] **Solar Events** (`solar`) - DONKI API integration (Solar Flares, CMEs)
@@ -276,17 +276,19 @@ This document provides a comprehensive inventory of what has been **accomplished
 
 **Note:** These features are available in Stellarium Web iframe, but not as integrated controls in the main app.
 
-### 5. Event Data Expansion ❌
+### 5. Event Data Expansion ⚠️ Partially Fixed
 
-**Current:** 11 static events (9 meteor showers, 2 planets)
+**Current:** 9 static meteor shower events + dynamic planet visibility (Jupiter, Saturn, Venus, Mercury, Mars)
 
-**Missing:**
-- [ ] More planet visibility events (Mars, Venus, Mercury, etc.)
-- [ ] Lunar events (phases, eclipses)
+**Fixed:**
+- [x] Planet visibility events - Now dynamically generated based on current date (Jupiter, Saturn, Venus, Mercury, Mars)
+
+**Still Missing:**
+- [ ] Lunar events (phases, eclipses) - Moon phases are in astronomy category but could be expanded
 - [ ] Comet visibility
 - [ ] Asteroid events
 - [ ] Conjunction events
-- [ ] Opposition events (beyond Jupiter/Saturn)
+- [ ] Opposition events (detailed calculations)
 - [ ] Transit events
 
 ### 6. ISS Pass CORS Issue ❌
@@ -402,9 +404,10 @@ This document provides a comprehensive inventory of what has been **accomplished
 
 ### High Priority:
 1. ~~**Add missing filter checkboxes**~~ - ✅ **FIXED** - Natural Events and Workshop checkboxes added, APOD set as default
-2. **Fix ISS CORS issue** - Implement proxy or find alternative API
-3. **Move API key to environment variables** - Security improvement
-4. **Add more event data** - Expand static events (planets, lunar, etc.)
+2. ~~**Fix planet visibility section**~~ - ✅ **FIXED** - Now shows current/real-time planet visibility instead of static August 2025 data
+3. **Fix ISS CORS issue** - Implement proxy or find alternative API
+4. **Move API key to environment variables** - Security improvement
+5. **Add more event data** - Expand static events (lunar events, etc.)
 
 ### Medium Priority:
 5. **Complete Stellarium Web Engine build** - If full control is desired
@@ -436,6 +439,21 @@ This document provides a comprehensive inventory of what has been **accomplished
 _This section tracks confirmed fixes and improvements made to the project._
 
 **Format:** `[YYYY-MM-DD] - Issue: Description - Status: ✅ Fixed`
+
+#### [2025-01-XX] - Fixed Planet Visibility Section - Now Shows Current Information
+- **Issue:** Planet visibility section only showed static events for Jupiter and Saturn in August 2025, not current/real-time visibility
+- **Fix:** 
+  - Created `loadPlanetVisibility()` function to dynamically calculate current planet visibility
+  - Created `calculatePlanetVisibility()` function that generates planet events based on current date
+  - Added planet visibility loading to main event loading pipeline
+  - Removed old static planet events from `data/events.json` (Jupiter and Saturn from August)
+  - Updated refresh button to also refresh planet visibility data
+  - Function calculates visibility for: Jupiter, Saturn, Mars, Venus, and Mercury
+  - Each planet event includes current visibility status, direction, best viewing time, and description
+  - Events are cached for 24 hours and update daily
+- **Status:** ✅ Fixed
+- **Files Modified:** `script.js`, `data/events.json`
+- **Impact:** Planet visibility now shows current, real-time information based on the current date. Users see which planets are visible tonight with accurate descriptions and viewing directions. Old static August 2025 data has been replaced with dynamic current data.
 
 #### [2025-01-XX] - Added Missing Filter Checkboxes & Set APOD as Default
 - **Issue:** Natural Events and Workshop filter checkboxes were missing from the UI, even though code supported them

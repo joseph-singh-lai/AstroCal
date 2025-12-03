@@ -107,30 +107,6 @@
         "peak": "Low-Moderate"
       },
       "location": "Northern horizon clear sky"
-    },
-    {
-      "id": "planet-jupiter",
-      "title": "Jupiter Visible in Late Evening",
-      "category": "planet",
-      "datetime": "2025-08-13T21:00:00",
-      "description": "Jupiter is well-placed in the night sky for long periods after sunset in mid-2025, according to local sky-chart predictions.",
-      "visibility": {
-        "direction": "South-East",
-        "peak": "Evening"
-      },
-      "location": "Horizon direction: SE"
-    },
-    {
-      "id": "planet-saturn",
-      "title": "Saturn Visible Overnight",
-      "category": "planet",
-      "datetime": "2025-08-12T20:00:00",
-      "description": "Saturn rises early evening and stays visible for many hours, ideal for telescopic and binocular viewing.",
-      "visibility": {
-        "direction": "South-West",
-        "peak": "Late Night"
-      },
-      "location": "Low to mid elevation sky"
     }
   ]
 }

@@ -143,7 +143,8 @@ document.addEventListener('DOMContentLoaded', () => {
         loadEvents(),
         loadISSPasses(),
         loadNASAData(),
-        loadAstronomyData()
+        loadAstronomyData(),
+        loadPlanetVisibility()
     ]).then(() => {
         console.log('All events loaded. Total:', allEvents.length);
         const actualCategories = [...new Set(allEvents.map(e => e.category))];
@@ -692,7 +693,10 @@ function setupEventListeners() {
             refreshNASAButton.disabled = true;
             refreshNASAButton.textContent = '🔄 Refreshing...';
             clearNASACache();
-            loadNASAData(true).then(() => {
+            Promise.all([
+                loadNASAData(true),
+                loadPlanetVisibility(true) // Also refresh planet visibility
+            ]).then(() => {
                 refreshNASAButton.disabled = false;
                 refreshNASAButton.textContent = '🔄 Refresh NASA Data';
                 applyFilters();
@@ -1876,5 +1880,249 @@ async function loadAstronomyEvents(lat, lon, forceRefresh = false) {
         
         return [];
     }
+}
+
+/**
+ * Load current planet visibility data
+ * Calculates which planets are currently visible based on current date and location
+ */
+async function loadPlanetVisibility(forceRefresh = false) {
+    try {
+        console.log('=== Loading Planet Visibility Data ===');
+        
+        // Get current location
+        const location = getCurrentLocation();
+        const lat = location.lat || 10.25; // Default to La Brea
+        const lon = location.lon || -61.63;
+        
+        const cacheKey = 'planet_visibility';
+        const maxAge = 24 * 60 * 60 * 1000; // 24 hours (planet positions change slowly)
+        
+        // Check cache first
+        if (!forceRefresh && isCacheValid(cacheKey, maxAge)) {
+            const cached = getCachedData(cacheKey);
+            if (cached && cached.length > 0) {
+                console.log('Using cached planet visibility data');
+                const beforeCount = allEvents.length;
+                allEvents = [...allEvents, ...cached];
+                const afterCount = allEvents.length;
+                console.log(`Added ${cached.length} planet visibility events (${beforeCount} → ${afterCount})`);
+                return Promise.resolve();
+            }
+        }
+        
+        const now = new Date();
+        const planetEvents = calculatePlanetVisibility(now, lat, lon);
+        
+        if (planetEvents && planetEvents.length > 0) {
+            // Remove old static planet events (they're outdated)
+            allEvents = allEvents.filter(e => e.category !== 'planet' || !e.id.startsWith('planet-'));
+            
+            const beforeCount = allEvents.length;
+            allEvents = [...allEvents, ...planetEvents];
+            const afterCount = allEvents.length;
+            
+            // Sort all events by datetime
+            allEvents.sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
+            window.allEvents = allEvents;
+            
+            console.log(`Added ${planetEvents.length} current planet visibility events (${beforeCount} → ${afterCount})`);
+            console.log('Planet visibility events:', planetEvents);
+            
+            // Cache the events
+            setCachedData(cacheKey, planetEvents);
+            
+            // Re-apply filters if this is called after initial load
+            if (beforeCount > 0) {
+                applyFilters();
+            }
+        } else {
+            console.warn('No planet visibility events generated.');
+        }
+        
+        return Promise.resolve();
+    } catch (error) {
+        console.error('Error loading planet visibility data:', error);
+        return Promise.resolve(); // Don't fail the whole app
+    }
+}
+
+/**
+ * Calculate which planets are currently visible
+ * Uses approximate calculations based on current date and planetary cycles
+ */
+function calculatePlanetVisibility(currentDate, lat, lon) {
+    const events = [];
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth() + 1; // 1-12
+    const day = currentDate.getDate();
+    
+    // Get current date string for event datetime
+    const dateStr = currentDate.toISOString().split('T')[0];
+    
+    // Planet visibility data (approximate, based on 2025 planetary positions)
+    // These are general visibility windows - for accurate positions, use a proper astronomy library
+    
+    // Jupiter - Visible most of the year, best around opposition (varies by year)
+    // In 2025, Jupiter is well-placed for evening viewing
+    const jupiterVisible = true; // Generally visible
+    const jupiterBestTime = "Evening to Late Night";
+    const jupiterDirection = "East to South";
+    const jupiterDescription = "Jupiter is currently visible in the evening sky. Look for it as a bright, steady point of light. Best viewing is in the evening hours when it's high in the sky.";
+    
+    // Saturn - Visible most of the year, best around opposition
+    // In 2025, Saturn is visible in the evening
+    const saturnVisible = true; // Generally visible
+    const saturnBestTime = "Evening to Late Night";
+    const saturnDirection = "South to Southwest";
+    const saturnDescription = "Saturn is currently visible in the evening sky. It appears as a golden-yellow point of light. Best viewed with a telescope to see its rings.";
+    
+    // Mars - Visibility varies significantly throughout the year
+    // Check if Mars is in a good viewing window (typically around opposition every ~2 years)
+    // In 2025, Mars is not at opposition, so visibility is limited
+    const marsVisible = false; // Not well-placed in 2025
+    const marsDescription = "Mars is currently not well-placed for viewing. It's too close to the Sun in the sky. Best viewing will be around its next opposition.";
+    
+    // Venus - Visible as morning or evening star, cycles every ~19 months
+    // Check current phase
+    const venusVisible = checkVenusVisibility(month);
+    const venusDescription = venusVisible 
+        ? "Venus is currently visible as a bright 'star' in the " + (month >= 3 && month <= 8 ? "evening" : "morning") + " sky. It's the brightest planet and easy to spot."
+        : "Venus is currently too close to the Sun to be easily visible.";
+    
+    // Mercury - Only visible near greatest elongation (brief windows)
+    // Very difficult to see, only visible for short periods
+    const mercuryVisible = checkMercuryVisibility(month);
+    const mercuryDescription = mercuryVisible
+        ? "Mercury may be visible low on the horizon just before sunrise or after sunset. It's challenging to spot and requires clear skies and an unobstructed horizon."
+        : "Mercury is currently too close to the Sun to be visible.";
+    
+    // Add visible planets to events
+    if (jupiterVisible) {
+        events.push({
+            id: `planet-jupiter-${dateStr}`,
+            title: "Jupiter Visible Tonight",
+            category: 'planet',
+            datetime: `${dateStr}T20:00:00Z`, // Evening time
+            description: jupiterDescription,
+            location: `Look ${jupiterDirection}`,
+            visibility: {
+                direction: jupiterDirection,
+                peak: jupiterBestTime,
+                elevation: "High in evening sky"
+            },
+            source: 'Current Planet Visibility',
+            planetName: 'Jupiter',
+            magnitude: '-2.5', // Approximate
+            updateDate: dateStr
+        });
+    }
+    
+    if (saturnVisible) {
+        events.push({
+            id: `planet-saturn-${dateStr}`,
+            title: "Saturn Visible Tonight",
+            category: 'planet',
+            datetime: `${dateStr}T20:00:00Z`, // Evening time
+            description: saturnDescription,
+            location: `Look ${saturnDirection}`,
+            visibility: {
+                direction: saturnDirection,
+                peak: saturnBestTime,
+                elevation: "Mid to high in evening sky"
+            },
+            source: 'Current Planet Visibility',
+            planetName: 'Saturn',
+            magnitude: '0.5', // Approximate
+            updateDate: dateStr
+        });
+    }
+    
+    if (marsVisible) {
+        events.push({
+            id: `planet-mars-${dateStr}`,
+            title: "Mars Visible Tonight",
+            category: 'planet',
+            datetime: `${dateStr}T20:00:00Z`,
+            description: marsDescription,
+            location: "Check current sky charts",
+            visibility: {
+                direction: "Variable",
+                peak: "Evening to Morning",
+                elevation: "Variable"
+            },
+            source: 'Current Planet Visibility',
+            planetName: 'Mars',
+            magnitude: '1.5', // Approximate
+            updateDate: dateStr
+        });
+    }
+    
+    if (venusVisible) {
+        const isMorningStar = month < 3 || month > 8;
+        events.push({
+            id: `planet-venus-${dateStr}`,
+            title: `Venus Visible ${isMorningStar ? 'Before Sunrise' : 'After Sunset'}`,
+            category: 'planet',
+            datetime: isMorningStar ? `${dateStr}T06:00:00Z` : `${dateStr}T19:00:00Z`,
+            description: venusDescription,
+            location: `Look ${isMorningStar ? 'East' : 'West'} near horizon`,
+            visibility: {
+                direction: isMorningStar ? "East" : "West",
+                peak: isMorningStar ? "Before Sunrise" : "After Sunset",
+                elevation: "Low on horizon"
+            },
+            source: 'Current Planet Visibility',
+            planetName: 'Venus',
+            magnitude: '-4.5', // Very bright
+            updateDate: dateStr
+        });
+    }
+    
+    if (mercuryVisible) {
+        const isMorning = month >= 1 && month <= 6;
+        events.push({
+            id: `planet-mercury-${dateStr}`,
+            title: `Mercury ${isMorning ? 'Morning' : 'Evening'} Visibility Window`,
+            category: 'planet',
+            datetime: isMorning ? `${dateStr}T06:00:00Z` : `${dateStr}T19:00:00Z`,
+            description: mercuryDescription,
+            location: `Look ${isMorning ? 'East' : 'West'} very low on horizon`,
+            visibility: {
+                direction: isMorning ? "East" : "West",
+                peak: isMorning ? "Just before sunrise" : "Just after sunset",
+                elevation: "Very low on horizon"
+            },
+            source: 'Current Planet Visibility',
+            planetName: 'Mercury',
+            magnitude: '0.0', // Variable
+            updateDate: dateStr
+        });
+    }
+    
+    return events;
+}
+
+/**
+ * Check if Venus is currently visible (approximate)
+ * Venus alternates between morning and evening star
+ */
+function checkVenusVisibility(month) {
+    // Simplified: Venus is generally visible except when too close to Sun
+    // In 2025, Venus has good visibility windows
+    // This is approximate - for accuracy, use proper astronomical calculations
+    return true; // Generally visible most of the time
+}
+
+/**
+ * Check if Mercury is currently visible (approximate)
+ * Mercury is only visible near greatest elongation
+ */
+function checkMercuryVisibility(month) {
+    // Mercury has brief visibility windows around greatest elongation
+    // These occur roughly every 3-4 months
+    // Simplified check - in reality, need to calculate elongation
+    const elongationMonths = [1, 4, 7, 10]; // Approximate months with good visibility
+    return elongationMonths.includes(month);
 }
 
