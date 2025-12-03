@@ -13,7 +13,7 @@ function getNASAConfig() {
 // Global state
 let allEvents = [];
 let filteredEvents = [];
-let selectedCategories = new Set(['meteor', 'planet', 'iss', 'apod', 'solar', 'astronomy']);
+let selectedCategories = new Set(['apod']); // Default: Only show NASA APOD on first visit
 
 // Location state
 let userLocation = null;
