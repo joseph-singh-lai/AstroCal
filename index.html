@@ -166,22 +166,17 @@
             <!-- GIBS Satellite Imagery Section -->
             <section id="gibs-section" class="content-section">
                 <div class="section-header">
-                    <h2>🛰️ NASA Satellite Imagery Explorer</h2>
-                    <p class="section-description">Explore Earth using NASA's Global Imagery Browse Services (GIBS)</p>
+                    <h2>🛰️ Satellite Imagery Explorer</h2>
+                    <p class="section-description">Explore Earth using NOAA GOES satellite imagery and map views</p>
                 </div>
                 
                 <div class="map-controls">
                     <div class="layer-controls">
                         <label for="gibs-layer-select" class="label">Choose Satellite Layer:</label>
                         <select id="gibs-layer-select" class="layer-select">
-                            <option value="MODIS_Terra_CorrectedReflectance_TrueColor">MODIS Terra – True Color</option>
-                            <option value="MODIS_Aqua_CorrectedReflectance_TrueColor">MODIS Aqua – True Color</option>
-                            <option value="VIIRS_SNPP_CorrectedReflectance_TrueColor">VIIRS SNPP – True Color</option>
-                            <option value="GOES-East_ABI_GeoColor">GOES-East – GeoColor</option>
-                            <option value="VIIRS_SNPP_DayNightBand_At_Sensor_Radiance">VIIRS – Night Lights (DNB)</option>
-                            <option value="MODIS_Terra_Aerosol">MODIS Terra – Aerosols</option>
-                            <option value="MODIS_Aqua_Cloud_Top_Temperature_Day">MODIS Aqua – Cloud Top Temp</option>
-                            <option value="MODIS_Terra_Thermal_Anomalies_250m">MODIS Terra – Fire/Heat</option>
+                            <option value="NOAA_GOES_East">NOAA GOES-East GeoColor (Near Real-Time)</option>
+                            <option value="NOAA_GOES_West">NOAA GOES-West GeoColor (Near Real-Time)</option>
+                            <option value="OpenStreetMap">OpenStreetMap (Map View)</option>
                         </select>
                     </div>
                     <button id="centerMapButton" class="map-button">📍 Center on My Location</button>
