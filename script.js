@@ -149,6 +149,13 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('All events loaded. Total:', allEvents.length);
         const actualCategories = [...new Set(allEvents.map(e => e.category))];
         console.log('Event categories:', actualCategories);
+        console.log('Planet events count:', allEvents.filter(e => e.category === 'planet').length);
+        
+        // Always include 'planet' category even if no events (for filter checkbox)
+        if (!actualCategories.includes('planet')) {
+            actualCategories.push('planet');
+            console.log('Added planet category to filter list even though no events');
+        }
         
         // Update filter checkboxes to only show categories that have events
         updateFilterCheckboxes(actualCategories);
@@ -159,6 +166,10 @@ document.addEventListener('DOMContentLoaded', () => {
         // Even if some fail, show what we have
         if (allEvents.length > 0) {
             const actualCategories = [...new Set(allEvents.map(e => e.category))];
+            // Always include 'planet' category
+            if (!actualCategories.includes('planet')) {
+                actualCategories.push('planet');
+            }
             updateFilterCheckboxes(actualCategories);
             applyFilters();
         }
@@ -1912,11 +1923,17 @@ async function loadPlanetVisibility(forceRefresh = false) {
         }
         
         const now = new Date();
+        console.log('Calculating planet visibility for date:', now.toISOString());
         const planetEvents = calculatePlanetVisibility(now, lat, lon);
+        console.log('Planet events calculated:', planetEvents);
+        console.log('Number of planet events:', planetEvents ? planetEvents.length : 0);
         
         if (planetEvents && planetEvents.length > 0) {
             // Remove old static planet events (they're outdated)
+            const beforeFilter = allEvents.length;
             allEvents = allEvents.filter(e => e.category !== 'planet' || !e.id.startsWith('planet-'));
+            const afterFilter = allEvents.length;
+            console.log(`Filtered out old planet events: ${beforeFilter} → ${afterFilter}`);
             
             const beforeCount = allEvents.length;
             allEvents = [...allEvents, ...planetEvents];
@@ -1928,6 +1945,8 @@ async function loadPlanetVisibility(forceRefresh = false) {
             
             console.log(`Added ${planetEvents.length} current planet visibility events (${beforeCount} → ${afterCount})`);
             console.log('Planet visibility events:', planetEvents);
+            console.log('Total events now:', allEvents.length);
+            console.log('Planet events in allEvents:', allEvents.filter(e => e.category === 'planet'));
             
             // Cache the events
             setCachedData(cacheKey, planetEvents);
@@ -1938,6 +1957,7 @@ async function loadPlanetVisibility(forceRefresh = false) {
             }
         } else {
             console.warn('No planet visibility events generated.');
+            console.warn('planetEvents value:', planetEvents);
         }
         
         return Promise.resolve();
@@ -1952,6 +1972,7 @@ async function loadPlanetVisibility(forceRefresh = false) {
  * Uses approximate calculations based on current date and planetary cycles
  */
 function calculatePlanetVisibility(currentDate, lat, lon) {
+    console.log('calculatePlanetVisibility called with:', { currentDate, lat, lon });
     const events = [];
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth() + 1; // 1-12
@@ -1959,6 +1980,7 @@ function calculatePlanetVisibility(currentDate, lat, lon) {
     
     // Get current date string for event datetime
     const dateStr = currentDate.toISOString().split('T')[0];
+    console.log('Date string:', dateStr, 'Month:', month);
     
     // Planet visibility data (approximate, based on 2025 planetary positions)
     // These are general visibility windows - for accurate positions, use a proper astronomy library
@@ -2100,6 +2122,10 @@ function calculatePlanetVisibility(currentDate, lat, lon) {
         });
     }
     
+    console.log('calculatePlanetVisibility returning events:', events.length);
+    if (events.length === 0) {
+        console.warn('No planet events generated! This should not happen.');
+    }
     return events;
 }
 
