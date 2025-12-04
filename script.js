@@ -747,16 +747,23 @@ function setupEventListeners() {
  * Update selected categories from checkboxes
  */
 function updateSelectedCategories() {
-    selectedCategories.clear();
-    const checkedBoxes = [];
-    filterCheckboxes.forEach(checkbox => {
-        if (checkbox.checked) {
-            selectedCategories.add(checkbox.value);
-            checkedBoxes.push(checkbox.value);
-        }
-    });
-    console.log('Checkbox states:', Array.from(filterCheckboxes).map(cb => ({ value: cb.value, checked: cb.checked })));
-    console.log('Selected categories from checkboxes:', checkedBoxes);
+    // Don't clear selectedCategories if checkboxes don't exist yet (during initialization)
+    // This preserves the default APOD selection
+    if (filterCheckboxes && filterCheckboxes.length > 0) {
+        selectedCategories.clear();
+        const checkedBoxes = [];
+        filterCheckboxes.forEach(checkbox => {
+            if (checkbox.checked) {
+                selectedCategories.add(checkbox.value);
+                checkedBoxes.push(checkbox.value);
+            }
+        });
+        console.log('Checkbox states:', Array.from(filterCheckboxes).map(cb => ({ value: cb.value, checked: cb.checked })));
+        console.log('Selected categories from checkboxes:', checkedBoxes);
+    } else {
+        // If no checkboxes exist yet, preserve default (APOD)
+        console.log('No checkboxes yet, preserving default selectedCategories:', Array.from(selectedCategories));
+    }
 }
 
 /**
