@@ -1750,6 +1750,42 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
 }
 
 /**
+ * Calculate moon phase (0 = new moon, 0.5 = full moon, 1 = new moon)
+ * Simple approximation based on days since known new moon
+ */
+function calculateMoonPhase(date) {
+    // Known new moon date: January 11, 2025 00:00 UTC
+    const knownNewMoon = new Date('2025-01-11T00:00:00Z');
+    const daysSinceNewMoon = (date - knownNewMoon) / (1000 * 60 * 60 * 24);
+    const lunarCycle = 29.53; // days in lunar cycle
+    const phase = (daysSinceNewMoon % lunarCycle) / lunarCycle;
+    return phase;
+}
+
+/**
+ * Get moon phase name from phase value (0-1)
+ */
+function getMoonPhaseName(phase) {
+    if (phase === 0 || phase === 1 || phase < 0.01) {
+        return 'New Moon';
+    } else if (phase < 0.25) {
+        return 'Waxing Crescent';
+    } else if (phase === 0.25 || (phase > 0.24 && phase < 0.26)) {
+        return 'First Quarter';
+    } else if (phase < 0.5) {
+        return 'Waxing Gibbous';
+    } else if (phase === 0.5 || (phase > 0.49 && phase < 0.51)) {
+        return 'Full Moon';
+    } else if (phase < 0.75) {
+        return 'Waning Gibbous';
+    } else if (phase === 0.75 || (phase > 0.74 && phase < 0.76)) {
+        return 'Last Quarter';
+    } else {
+        return 'Waning Crescent';
+    }
+}
+
+/**
  * Load astronomy events from Open-Meteo Astronomy API (CORS-enabled, free)
  */
 async function loadAstronomyEvents(lat, lon, forceRefresh = false) {
@@ -1771,9 +1807,10 @@ async function loadAstronomyEvents(lat, lon, forceRefresh = false) {
         const timezone = 'America/Port_of_Spain';
         
         // Build URL with correct endpoint (/v1/forecast) and required date parameters
-        // Note: moonrise and moonset are not available in daily forecast, only sunrise, sunset, and moon_phase
+        // Note: moon_phase is not available in daily forecast endpoint
+        // Only sunrise and sunset are supported in daily forecast
         const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
-                    `&daily=sunrise,sunset,moon_phase` +
+                    `&daily=sunrise,sunset` +
                     `&timezone=${encodeURIComponent(timezone)}` +
                     `&start_date=${date}&end_date=${date}`;
         
@@ -1805,61 +1842,34 @@ async function loadAstronomyEvents(lat, lon, forceRefresh = false) {
         const daily = data.daily;
         const events = [];
         
-        // Process each field (sunrise, sunset, moon_phase)
-        // Note: moonrise and moonset are not available in daily forecast API
-        const fields = ['sunrise', 'sunset', 'moon_phase'];
+        // Calculate moon phase manually (since API doesn't provide it in daily forecast)
+        const moonPhase = calculateMoonPhase(new Date(date));
+        const moonPhaseName = getMoonPhaseName(moonPhase);
+        const moonIllumination = Math.round(moonPhase * 100);
+        
+        events.push({
+            id: `astronomy-moon-${date}`,
+            title: `Moon Phase: ${moonPhaseName}`,
+            category: 'astronomy',
+            datetime: `${date}T12:00:00Z`,
+            description: `Current moon phase: ${moonPhaseName}. Illumination: ${moonIllumination}%`,
+            location: `Lat: ${lat.toFixed(2)}°, Lon: ${lon.toFixed(2)}°`,
+            source: 'Open-Meteo Astronomy (calculated)',
+            moonPhase: moonPhaseName,
+            illumination: moonIllumination,
+            moonPhaseValue: moonPhase
+        });
+        console.log('Astronomy event created: Moon Phase (calculated)');
+        
+        // Process each field (sunrise, sunset)
+        // Note: moon_phase is not available in daily forecast API
+        const fields = ['sunrise', 'sunset'];
         fields.forEach(field => {
             if (daily[field] && daily[field].length > 0 && daily[field][0] !== null) {
                 const fieldValue = daily[field][0];
                 const fieldTitle = field.charAt(0).toUpperCase() + field.slice(1).replace('_', ' ');
                 
-                // Special handling for moon_phase
-                if (field === 'moon_phase') {
-                    const moonPhase = fieldValue;
-                    let phaseName = 'New Moon';
-                    let illumination = 0;
-                    
-                    if (moonPhase === 0 || moonPhase === 1) {
-                        phaseName = 'New Moon';
-                        illumination = 0;
-                    } else if (moonPhase > 0 && moonPhase < 0.25) {
-                        phaseName = 'Waxing Crescent';
-                        illumination = (moonPhase / 0.25) * 50;
-                    } else if (moonPhase === 0.25) {
-                        phaseName = 'First Quarter';
-                        illumination = 50;
-                    } else if (moonPhase > 0.25 && moonPhase < 0.5) {
-                        phaseName = 'Waxing Gibbous';
-                        illumination = 50 + ((moonPhase - 0.25) / 0.25) * 50;
-                    } else if (moonPhase === 0.5) {
-                        phaseName = 'Full Moon';
-                        illumination = 100;
-                    } else if (moonPhase > 0.5 && moonPhase < 0.75) {
-                        phaseName = 'Waning Gibbous';
-                        illumination = 100 - ((moonPhase - 0.5) / 0.25) * 50;
-                    } else if (moonPhase === 0.75) {
-                        phaseName = 'Last Quarter';
-                        illumination = 50;
-                    } else if (moonPhase > 0.75 && moonPhase < 1) {
-                        phaseName = 'Waning Crescent';
-                        illumination = 50 - ((moonPhase - 0.75) / 0.25) * 50;
-                    }
-                    
-                    events.push({
-                        id: `astronomy-moon-${date}`,
-                        title: `Moon Phase: ${phaseName}`,
-                        category: 'astronomy',
-                        datetime: `${date}T12:00:00Z`,
-                        description: `Current moon phase: ${phaseName}. Illumination: ${illumination.toFixed(1)}%`,
-                        location: `Lat: ${lat.toFixed(2)}°, Lon: ${lon.toFixed(2)}°`,
-                        source: 'Open-Meteo Astronomy',
-                        moonPhase: phaseName,
-                        illumination: illumination,
-                        moonPhaseValue: moonPhase
-                    });
-                    console.log('Astronomy event created: Moon Phase');
-                } else {
-                    // For sunrise, sunset, moonrise, moonset - use the actual time value
+                // For sunrise, sunset - use the actual time value
                     events.push({
                         id: `astronomy-${field}-${date}`,
                         title: fieldTitle,
