@@ -1835,11 +1835,18 @@ async function loadNASAData(forceRefresh = false) {
         console.log('Total events by category:', 
             categories.map(cat => `${cat}: ${allEvents.filter(e => e.category === cat).length}`).join(', '));
         
-        // If this is called after initial load, just re-apply filters
-        // Don't update checkboxes here - let the main Promise.all do it at the end
-        // This prevents duplicate checkbox updates that reset the state
+        // If this is called after initial load, update checkboxes to include new categories
+        // This ensures APOD checkbox is created and checked when NASA data loads
         if (beforeCount > 0) {
             console.log('Re-applying filters after NASA data load...');
+            // Update checkboxes to include new categories (like APOD)
+            const allCategories = [...new Set(allEvents.map(e => e.category))];
+            // Always include 'planet' category even if no events
+            if (!allCategories.includes('planet')) {
+                allCategories.push('planet');
+            }
+            // Update checkboxes - this will create APOD checkbox and check it if APOD is in selectedCategories
+            updateFilterCheckboxes(allCategories);
             applyFilters();
         }
         
