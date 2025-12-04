@@ -96,6 +96,7 @@ let locationButton;
 let locationStatus;
 let clearLocationButton;
 let refreshNASAButton;
+let checkboxesInitialized = false; // Track if checkboxes have been initialized
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
@@ -1194,10 +1195,12 @@ function updateFilterCheckboxes(actualCategories) {
         }
     });
     
-    // If no categories are selected yet and APOD is available, set it as default
-    if (selectedCategories.size === 0 && actualCategories.includes('apod')) {
+    // If this is the first time initializing checkboxes, set APOD as default
+    // OR if no categories are selected yet and APOD is available, set it as default
+    if ((!checkboxesInitialized || selectedCategories.size === 0) && actualCategories.includes('apod')) {
         selectedCategories.add('apod');
         currentStates.set('apod', true);
+        console.log('Setting APOD as default checked category');
     }
     
     // Merge saved states with selectedCategories
@@ -1240,6 +1243,9 @@ function updateFilterCheckboxes(actualCategories) {
     
     // Re-setup event listeners for new checkboxes
     setupEventListeners();
+    
+    // Mark checkboxes as initialized
+    checkboxesInitialized = true;
     
     console.log(`Updated filter checkboxes for ${actualCategories.length} categories:`, actualCategories);
     console.log('Selected categories after update:', Array.from(selectedCategories));
