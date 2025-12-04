@@ -107,21 +107,25 @@ function setGibsLayer(layerName) {
     // For NOAA layers, use proxy to bypass CORS
     // Create custom tile layer that overrides getTileUrl method
     if (layerConfig.type === "noaa") {
-        // Create a base tile layer with a placeholder URL
-        currentGibsLayer = L.tileLayer('', tileOptions);
+        // Create a base tile layer with a dummy URL template
+        // Leaflet needs a template string to parse, even if we override getTileUrl
+        currentGibsLayer = L.tileLayer('https://placeholder/{z}/{x}/{y}.png', tileOptions);
         
         // Override the getTileUrl method to build proxy URLs
-        currentGibsLayer.getTileUrl = function(tilePoint) {
+        // Leaflet's getTileUrl receives coords object with x, y, z properties
+        currentGibsLayer.getTileUrl = function(coords) {
+            console.log('getTileUrl called with coords:', coords);
+            
             // Build the actual NOAA tile URL with coordinates
-            // Note: TMS format uses {z}/{y}/{x}, Leaflet will handle TMS flag
+            // Note: TMS format uses {z}/{y}/{x}, Leaflet will handle TMS flag via tms: true
             let actualUrl = layerConfig.url
-                .replace('{z}', tilePoint.z)
-                .replace('{y}', tilePoint.y)
-                .replace('{x}', tilePoint.x);
+                .replace('{z}', coords.z)
+                .replace('{y}', coords.y)
+                .replace('{x}', coords.x);
             
             // Route through proxy to avoid CORS
             const proxyUrl = `/api/gibs-tile.js?url=${encodeURIComponent(actualUrl)}`;
-            console.log(`NOAA tile request: z=${tilePoint.z}, y=${tilePoint.y}, x=${tilePoint.x}`);
+            console.log(`NOAA tile request: z=${coords.z}, y=${coords.y}, x=${coords.x}`);
             console.log(`Actual URL: ${actualUrl}`);
             console.log(`Proxy URL: ${proxyUrl}`);
             return proxyUrl;
@@ -139,10 +143,13 @@ function setGibsLayer(layerName) {
     let successCount = 0;
     const maxErrors = 3; // Lower threshold for faster fallback
     
-    currentGibsLayer.on('tileerror', function(error, tile) {
+    currentGibsLayer.on('tileerror', function(error) {
         errorCount++;
         console.warn(`Tile error (${errorCount}/${maxErrors}):`, error);
-        console.warn('Failed tile URL:', tile.src || 'unknown');
+        
+        // Safely get tile URL if available
+        const tileUrl = error.tile ? (error.tile.src || 'unknown') : 'tile object unavailable';
+        console.warn('Failed tile URL:', tileUrl);
         console.warn('Error details:', error);
         
         // If too many errors and not already on OSM, switch to OSM
@@ -175,10 +182,16 @@ function setGibsLayer(layerName) {
         }
     });
     
-    // Track successful tile loads
+    // Track successful tile loads (but ignore error placeholder tiles)
     currentGibsLayer.on('tileload', function(event) {
-        successCount++;
-        console.log(`Tile loaded successfully (${successCount}):`, event.tile.src);
+        const tileUrl = event.tile ? event.tile.src : 'unknown';
+        // Only count as success if it's not the error placeholder
+        if (tileUrl && !tileUrl.includes('data:image/svg+xml')) {
+            successCount++;
+            console.log(`Tile loaded successfully (${successCount}):`, tileUrl);
+        } else {
+            console.warn('Tile loaded but appears to be error placeholder:', tileUrl);
+        }
     });
     
     // Track when tiles start loading
