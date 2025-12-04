@@ -96,7 +96,6 @@ let locationButton;
 let locationStatus;
 let clearLocationButton;
 let refreshNASAButton;
-let checkboxesInitialized = false; // Track if checkboxes have been initialized
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
@@ -161,7 +160,6 @@ document.addEventListener('DOMContentLoaded', () => {
         // Update filter checkboxes to only show categories that have events
         updateFilterCheckboxes(actualCategories);
         
-        // Apply filters with the final event set
         applyFilters();
     }).catch((error) => {
         console.error('Error loading events:', error);
@@ -686,18 +684,9 @@ function setupEventListeners() {
     });
 
     // Apply filters button
-    // Combined refresh and apply filters button
-    // Removed separate applyFiltersButton - refresh button now does both
-    if (applyFiltersButton) {
-        // Keep for backwards compatibility, but redirect to refresh
     applyFiltersButton.addEventListener('click', () => {
-            if (refreshNASAButton) {
-                refreshNASAButton.click();
-            } else {
         applyFilters();
-            }
     });
-    }
 
     // Location button
     if (locationButton) {
@@ -709,7 +698,7 @@ function setupEventListeners() {
         clearLocationButton.addEventListener('click', clearSavedLocation);
     }
 
-    // Refresh & Apply Filters button (combines both actions)
+    // Refresh NASA data button
     if (refreshNASAButton) {
         refreshNASAButton.addEventListener('click', () => {
             refreshNASAButton.disabled = true;
@@ -717,17 +706,11 @@ function setupEventListeners() {
             clearNASACache();
             Promise.all([
                 loadNASAData(true),
-                loadPlanetVisibility(true), // Also refresh planet visibility
-                loadAstronomyData(true) // Refresh astronomy data too
+                loadPlanetVisibility(true) // Also refresh planet visibility
             ]).then(() => {
                 refreshNASAButton.disabled = false;
-                refreshNASAButton.textContent = '🔄 Refresh & Apply Filters';
-                applyFilters(); // Apply filters after refresh
-            }).catch((error) => {
-                console.error('Error refreshing data:', error);
-                refreshNASAButton.disabled = false;
-                refreshNASAButton.textContent = '🔄 Refresh & Apply Filters';
-                applyFilters(); // Still apply filters even if refresh fails
+                refreshNASAButton.textContent = '🔄 Refresh NASA Data';
+                applyFilters();
             });
         });
     }
@@ -745,27 +728,16 @@ function setupEventListeners() {
  * Update selected categories from checkboxes
  */
 function updateSelectedCategories() {
-    // Simple: Update from checkboxes, but preserve APOD if it's the default and checkbox doesn't exist yet
-    if (filterCheckboxes && filterCheckboxes.length > 0) {
-        const newSelectedCategories = new Set();
-        
-        // Add checked categories
-        filterCheckboxes.forEach(checkbox => {
-            if (checkbox.checked) {
-                newSelectedCategories.add(checkbox.value);
-            }
-        });
-        
-        // Preserve APOD if it was selected but checkbox doesn't exist yet
-        const hasAPODCheckbox = Array.from(filterCheckboxes).some(cb => cb.value === 'apod');
-        if (!hasAPODCheckbox && selectedCategories.has('apod')) {
-            newSelectedCategories.add('apod');
+    selectedCategories.clear();
+    const checkedBoxes = [];
+    filterCheckboxes.forEach(checkbox => {
+        if (checkbox.checked) {
+            selectedCategories.add(checkbox.value);
+            checkedBoxes.push(checkbox.value);
         }
-        
-        selectedCategories = newSelectedCategories;
-    }
-    // If no checkboxes exist yet, selectedCategories remains as its default (['apod'])
-    console.log('Selected categories after update:', Array.from(selectedCategories));
+    });
+    console.log('Checkbox states:', Array.from(filterCheckboxes).map(cb => ({ value: cb.value, checked: cb.checked })));
+    console.log('Selected categories from checkboxes:', checkedBoxes);
 }
 
 /**
@@ -773,21 +745,6 @@ function updateSelectedCategories() {
  */
 function applyFilters() {
     updateSelectedCategories();
-    
-    // Simple: If APOD events exist and APOD is not selected, select it (default behavior)
-    const hasAPODEvents = allEvents.some(e => e.category === 'apod');
-    if (hasAPODEvents && !selectedCategories.has('apod')) {
-        const apodCheckbox = filterCheckboxes ? Array.from(filterCheckboxes).find(cb => cb.value === 'apod') : null;
-        if (apodCheckbox && !apodCheckbox.checked) {
-            // User unchecked it, don't force it
-            return;
-        }
-        console.log('Restoring APOD default - events exist');
-        selectedCategories.add('apod');
-        if (apodCheckbox) {
-            apodCheckbox.checked = true;
-        }
-    }
     
     const searchTerm = searchInput.value.toLowerCase().trim();
     
@@ -1211,27 +1168,6 @@ function updateFilterCheckboxes(actualCategories) {
         'workshop': 'Workshops (Educational events)'
     };
     
-    // Save current checkbox states before clearing
-    const currentStates = new Map();
-    filterCheckboxes.forEach(checkbox => {
-        if (checkbox.checked) {
-            currentStates.set(checkbox.value, true);
-        }
-    });
-    
-    // If this is the first time initializing checkboxes, set APOD as default
-    // OR if no categories are selected yet and APOD is available, set it as default
-    if ((!checkboxesInitialized || selectedCategories.size === 0) && actualCategories.includes('apod')) {
-        selectedCategories.add('apod');
-        currentStates.set('apod', true);
-        console.log('Setting APOD as default checked category');
-    }
-    
-    // Merge saved states with selectedCategories
-    selectedCategories.forEach(cat => {
-        currentStates.set(cat, true);
-    });
-    
     // Clear existing checkboxes
     filterOptions.innerHTML = '';
     
@@ -1243,16 +1179,7 @@ function updateFilterCheckboxes(actualCategories) {
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
         checkbox.value = category;
-        
-        // Preserve checked state from saved states or selectedCategories
-        checkbox.checked = currentStates.has(category) || selectedCategories.has(category);
-        
-        // Update selectedCategories to match checkbox state
-        if (checkbox.checked) {
-            selectedCategories.add(category);
-        } else {
-            selectedCategories.delete(category);
-        }
+        checkbox.checked = selectedCategories.has(category);
         
         const span = document.createElement('span');
         span.textContent = categoryLabels[category] || category;
@@ -1268,11 +1195,7 @@ function updateFilterCheckboxes(actualCategories) {
     // Re-setup event listeners for new checkboxes
     setupEventListeners();
     
-    // Mark checkboxes as initialized
-    checkboxesInitialized = true;
-    
     console.log(`Updated filter checkboxes for ${actualCategories.length} categories:`, actualCategories);
-    console.log('Selected categories after update:', Array.from(selectedCategories));
 }
 
 /**
@@ -1818,14 +1741,9 @@ async function loadNASAData(forceRefresh = false) {
         console.log('Total events by category:', 
             categories.map(cat => `${cat}: ${allEvents.filter(e => e.category === cat).length}`).join(', '));
         
-        // If this is called after initial load, update checkboxes and re-apply filters
+        // If this is called after initial load, re-apply filters to show new events
         if (beforeCount > 0) {
             console.log('Re-applying filters after NASA data load...');
-            const allCategories = [...new Set(allEvents.map(e => e.category))];
-            if (!allCategories.includes('planet')) {
-                allCategories.push('planet');
-            }
-            updateFilterCheckboxes(allCategories);
             applyFilters();
         }
         
@@ -1999,19 +1917,19 @@ async function loadAstronomyEvents(lat, lon, forceRefresh = false) {
         const moonPhase = calculateMoonPhase(new Date(date));
         const moonPhaseName = getMoonPhaseName(moonPhase);
         const moonIllumination = Math.round(moonPhase * 100);
-                    
-                    events.push({
-                        id: `astronomy-moon-${date}`,
+        
+        events.push({
+            id: `astronomy-moon-${date}`,
             title: `Moon Phase: ${moonPhaseName}`,
-                        category: 'astronomy',
-                        datetime: `${date}T12:00:00Z`,
+            category: 'astronomy',
+            datetime: `${date}T12:00:00Z`,
             description: `Current moon phase: ${moonPhaseName}. Illumination: ${moonIllumination}%`,
-                        location: `Lat: ${lat.toFixed(2)}°, Lon: ${lon.toFixed(2)}°`,
+            location: `Lat: ${lat.toFixed(2)}°, Lon: ${lon.toFixed(2)}°`,
             source: 'Open-Meteo Astronomy (calculated)',
             moonPhase: moonPhaseName,
             illumination: moonIllumination,
-                        moonPhaseValue: moonPhase
-                    });
+            moonPhaseValue: moonPhase
+        });
         console.log('Astronomy event created: Moon Phase (calculated)');
         
         // Process each field (sunrise, sunset)
@@ -2023,16 +1941,16 @@ async function loadAstronomyEvents(lat, lon, forceRefresh = false) {
                 const fieldTitle = field.charAt(0).toUpperCase() + field.slice(1).replace('_', ' ');
                 
                 // For sunrise, sunset - use the actual time value
-                    events.push({
-                        id: `astronomy-${field}-${date}`,
-                        title: fieldTitle,
-                        category: 'astronomy',
-                        datetime: fieldValue || `${date}T00:00:00Z`,
-                        description: `${fieldTitle} time for your location: ${fieldValue || 'N/A'}`,
-                        location: `Lat: ${lat.toFixed(2)}°, Lon: ${lon.toFixed(2)}°`,
-                        source: 'Open-Meteo Astronomy'
-                    });
-                    console.log(`Astronomy event created: ${fieldTitle}`);
+                events.push({
+                    id: `astronomy-${field}-${date}`,
+                    title: fieldTitle,
+                    category: 'astronomy',
+                    datetime: fieldValue || `${date}T00:00:00Z`,
+                    description: `${fieldTitle} time for your location: ${fieldValue || 'N/A'}`,
+                    location: `Lat: ${lat.toFixed(2)}°, Lon: ${lon.toFixed(2)}°`,
+                    source: 'Open-Meteo Astronomy'
+                });
+                console.log(`Astronomy event created: ${fieldTitle}`);
             }
         });
         
@@ -2151,19 +2069,17 @@ function calculatePlanetVisibility(currentDate, lat, lon) {
     
     // Jupiter - Visible most of the year, best around opposition (varies by year)
     // In 2025, Jupiter is well-placed for evening viewing
-    // Always visible - it's one of the brightest objects in the night sky
-    const jupiterVisible = true; // Generally visible year-round
+    const jupiterVisible = true; // Generally visible
     const jupiterBestTime = "Evening to Late Night";
     const jupiterDirection = "East to South";
-    const jupiterDescription = "Jupiter is currently visible in the evening sky. Look for it as a bright, steady point of light. Best viewing is in the evening hours when it's high in the sky. Jupiter is one of the brightest objects in the night sky and is visible most nights.";
+    const jupiterDescription = "Jupiter is currently visible in the evening sky. Look for it as a bright, steady point of light. Best viewing is in the evening hours when it's high in the sky.";
     
     // Saturn - Visible most of the year, best around opposition
     // In 2025, Saturn is visible in the evening
-    // Always visible - though brightness varies
-    const saturnVisible = true; // Generally visible year-round
+    const saturnVisible = true; // Generally visible
     const saturnBestTime = "Evening to Late Night";
     const saturnDirection = "South to Southwest";
-    const saturnDescription = "Saturn is currently visible in the evening sky. It appears as a golden-yellow point of light. Best viewed with a telescope to see its rings. Saturn is visible most nights, though it's dimmer than Jupiter.";
+    const saturnDescription = "Saturn is currently visible in the evening sky. It appears as a golden-yellow point of light. Best viewed with a telescope to see its rings.";
     
     // Mars - Visibility varies significantly throughout the year
     // Check if Mars is in a good viewing window (typically around opposition every ~2 years)
@@ -2289,18 +2205,8 @@ function calculatePlanetVisibility(currentDate, lat, lon) {
     }
     
     console.log('calculatePlanetVisibility returning events:', events.length);
-    console.log('Planet events details:', events.map(e => `${e.planetName}: ${e.title}`));
-    
     if (events.length === 0) {
-        console.error('No planet events generated! This should not happen.');
-        console.error('Visibility flags:', {
-            jupiter: jupiterVisible,
-            saturn: saturnVisible,
-            mars: marsVisible,
-            venus: venusVisible,
-            mercury: mercuryVisible,
-            month: month
-        });
+        console.warn('No planet events generated! This should not happen.');
     }
     return events;
 }
