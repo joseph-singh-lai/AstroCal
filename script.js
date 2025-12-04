@@ -818,12 +818,17 @@ function updateSelectedCategories() {
 function applyFilters() {
     updateSelectedCategories();
     
-    // Defensive: If selectedCategories is empty but APOD events exist, restore APOD default
-    if (selectedCategories.size === 0) {
-        const hasAPODEvents = allEvents.some(e => e.category === 'apod');
-        if (hasAPODEvents) {
-            console.log('Restoring APOD default - selectedCategories was empty but APOD events exist');
-            selectedCategories.add('apod');
+    // Defensive: If APOD events exist, ensure APOD is selected (unless user explicitly unchecked it)
+    const hasAPODEvents = allEvents.some(e => e.category === 'apod');
+    const apodCheckbox = filterCheckboxes ? Array.from(filterCheckboxes).find(cb => cb.value === 'apod') : null;
+    const userUncheckedAPOD = apodCheckbox && !apodCheckbox.checked;
+    
+    if (hasAPODEvents && !selectedCategories.has('apod') && !userUncheckedAPOD) {
+        console.log('Restoring APOD - events exist but not selected (user did not explicitly uncheck)');
+        selectedCategories.add('apod');
+        // Also check the checkbox if it exists
+        if (apodCheckbox) {
+            apodCheckbox.checked = true;
         }
     }
     
