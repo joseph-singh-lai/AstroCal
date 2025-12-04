@@ -2069,17 +2069,19 @@ function calculatePlanetVisibility(currentDate, lat, lon) {
     
     // Jupiter - Visible most of the year, best around opposition (varies by year)
     // In 2025, Jupiter is well-placed for evening viewing
-    const jupiterVisible = true; // Generally visible
+    // Always visible - it's one of the brightest objects in the night sky
+    const jupiterVisible = true; // Generally visible year-round
     const jupiterBestTime = "Evening to Late Night";
     const jupiterDirection = "East to South";
-    const jupiterDescription = "Jupiter is currently visible in the evening sky. Look for it as a bright, steady point of light. Best viewing is in the evening hours when it's high in the sky.";
+    const jupiterDescription = "Jupiter is currently visible in the evening sky. Look for it as a bright, steady point of light. Best viewing is in the evening hours when it's high in the sky. Jupiter is one of the brightest objects in the night sky and is visible most nights.";
     
     // Saturn - Visible most of the year, best around opposition
     // In 2025, Saturn is visible in the evening
-    const saturnVisible = true; // Generally visible
+    // Always visible - though brightness varies
+    const saturnVisible = true; // Generally visible year-round
     const saturnBestTime = "Evening to Late Night";
     const saturnDirection = "South to Southwest";
-    const saturnDescription = "Saturn is currently visible in the evening sky. It appears as a golden-yellow point of light. Best viewed with a telescope to see its rings.";
+    const saturnDescription = "Saturn is currently visible in the evening sky. It appears as a golden-yellow point of light. Best viewed with a telescope to see its rings. Saturn is visible most nights, though it's dimmer than Jupiter.";
     
     // Mars - Visibility varies significantly throughout the year
     // Check if Mars is in a good viewing window (typically around opposition every ~2 years)
@@ -2205,8 +2207,18 @@ function calculatePlanetVisibility(currentDate, lat, lon) {
     }
     
     console.log('calculatePlanetVisibility returning events:', events.length);
+    console.log('Planet events details:', events.map(e => `${e.planetName}: ${e.title}`));
+    
     if (events.length === 0) {
-        console.warn('No planet events generated! This should not happen.');
+        console.error('No planet events generated! This should not happen.');
+        console.error('Visibility flags:', {
+            jupiter: jupiterVisible,
+            saturn: saturnVisible,
+            mars: marsVisible,
+            venus: venusVisible,
+            mercury: mercuryVisible,
+            month: month
+        });
     }
     return events;
 }
