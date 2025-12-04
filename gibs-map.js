@@ -28,23 +28,26 @@ const SATELLITE_LAYERS = {
     },
     "NOAA_GOES_East": {
         type: "noaa",
-        // Try TMS format (ArcGIS REST format) - note: Leaflet uses {z}/{x}/{y} but ArcGIS uses {z}/{y}/{x}
-        // We'll need to handle coordinate conversion
+        // NOTE: NOWCoast service returns 403 Forbidden - requires authentication or not publicly accessible
+        // URL format is correct but service blocks direct tile access
         url: "https://nowcoast.noaa.gov/arcgis/rest/services/nowcoast/sat_meteo_imagery_goes16geocolor/MapServer/tile/{z}/{y}/{x}",
-        attribution: 'Imagery © NOAA',
+        attribution: 'Imagery © NOAA (Currently unavailable - requires authentication)',
         maxZoom: 8,
         minZoom: 2,
-        description: "NOAA GOES-East GeoColor (near real-time)",
-        tms: true // ArcGIS uses TMS (Y coordinate flipped)
+        description: "NOAA GOES-East GeoColor - Currently unavailable (service requires authentication)",
+        tms: true, // ArcGIS uses TMS (Y coordinate flipped)
+        disabled: true // Mark as disabled since service requires auth
     },
     "NOAA_GOES_West": {
         type: "noaa",
+        // NOTE: NOWCoast service returns 403 Forbidden - requires authentication or not publicly accessible
         url: "https://nowcoast.noaa.gov/arcgis/rest/services/nowcoast/sat_meteo_imagery_goes17geocolor/MapServer/tile/{z}/{y}/{x}",
-        attribution: 'Imagery © NOAA',
+        attribution: 'Imagery © NOAA (Currently unavailable - requires authentication)',
         maxZoom: 8,
         minZoom: 2,
-        description: "NOAA GOES-West GeoColor (near real-time)",
-        tms: true
+        description: "NOAA GOES-West GeoColor - Currently unavailable (service requires authentication)",
+        tms: true,
+        disabled: true // Mark as disabled since service requires auth
     }
 };
 
@@ -74,6 +77,34 @@ function setGibsLayer(layerName) {
     
     if (!layerConfig) {
         console.warn(`Layer ${layerName} not found, using OpenStreetMap fallback`);
+        setGibsLayer("OpenStreetMap");
+        return;
+    }
+    
+    // Check if layer is disabled (e.g., requires authentication)
+    if (layerConfig.disabled) {
+        console.warn(`Layer ${mappedLayer} is disabled: ${layerConfig.description}`);
+        // Show user-friendly message
+        const mapContainer = document.getElementById("gibs-map");
+        if (mapContainer) {
+            const existingMsg = mapContainer.querySelector('.layer-disabled-message');
+            if (!existingMsg) {
+                const msg = document.createElement('div');
+                msg.className = 'layer-disabled-message';
+                msg.style.cssText = 'position: absolute; top: 10px; left: 10px; right: 10px; background: rgba(255, 200, 0, 0.9); color: #000; padding: 10px; border-radius: 5px; z-index: 1000; font-size: 0.9rem;';
+                msg.innerHTML = `⚠️ ${layerConfig.description}. Switching to OpenStreetMap.`;
+                mapContainer.style.position = 'relative';
+                mapContainer.appendChild(msg);
+                
+                // Remove message after 5 seconds
+                setTimeout(() => {
+                    if (msg.parentNode) {
+                        msg.parentNode.removeChild(msg);
+                    }
+                }, 5000);
+            }
+        }
+        // Fallback to OSM
         setGibsLayer("OpenStreetMap");
         return;
     }
