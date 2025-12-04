@@ -384,7 +384,7 @@ This document provides a comprehensive inventory of what has been **accomplished
 | **Events Browser** | ✅ Complete | 95% (missing workshop/natural UI filters) |
 | **NASA API Integration** | ✅ Complete | 100% |
 | **ISS Pass Integration** | ⚠️ Partial | 80% (CORS issue) |
-| **GIBS Satellite Imagery** | ✅ Complete | 100% |
+| **GIBS Satellite Imagery** | ⚠️ Partial | 70% (NOAA requires auth, OSM works) |
 | **Sky Map (Iframe)** | ✅ Complete | 100% |
 | **Sky Map (Engine Build)** | ❌ Missing | 0% |
 | **Geolocation** | ✅ Complete | 100% |
@@ -439,6 +439,23 @@ This document provides a comprehensive inventory of what has been **accomplished
 _This section tracks confirmed fixes and improvements made to the project._
 
 **Format:** `[YYYY-MM-DD] - Issue: Description - Status: ✅ Fixed`
+
+#### [2025-01-XX] - Fixed Satellite Imagery - NOAA Service Requires Authentication
+- **Issue:** Satellite imagery section showing all green tiles - NOAA NOWCoast service returns 403 Forbidden
+- **Root Cause:** NOWCoast ArcGIS REST service requires authentication or is not publicly accessible via direct tile requests
+- **Fix:**
+  - Identified that NOWCoast service returns 403 Forbidden for direct tile access
+  - Added `disabled` flag to NOAA layers in configuration
+  - Implemented auto-fallback to OpenStreetMap when NOAA layers are selected
+  - Added user-friendly warning message when NOAA is unavailable
+  - Updated layer descriptions to indicate authentication requirement
+  - Set OpenStreetMap as default working layer
+  - Improved error detection to identify 1x1 pixel fallback tiles
+  - Added better debugging to detect non-image responses from NOAA
+- **Status:** ✅ Fixed (with limitation documented)
+- **Files Modified:** `gibs-map.js`, `api/gibs-tile.js`
+- **Impact:** Users now see OpenStreetMap by default (reliable). NOAA layers are disabled with clear messaging that they require authentication. The app gracefully handles the NOAA service limitation and automatically falls back to a working map layer.
+- **Note:** NOAA satellite imagery would require proper authentication/API access to NOWCoast service. OpenStreetMap is a reliable alternative that works without authentication.
 
 #### [2025-01-XX] - Fixed Planet Visibility Section - Now Shows Current Information
 - **Issue:** Planet visibility section only showed static events for Jupiter and Saturn in August 2025, not current/real-time visibility
