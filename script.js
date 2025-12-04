@@ -750,16 +750,40 @@ function updateSelectedCategories() {
     // Don't clear selectedCategories if checkboxes don't exist yet (during initialization)
     // This preserves the default APOD selection
     if (filterCheckboxes && filterCheckboxes.length > 0) {
-        selectedCategories.clear();
+        // Get all available checkbox values
+        const availableCheckboxValues = new Set();
+        filterCheckboxes.forEach(checkbox => {
+            availableCheckboxValues.add(checkbox.value);
+        });
+        
+        // Only update categories that have checkboxes
+        // Preserve categories that don't have checkboxes yet (like APOD before it loads)
         const checkedBoxes = [];
+        const preservedCategories = [];
+        
+        // Update categories that have checkboxes
         filterCheckboxes.forEach(checkbox => {
             if (checkbox.checked) {
                 selectedCategories.add(checkbox.value);
                 checkedBoxes.push(checkbox.value);
+            } else if (availableCheckboxValues.has(checkbox.value)) {
+                // Only remove if checkbox exists and is unchecked
+                selectedCategories.delete(checkbox.value);
             }
         });
+        
+        // Preserve categories that don't have checkboxes yet
+        selectedCategories.forEach(cat => {
+            if (!availableCheckboxValues.has(cat)) {
+                preservedCategories.push(cat);
+            }
+        });
+        
         console.log('Checkbox states:', Array.from(filterCheckboxes).map(cb => ({ value: cb.value, checked: cb.checked })));
         console.log('Selected categories from checkboxes:', checkedBoxes);
+        if (preservedCategories.length > 0) {
+            console.log('Preserved categories (no checkbox yet):', preservedCategories);
+        }
     } else {
         // If no checkboxes exist yet, preserve default (APOD)
         console.log('No checkboxes yet, preserving default selectedCategories:', Array.from(selectedCategories));
