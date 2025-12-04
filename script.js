@@ -1554,15 +1554,38 @@ async function loadEONET(forceRefresh = false) {
         
         const data = await response.json();
         
+        console.log('EONET API response:', {
+            totalEvents: data.events ? data.events.length : 0,
+            sampleEvent: data.events && data.events.length > 0 ? data.events[0] : null
+        });
+        
+        // Log all category IDs we're getting
+        if (data.events && data.events.length > 0) {
+            const allCategoryIds = new Set();
+            data.events.forEach(event => {
+                if (event.categories) {
+                    event.categories.forEach(cat => allCategoryIds.add(cat.id));
+                }
+            });
+            console.log('EONET category IDs found:', Array.from(allCategoryIds).sort((a, b) => a - b));
+        }
+        
         // Filter for astronomy-related events (fireballs, aurora, etc.)
+        // Category IDs: 18=Fireballs, 19=Auroras, 20=Atmospheric events
         const astronomyEvents = (data.events || []).filter(event => {
             const categories = event.categories || [];
-            return categories.some(cat => 
+            const matches = categories.some(cat => 
                 cat.id === 18 || // Fireballs
                 cat.id === 19 || // Auroras
                 cat.id === 20    // Atmospheric events
             );
+            if (!matches && categories.length > 0) {
+                console.log(`Event "${event.title}" filtered out - categories:`, categories.map(c => `${c.id} (${c.title})`).join(', '));
+            }
+            return matches;
         });
+        
+        console.log(`Filtered ${astronomyEvents.length} astronomy events from ${data.events ? data.events.length : 0} total events`);
         
         // Cache the data
         if (astronomyEvents.length > 0) {
