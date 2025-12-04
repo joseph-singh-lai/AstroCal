@@ -105,31 +105,31 @@ function setGibsLayer(layerName) {
     }
 
     // For NOAA layers, use proxy to bypass CORS
-    // Create custom tile layer that overrides getTileUrl method
+    // Create custom tile layer class that properly overrides getTileUrl
     if (layerConfig.type === "noaa") {
-        // Create a base tile layer with a dummy URL template
-        // Leaflet needs a template string to parse, even if we override getTileUrl
-        currentGibsLayer = L.tileLayer('https://placeholder/{z}/{x}/{y}.png', tileOptions);
+        // Extend L.TileLayer to properly override getTileUrl
+        const ProxyTileLayer = L.TileLayer.extend({
+            getTileUrl: function(coords) {
+                console.log('getTileUrl called with coords:', coords);
+                
+                // Build the actual NOAA tile URL with coordinates
+                // Note: TMS format uses {z}/{y}/{x}, Leaflet will handle TMS flag via tms: true
+                let actualUrl = layerConfig.url
+                    .replace('{z}', coords.z)
+                    .replace('{y}', coords.y)
+                    .replace('{x}', coords.x);
+                
+                // Route through proxy to avoid CORS
+                const proxyUrl = `/api/gibs-tile.js?url=${encodeURIComponent(actualUrl)}`;
+                console.log(`NOAA tile request: z=${coords.z}, y=${coords.y}, x=${coords.x}`);
+                console.log(`Actual URL: ${actualUrl}`);
+                console.log(`Proxy URL: ${proxyUrl}`);
+                return proxyUrl;
+            }
+        });
         
-        // Override the getTileUrl method to build proxy URLs
-        // Leaflet's getTileUrl receives coords object with x, y, z properties
-        currentGibsLayer.getTileUrl = function(coords) {
-            console.log('getTileUrl called with coords:', coords);
-            
-            // Build the actual NOAA tile URL with coordinates
-            // Note: TMS format uses {z}/{y}/{x}, Leaflet will handle TMS flag via tms: true
-            let actualUrl = layerConfig.url
-                .replace('{z}', coords.z)
-                .replace('{y}', coords.y)
-                .replace('{x}', coords.x);
-            
-            // Route through proxy to avoid CORS
-            const proxyUrl = `/api/gibs-tile.js?url=${encodeURIComponent(actualUrl)}`;
-            console.log(`NOAA tile request: z=${coords.z}, y=${coords.y}, x=${coords.x}`);
-            console.log(`Actual URL: ${actualUrl}`);
-            console.log(`Proxy URL: ${proxyUrl}`);
-            return proxyUrl;
-        };
+        // Create instance with placeholder URL (required by Leaflet but won't be used)
+        currentGibsLayer = new ProxyTileLayer('https://placeholder/{z}/{x}/{y}.png', tileOptions);
         
         console.log('Using proxy for NOAA tiles to bypass CORS');
         console.log('NOAA tile URL template:', layerConfig.url);
