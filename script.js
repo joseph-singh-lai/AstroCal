@@ -1559,28 +1559,47 @@ async function loadEONET(forceRefresh = false) {
             sampleEvent: data.events && data.events.length > 0 ? data.events[0] : null
         });
         
-        // Log all category IDs we're getting
+        // Log all category IDs and names we're getting
         if (data.events && data.events.length > 0) {
-            const allCategoryIds = new Set();
+            const allCategories = new Map();
             data.events.forEach(event => {
                 if (event.categories) {
-                    event.categories.forEach(cat => allCategoryIds.add(cat.id));
+                    event.categories.forEach(cat => {
+                        allCategories.set(cat.id, cat.title || cat.name || 'Unknown');
+                    });
                 }
             });
-            console.log('EONET category IDs found:', Array.from(allCategoryIds).sort((a, b) => a - b));
+            console.log('EONET categories found:', Array.from(allCategories.entries()).map(([id, name]) => `${id}: ${name}`).join(', '));
         }
         
         // Filter for astronomy-related events (fireballs, aurora, etc.)
-        // Category IDs: 18=Fireballs, 19=Auroras, 20=Atmospheric events
+        // Try both ID and title matching for v3 API compatibility
         const astronomyEvents = (data.events || []).filter(event => {
             const categories = event.categories || [];
-            const matches = categories.some(cat => 
-                cat.id === 18 || // Fireballs
-                cat.id === 19 || // Auroras
-                cat.id === 20    // Atmospheric events
-            );
-            if (!matches && categories.length > 0) {
-                console.log(`Event "${event.title}" filtered out - categories:`, categories.map(c => `${c.id} (${c.title})`).join(', '));
+            const matches = categories.some(cat => {
+                const id = cat.id;
+                const title = (cat.title || cat.name || '').toLowerCase();
+                
+                // Match by ID (v2 API)
+                if (id === 18 || id === 19 || id === 20) {
+                    return true;
+                }
+                
+                // Match by title/name (v3 API might use different structure)
+                if (title.includes('fireball') || 
+                    title.includes('aurora') || 
+                    title.includes('atmospheric') ||
+                    title.includes('meteor') ||
+                    title.includes('asteroid')) {
+                    return true;
+                }
+                
+                return false;
+            });
+            
+            // Only log first few filtered events to avoid spam
+            if (!matches && categories.length > 0 && Math.random() < 0.1) {
+                console.log(`Event "${event.title}" filtered out - categories:`, categories.map(c => `${c.id} (${c.title || c.name})`).join(', '));
             }
             return matches;
         });
