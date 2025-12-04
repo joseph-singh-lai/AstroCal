@@ -747,8 +747,8 @@ function setupEventListeners() {
  * Update selected categories from checkboxes
  */
 function updateSelectedCategories() {
-    // Don't clear selectedCategories if checkboxes don't exist yet (during initialization)
-    // This preserves the default APOD selection
+    // Don't clear selectedCategories - only update categories that have checkboxes
+    // This preserves categories like APOD that don't have checkboxes yet
     if (filterCheckboxes && filterCheckboxes.length > 0) {
         // Get all available checkbox values
         const availableCheckboxValues = new Set();
@@ -756,26 +756,26 @@ function updateSelectedCategories() {
             availableCheckboxValues.add(checkbox.value);
         });
         
-        // Only update categories that have checkboxes
-        // Preserve categories that don't have checkboxes yet (like APOD before it loads)
+        // Update categories that have checkboxes (add if checked, remove if unchecked)
+        // DO NOT clear selectedCategories - preserve categories without checkboxes
         const checkedBoxes = [];
         const preservedCategories = [];
+        
+        // First, identify which categories don't have checkboxes yet
+        selectedCategories.forEach(cat => {
+            if (!availableCheckboxValues.has(cat)) {
+                preservedCategories.push(cat);
+            }
+        });
         
         // Update categories that have checkboxes
         filterCheckboxes.forEach(checkbox => {
             if (checkbox.checked) {
                 selectedCategories.add(checkbox.value);
                 checkedBoxes.push(checkbox.value);
-            } else if (availableCheckboxValues.has(checkbox.value)) {
+            } else {
                 // Only remove if checkbox exists and is unchecked
                 selectedCategories.delete(checkbox.value);
-            }
-        });
-        
-        // Preserve categories that don't have checkboxes yet
-        selectedCategories.forEach(cat => {
-            if (!availableCheckboxValues.has(cat)) {
-                preservedCategories.push(cat);
             }
         });
         
@@ -784,6 +784,7 @@ function updateSelectedCategories() {
         if (preservedCategories.length > 0) {
             console.log('Preserved categories (no checkbox yet):', preservedCategories);
         }
+        console.log('Final selectedCategories:', Array.from(selectedCategories));
     } else {
         // If no checkboxes exist yet, preserve default (APOD)
         console.log('No checkboxes yet, preserving default selectedCategories:', Array.from(selectedCategories));
