@@ -1573,24 +1573,37 @@ async function loadEONET(forceRefresh = false) {
         }
         
         // Filter for astronomy-related events (fireballs, aurora, etc.)
-        // Try both ID and title matching for v3 API compatibility
+        // EONET v3 uses string category IDs (e.g., "wildfires", "severeStorms")
+        // Astronomy-related categories to include:
+        // - Fireballs (if available)
+        // - Auroras (if available)
+        // - Atmospheric events (if available)
+        // - Volcanic events (can affect astronomy observations)
+        const astronomyCategoryIds = [
+            'fireballs',      // Fireballs (if exists)
+            'aurora',         // Auroras (if exists)
+            'atmospheric',    // Atmospheric events (if exists)
+            'volcanoes'       // Volcanic events (can affect sky visibility)
+        ];
+        
         const astronomyEvents = (data.events || []).filter(event => {
             const categories = event.categories || [];
             const matches = categories.some(cat => {
-                const id = cat.id;
+                const id = String(cat.id || '').toLowerCase();
                 const title = (cat.title || cat.name || '').toLowerCase();
                 
-                // Match by ID (v2 API)
-                if (id === 18 || id === 19 || id === 20) {
+                // Match by string ID (v3 API uses strings like "wildfires", "volcanoes")
+                if (astronomyCategoryIds.some(astroId => id.includes(astroId) || astroId.includes(id))) {
                     return true;
                 }
                 
-                // Match by title/name (v3 API might use different structure)
+                // Match by title/name keywords
                 if (title.includes('fireball') || 
                     title.includes('aurora') || 
                     title.includes('atmospheric') ||
                     title.includes('meteor') ||
-                    title.includes('asteroid')) {
+                    title.includes('asteroid') ||
+                    (title.includes('volcano') && title.includes('ash'))) {
                     return true;
                 }
                 
