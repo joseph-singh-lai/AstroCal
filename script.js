@@ -1870,17 +1870,16 @@ async function loadAstronomyEvents(lat, lon, forceRefresh = false) {
                 const fieldTitle = field.charAt(0).toUpperCase() + field.slice(1).replace('_', ' ');
                 
                 // For sunrise, sunset - use the actual time value
-                    events.push({
-                        id: `astronomy-${field}-${date}`,
-                        title: fieldTitle,
-                        category: 'astronomy',
-                        datetime: fieldValue || `${date}T00:00:00Z`,
-                        description: `${fieldTitle} time for your location: ${fieldValue || 'N/A'}`,
-                        location: `Lat: ${lat.toFixed(2)}°, Lon: ${lon.toFixed(2)}°`,
-                        source: 'Open-Meteo Astronomy'
-                    });
-                    console.log(`Astronomy event created: ${fieldTitle}`);
-                }
+                events.push({
+                    id: `astronomy-${field}-${date}`,
+                    title: fieldTitle,
+                    category: 'astronomy',
+                    datetime: fieldValue || `${date}T00:00:00Z`,
+                    description: `${fieldTitle} time for your location: ${fieldValue || 'N/A'}`,
+                    location: `Lat: ${lat.toFixed(2)}°, Lon: ${lon.toFixed(2)}°`,
+                    source: 'Open-Meteo Astronomy'
+                });
+                console.log(`Astronomy event created: ${fieldTitle}`);
             }
         });
         
