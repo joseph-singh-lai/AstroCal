@@ -1525,16 +1525,28 @@ async function loadEONET(forceRefresh = false) {
         });
         
         if (!response.ok) {
+            // Try to get error details
+            let errorDetails = '';
+            try {
+                const errorData = await response.json();
+                errorDetails = errorData.error || errorData.details || '';
+                console.error('EONET proxy error response:', errorData);
+            } catch (e) {
+                // Response might not be JSON
+                console.error('EONET proxy returned non-JSON error');
+            }
+            
             // 503 means service unavailable - use cache if available
             if (response.status === 503) {
-                console.warn('EONET API unavailable (503), using cache if available');
+                console.warn('EONET API unavailable (503 - NASA service down), using cache if available');
+                console.warn('Error details:', errorDetails || 'No details available');
                 const cached = getCachedData(cacheKey);
                 if (cached && cached.events && cached.events.length > 0) {
                     console.log('Using expired cached EONET data due to service unavailability');
                     return convertEONETToEvents(cached.events);
                 }
             }
-            throw new Error(`EONET API error! status: ${response.status}`);
+            throw new Error(`EONET API error! status: ${response.status}${errorDetails ? ` - ${errorDetails}` : ''}`);
         }
         
         const data = await response.json();

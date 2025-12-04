@@ -29,9 +29,21 @@ export default async function handler(req, res) {
         console.log('EONET proxy response status:', response.status, response.statusText);
 
         if (!response.ok) {
-            console.error(`EONET API fetch failed: ${response.status} ${response.statusText}`);
+            // Try to get error details from response
+            let errorDetails = '';
+            try {
+                const errorText = await response.text();
+                errorDetails = errorText;
+                console.error(`EONET API fetch failed: ${response.status} ${response.statusText}`);
+                console.error('Error response body:', errorText.substring(0, 500));
+            } catch (e) {
+                console.error(`EONET API fetch failed: ${response.status} ${response.statusText} (could not read error body)`);
+            }
+            
             return res.status(response.status).json({ 
-                error: `Failed to fetch EONET data: ${response.statusText}` 
+                error: `Failed to fetch EONET data: ${response.statusText}`,
+                details: errorDetails.substring(0, 200),
+                status: response.status
             });
         }
 
