@@ -16,9 +16,17 @@ export default async function handler(req, res) {
         // Decode the URL
         const tileUrl = decodeURIComponent(url);
 
-        // Validate that it's a GIBS URL (security check)
-        if (!tileUrl.includes('earthdata.nasa.gov') && !tileUrl.includes('vis.earthdata.nasa.gov')) {
-            return res.status(400).json({ error: 'Invalid tile URL' });
+        // Validate that it's an allowed tile URL (security check)
+        const allowedDomains = [
+            'earthdata.nasa.gov',
+            'vis.earthdata.nasa.gov',
+            'nowcoast.noaa.gov',
+            'gibs.earthdata.nasa.gov'
+        ];
+        
+        const isAllowed = allowedDomains.some(domain => tileUrl.includes(domain));
+        if (!isAllowed) {
+            return res.status(400).json({ error: 'Invalid tile URL - domain not allowed' });
         }
 
         // Fetch the tile from GIBS

@@ -28,17 +28,25 @@ const SATELLITE_LAYERS = {
     },
     "NOAA_GOES_East": {
         type: "noaa",
-        url: "https://nowcoast.noaa.gov/arcgis/rest/services/nowcoast/sat_meteo_imagery_goes16geocolor/MapServer/WMTS/tile/1.0.0/sat_meteo_imagery_goes16geocolor/default/default028mm/{z}/{y}/{x}.jpg",
+        // Try TMS format (ArcGIS REST format) - note: Leaflet uses {z}/{x}/{y} but ArcGIS uses {z}/{y}/{x}
+        // We'll need to handle coordinate conversion
+        url: "https://nowcoast.noaa.gov/arcgis/rest/services/nowcoast/sat_meteo_imagery_goes16geocolor/MapServer/tile/{z}/{y}/{x}",
         attribution: 'Imagery © NOAA',
         maxZoom: 8,
-        description: "NOAA GOES-East GeoColor (near real-time)"
+        minZoom: 2,
+        description: "NOAA GOES-East GeoColor (near real-time)",
+        tms: true, // ArcGIS uses TMS (Y coordinate flipped)
+        note: "May have CORS or availability issues - OSM recommended"
     },
     "NOAA_GOES_West": {
         type: "noaa",
-        url: "https://nowcoast.noaa.gov/arcgis/rest/services/nowcoast/sat_meteo_imagery_goes17geocolor/MapServer/WMTS/tile/1.0.0/sat_meteo_imagery_goes17geocolor/default/default028mm/{z}/{y}/{x}.jpg",
+        url: "https://nowcoast.noaa.gov/arcgis/rest/services/nowcoast/sat_meteo_imagery_goes17geocolor/MapServer/tile/{z}/{y}/{x}",
         attribution: 'Imagery © NOAA',
         maxZoom: 8,
-        description: "NOAA GOES-West GeoColor (near real-time)"
+        minZoom: 2,
+        description: "NOAA GOES-West GeoColor (near real-time)",
+        tms: true,
+        note: "May have CORS or availability issues - OSM recommended"
     }
 };
 
@@ -84,7 +92,7 @@ function setGibsLayer(layerName) {
         noWrap: false,
         attribution: layerConfig.attribution,
         maxZoom: layerConfig.maxZoom || 18,
-        minZoom: 2,
+        minZoom: layerConfig.minZoom || 2,
         errorTileUrl: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjU2IiBoZWlnaHQ9IjI1NiIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjU2IiBoZWlnaHQ9IjI1NiIgZmlsbD0iIzAwMCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM2NjYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5UaWxlIGVycm9yPC90ZXh0Pjwvc3ZnPg=='
     };
 
@@ -93,11 +101,35 @@ function setGibsLayer(layerName) {
         tileOptions.subdomains = layerConfig.subdomains;
     }
 
-    currentGibsLayer = L.tileLayer(layerConfig.url, tileOptions);
+    // Handle TMS format (Y coordinate flipped) for ArcGIS services
+    if (layerConfig.tms) {
+        tileOptions.tms = true;
+    }
+
+    // For NOAA layers, use proxy to bypass CORS
+    let finalUrl = layerConfig.url;
+    if (layerConfig.type === "noaa") {
+        // Leaflet supports function URLs - receives tile point with z, x, y
+        finalUrl = function(tilePoint) {
+            // Build the actual NOAA tile URL with coordinates
+            // Note: TMS format uses {z}/{y}/{x}, Leaflet will handle TMS flag
+            let actualUrl = layerConfig.url
+                .replace('{z}', tilePoint.z)
+                .replace('{y}', tilePoint.y)
+                .replace('{x}', tilePoint.x);
+            
+            // Route through proxy to avoid CORS
+            const proxyUrl = `/api/gibs-tile.js?url=${encodeURIComponent(actualUrl)}`;
+            return proxyUrl;
+        };
+        console.log('Using proxy for NOAA tiles to bypass CORS');
+    }
+
+    currentGibsLayer = L.tileLayer(finalUrl, tileOptions);
 
     // Add error handler - fallback to OSM if satellite imagery fails
     let errorCount = 0;
-    const maxErrors = 5;
+    const maxErrors = 3; // Lower threshold for faster fallback
     
     currentGibsLayer.on('tileerror', function(error, tile) {
         errorCount++;
@@ -105,7 +137,29 @@ function setGibsLayer(layerName) {
         
         // If too many errors and not already on OSM, switch to OSM
         if (errorCount >= maxErrors && mappedLayer !== "OpenStreetMap") {
-            console.warn('Too many tile errors, falling back to OpenStreetMap');
+            console.warn('NOAA satellite imagery unavailable, falling back to OpenStreetMap');
+            
+            // Show user-friendly message
+            const mapContainer = document.getElementById("gibs-map");
+            if (mapContainer) {
+                const existingMsg = mapContainer.querySelector('.layer-error-message');
+                if (!existingMsg) {
+                    const msg = document.createElement('div');
+                    msg.className = 'layer-error-message';
+                    msg.style.cssText = 'position: absolute; top: 10px; left: 10px; right: 10px; background: rgba(255, 100, 100, 0.9); color: white; padding: 10px; border-radius: 5px; z-index: 1000; font-size: 0.9rem;';
+                    msg.innerHTML = '⚠️ NOAA satellite imagery unavailable. Switched to OpenStreetMap.';
+                    mapContainer.style.position = 'relative';
+                    mapContainer.appendChild(msg);
+                    
+                    // Remove message after 5 seconds
+                    setTimeout(() => {
+                        if (msg.parentNode) {
+                            msg.parentNode.removeChild(msg);
+                        }
+                    }, 5000);
+                }
+            }
+            
             setGibsLayer("OpenStreetMap");
         }
     });
@@ -154,8 +208,8 @@ function initGIBSMap() {
         worldCopyJump: false
     });
 
-    // Load default layer - start with NOAA GOES-East, fallback to OSM
-    setGibsLayer("NOAA_GOES_East");
+    // Load default layer - start with OSM (reliable), NOAA as optional
+    setGibsLayer("OpenStreetMap");
 
     // Change layer dynamically
     const layerSelect = document.getElementById("gibs-layer-select");
