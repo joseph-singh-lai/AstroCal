@@ -35,8 +35,7 @@ const SATELLITE_LAYERS = {
         maxZoom: 8,
         minZoom: 2,
         description: "NOAA GOES-East GeoColor (near real-time)",
-        tms: true, // ArcGIS uses TMS (Y coordinate flipped)
-        note: "May have CORS or availability issues - OSM recommended"
+        tms: true // ArcGIS uses TMS (Y coordinate flipped)
     },
     "NOAA_GOES_West": {
         type: "noaa",
@@ -45,8 +44,7 @@ const SATELLITE_LAYERS = {
         maxZoom: 8,
         minZoom: 2,
         description: "NOAA GOES-West GeoColor (near real-time)",
-        tms: true,
-        note: "May have CORS or availability issues - OSM recommended"
+        tms: true
     }
 };
 
@@ -107,10 +105,13 @@ function setGibsLayer(layerName) {
     }
 
     // For NOAA layers, use proxy to bypass CORS
-    let finalUrl = layerConfig.url;
+    // Create custom tile layer that overrides getTileUrl method
     if (layerConfig.type === "noaa") {
-        // Leaflet supports function URLs - receives tile point with z, x, y
-        finalUrl = function(tilePoint) {
+        // Create a base tile layer with a placeholder URL
+        currentGibsLayer = L.tileLayer('', tileOptions);
+        
+        // Override the getTileUrl method to build proxy URLs
+        currentGibsLayer.getTileUrl = function(tilePoint) {
             // Build the actual NOAA tile URL with coordinates
             // Note: TMS format uses {z}/{y}/{x}, Leaflet will handle TMS flag
             let actualUrl = layerConfig.url
@@ -120,24 +121,34 @@ function setGibsLayer(layerName) {
             
             // Route through proxy to avoid CORS
             const proxyUrl = `/api/gibs-tile.js?url=${encodeURIComponent(actualUrl)}`;
+            console.log(`NOAA tile request: z=${tilePoint.z}, y=${tilePoint.y}, x=${tilePoint.x}`);
+            console.log(`Actual URL: ${actualUrl}`);
+            console.log(`Proxy URL: ${proxyUrl}`);
             return proxyUrl;
         };
+        
         console.log('Using proxy for NOAA tiles to bypass CORS');
+        console.log('NOAA tile URL template:', layerConfig.url);
+    } else {
+        // For OSM, use standard tile layer
+        currentGibsLayer = L.tileLayer(layerConfig.url, tileOptions);
     }
-
-    currentGibsLayer = L.tileLayer(finalUrl, tileOptions);
 
     // Add error handler - fallback to OSM if satellite imagery fails
     let errorCount = 0;
+    let successCount = 0;
     const maxErrors = 3; // Lower threshold for faster fallback
     
     currentGibsLayer.on('tileerror', function(error, tile) {
         errorCount++;
-        console.warn(`Tile error (${errorCount}/${maxErrors}):`, error, 'for layer:', mappedLayer);
+        console.warn(`Tile error (${errorCount}/${maxErrors}):`, error);
+        console.warn('Failed tile URL:', tile.src || 'unknown');
+        console.warn('Error details:', error);
         
         // If too many errors and not already on OSM, switch to OSM
         if (errorCount >= maxErrors && mappedLayer !== "OpenStreetMap") {
             console.warn('NOAA satellite imagery unavailable, falling back to OpenStreetMap');
+            console.warn(`Total errors: ${errorCount}, Successes: ${successCount}`);
             
             // Show user-friendly message
             const mapContainer = document.getElementById("gibs-map");
@@ -162,6 +173,17 @@ function setGibsLayer(layerName) {
             
             setGibsLayer("OpenStreetMap");
         }
+    });
+    
+    // Track successful tile loads
+    currentGibsLayer.on('tileload', function(event) {
+        successCount++;
+        console.log(`Tile loaded successfully (${successCount}):`, event.tile.src);
+    });
+    
+    // Track when tiles start loading
+    currentGibsLayer.on('loading', function() {
+        console.log('Tiles loading for layer:', mappedLayer);
     });
 
     // Reset error count on successful tile load
@@ -208,7 +230,7 @@ function initGIBSMap() {
         worldCopyJump: false
     });
 
-    // Load default layer - start with OSM (reliable), NOAA as optional
+    // Load default layer - start with OSM (reliable), NOAA available but may have issues
     setGibsLayer("OpenStreetMap");
 
     // Change layer dynamically
