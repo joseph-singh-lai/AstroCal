@@ -1194,7 +1194,18 @@ function updateFilterCheckboxes(actualCategories) {
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
         checkbox.value = category;
-        checkbox.checked = selectedCategories.has(category);
+        
+        // Preserve checked state if category was already selected
+        // OR set default: APOD should be checked by default if no categories are selected yet
+        if (selectedCategories.has(category)) {
+            checkbox.checked = true;
+        } else if (selectedCategories.size === 0 && category === 'apod') {
+            // Default: APOD checked on first load
+            checkbox.checked = true;
+            selectedCategories.add('apod');
+        } else {
+            checkbox.checked = false;
+        }
         
         const span = document.createElement('span');
         span.textContent = categoryLabels[category] || category;
@@ -1756,9 +1767,16 @@ async function loadNASAData(forceRefresh = false) {
         console.log('Total events by category:', 
             categories.map(cat => `${cat}: ${allEvents.filter(e => e.category === cat).length}`).join(', '));
         
-        // If this is called after initial load, re-apply filters to show new events
+        // If this is called after initial load, update checkboxes and re-apply filters
         if (beforeCount > 0) {
             console.log('Re-applying filters after NASA data load...');
+            // Update checkboxes to include new categories (like APOD)
+            const allCategories = [...new Set(allEvents.map(e => e.category))];
+            // Always include 'planet' category even if no events
+            if (!allCategories.includes('planet')) {
+                allCategories.push('planet');
+            }
+            updateFilterCheckboxes(allCategories);
             applyFilters();
         }
         
