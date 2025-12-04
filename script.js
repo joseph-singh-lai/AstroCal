@@ -816,18 +816,30 @@ function updateSelectedCategories() {
  * Apply filters and render events
  */
 function applyFilters() {
+    // Defensive: Before updating selectedCategories, ensure APOD is preserved if events exist
+    const hasAPODEvents = allEvents.some(e => e.category === 'apod');
+    const apodCheckbox = filterCheckboxes ? Array.from(filterCheckboxes).find(cb => cb.value === 'apod') : null;
+    const apodWasSelected = selectedCategories.has('apod');
+    
+    // Update selectedCategories from checkboxes
     updateSelectedCategories();
     
     // Defensive: If APOD events exist, ensure APOD is selected (unless user explicitly unchecked it)
-    const hasAPODEvents = allEvents.some(e => e.category === 'apod');
-    const apodCheckbox = filterCheckboxes ? Array.from(filterCheckboxes).find(cb => cb.value === 'apod') : null;
-    const userUncheckedAPOD = apodCheckbox && !apodCheckbox.checked;
-    
-    if (hasAPODEvents && !selectedCategories.has('apod') && !userUncheckedAPOD) {
-        console.log('Restoring APOD - events exist but not selected (user did not explicitly uncheck)');
-        selectedCategories.add('apod');
-        // Also check the checkbox if it exists
-        if (apodCheckbox) {
+    // Only restore if APOD was previously selected (default state) or if no user interaction
+    if (hasAPODEvents) {
+        const userUncheckedAPOD = apodCheckbox && !apodCheckbox.checked && apodWasSelected;
+        
+        if (!selectedCategories.has('apod') && !userUncheckedAPOD) {
+            console.log('Restoring APOD - events exist, was selected, user did not uncheck');
+            selectedCategories.add('apod');
+            // Also check the checkbox if it exists
+            if (apodCheckbox) {
+                apodCheckbox.checked = true;
+                console.log('APOD checkbox checked programmatically');
+            }
+        } else if (selectedCategories.has('apod') && apodCheckbox && !apodCheckbox.checked) {
+            // Sync checkbox if APOD is in selectedCategories but checkbox isn't checked
+            console.log('Syncing APOD checkbox - selectedCategories has it but checkbox not checked');
             apodCheckbox.checked = true;
         }
     }
