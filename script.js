@@ -1771,8 +1771,9 @@ async function loadAstronomyEvents(lat, lon, forceRefresh = false) {
         const timezone = 'America/Port_of_Spain';
         
         // Build URL with correct endpoint (/v1/forecast) and required date parameters
+        // Note: moonrise and moonset are not available in daily forecast, only sunrise, sunset, and moon_phase
         const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
-                    `&daily=sunrise,sunset,moonrise,moonset,moon_phase` +
+                    `&daily=sunrise,sunset,moon_phase` +
                     `&timezone=${encodeURIComponent(timezone)}` +
                     `&start_date=${date}&end_date=${date}`;
         
@@ -1804,8 +1805,9 @@ async function loadAstronomyEvents(lat, lon, forceRefresh = false) {
         const daily = data.daily;
         const events = [];
         
-        // Process each field (sunrise, sunset, moonrise, moonset, moon_phase)
-        const fields = ['sunrise', 'sunset', 'moonrise', 'moonset', 'moon_phase'];
+        // Process each field (sunrise, sunset, moon_phase)
+        // Note: moonrise and moonset are not available in daily forecast API
+        const fields = ['sunrise', 'sunset', 'moon_phase'];
         fields.forEach(field => {
             if (daily[field] && daily[field].length > 0 && daily[field][0] !== null) {
                 const fieldValue = daily[field][0];
