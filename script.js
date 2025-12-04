@@ -1183,6 +1183,25 @@ function updateFilterCheckboxes(actualCategories) {
         'workshop': 'Workshops (Educational events)'
     };
     
+    // Save current checkbox states before clearing
+    const currentStates = new Map();
+    filterCheckboxes.forEach(checkbox => {
+        if (checkbox.checked) {
+            currentStates.set(checkbox.value, true);
+        }
+    });
+    
+    // If no categories are selected yet and APOD is available, set it as default
+    if (selectedCategories.size === 0 && actualCategories.includes('apod')) {
+        selectedCategories.add('apod');
+        currentStates.set('apod', true);
+    }
+    
+    // Merge saved states with selectedCategories
+    selectedCategories.forEach(cat => {
+        currentStates.set(cat, true);
+    });
+    
     // Clear existing checkboxes
     filterOptions.innerHTML = '';
     
@@ -1195,16 +1214,14 @@ function updateFilterCheckboxes(actualCategories) {
         checkbox.type = 'checkbox';
         checkbox.value = category;
         
-        // Preserve checked state if category was already selected
-        // OR set default: APOD should be checked by default if no categories are selected yet
-        if (selectedCategories.has(category)) {
-            checkbox.checked = true;
-        } else if (selectedCategories.size === 0 && category === 'apod') {
-            // Default: APOD checked on first load
-            checkbox.checked = true;
-            selectedCategories.add('apod');
+        // Preserve checked state from saved states or selectedCategories
+        checkbox.checked = currentStates.has(category) || selectedCategories.has(category);
+        
+        // Update selectedCategories to match checkbox state
+        if (checkbox.checked) {
+            selectedCategories.add(category);
         } else {
-            checkbox.checked = false;
+            selectedCategories.delete(category);
         }
         
         const span = document.createElement('span');
@@ -1222,6 +1239,7 @@ function updateFilterCheckboxes(actualCategories) {
     setupEventListeners();
     
     console.log(`Updated filter checkboxes for ${actualCategories.length} categories:`, actualCategories);
+    console.log('Selected categories after update:', Array.from(selectedCategories));
 }
 
 /**
