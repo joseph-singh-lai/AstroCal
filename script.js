@@ -158,6 +158,20 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('Added planet category to filter list even though no events');
         }
         
+        // Defensive: If APOD events exist but APOD isn't in categories, add it
+        // This can happen if categories list is stale
+        const hasAPODEvents = allEvents.some(e => e.category === 'apod');
+        if (hasAPODEvents && !actualCategories.includes('apod')) {
+            console.log('APOD events exist but not in categories list - adding it');
+            actualCategories.push('apod');
+        }
+        
+        // Ensure APOD is in selectedCategories if APOD events exist
+        if (hasAPODEvents && !selectedCategories.has('apod')) {
+            console.log('Restoring APOD to selectedCategories - APOD events exist');
+            selectedCategories.add('apod');
+        }
+        
         // Update filter checkboxes to only show categories that have events
         // This is the FINAL update after all data has loaded
         // Preserve any existing selected categories (like APOD default)
