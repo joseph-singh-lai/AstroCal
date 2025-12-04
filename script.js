@@ -97,7 +97,6 @@ let locationStatus;
 let clearLocationButton;
 let refreshNASAButton;
 let checkboxesInitialized = false; // Track if checkboxes have been initialized
-let finalCheckboxUpdateDone = false; // Track if final checkbox update has been done
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
@@ -159,30 +158,8 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('Added planet category to filter list even though no events');
         }
         
-        // Defensive: If APOD events exist but APOD isn't in categories, add it
-        // This can happen if categories list is stale
-        const hasAPODEvents = allEvents.some(e => e.category === 'apod');
-        if (hasAPODEvents && !actualCategories.includes('apod')) {
-            console.log('APOD events exist but not in categories list - adding it');
-            actualCategories.push('apod');
-        }
-        
-        // Ensure APOD is in selectedCategories if APOD events exist
-        if (hasAPODEvents && !selectedCategories.has('apod')) {
-            console.log('Restoring APOD to selectedCategories - APOD events exist');
-            selectedCategories.add('apod');
-        }
-        
         // Update filter checkboxes to only show categories that have events
-        // This is the FINAL update after all data has loaded
-        // Only do this once to prevent duplicate updates that reset state
-        if (!finalCheckboxUpdateDone) {
-            console.log('Performing final checkbox update after all data loaded');
         updateFilterCheckboxes(actualCategories);
-            finalCheckboxUpdateDone = true;
-        } else {
-            console.log('Skipping duplicate final checkbox update - already done');
-        }
         
         // Apply filters with the final event set
         applyFilters();
@@ -816,30 +793,19 @@ function updateSelectedCategories() {
  * Apply filters and render events
  */
 function applyFilters() {
-    // Defensive: Before updating selectedCategories, ensure APOD is preserved if events exist
-    const hasAPODEvents = allEvents.some(e => e.category === 'apod');
-    const apodCheckbox = filterCheckboxes ? Array.from(filterCheckboxes).find(cb => cb.value === 'apod') : null;
-    const apodWasSelected = selectedCategories.has('apod');
-    
-    // Update selectedCategories from checkboxes
     updateSelectedCategories();
     
-    // Defensive: If APOD events exist, ensure APOD is selected (unless user explicitly unchecked it)
-    // Only restore if APOD was previously selected (default state) or if no user interaction
-    if (hasAPODEvents) {
-        const userUncheckedAPOD = apodCheckbox && !apodCheckbox.checked && apodWasSelected;
-        
-        if (!selectedCategories.has('apod') && !userUncheckedAPOD) {
-            console.log('Restoring APOD - events exist, was selected, user did not uncheck');
-            selectedCategories.add('apod');
-            // Also check the checkbox if it exists
-            if (apodCheckbox) {
-                apodCheckbox.checked = true;
-                console.log('APOD checkbox checked programmatically');
-            }
-        } else if (selectedCategories.has('apod') && apodCheckbox && !apodCheckbox.checked) {
-            // Sync checkbox if APOD is in selectedCategories but checkbox isn't checked
-            console.log('Syncing APOD checkbox - selectedCategories has it but checkbox not checked');
+    // Simple: If APOD events exist and APOD is not selected, select it (default behavior)
+    const hasAPODEvents = allEvents.some(e => e.category === 'apod');
+    if (hasAPODEvents && !selectedCategories.has('apod')) {
+        const apodCheckbox = filterCheckboxes ? Array.from(filterCheckboxes).find(cb => cb.value === 'apod') : null;
+        if (apodCheckbox && !apodCheckbox.checked) {
+            // User unchecked it, don't force it
+            return;
+        }
+        console.log('Restoring APOD default - events exist');
+        selectedCategories.add('apod');
+        if (apodCheckbox) {
             apodCheckbox.checked = true;
         }
     }
@@ -1300,25 +1266,13 @@ function updateFilterCheckboxes(actualCategories) {
         checkbox.value = category;
         
         // Preserve checked state from saved states or selectedCategories
-        // For APOD specifically, always check it if it's in selectedCategories (default state)
-        if (category === 'apod' && selectedCategories.has('apod')) {
-            checkbox.checked = true;
-            console.log('APOD checkbox created and checked (was in selectedCategories)');
-        } else {
-            checkbox.checked = currentStates.has(category) || selectedCategories.has(category);
-        }
+        checkbox.checked = currentStates.has(category) || selectedCategories.has(category);
         
         // Update selectedCategories to match checkbox state
         if (checkbox.checked) {
             selectedCategories.add(category);
         } else {
-            // Don't remove APOD if it's the default and checkbox was just created
-            if (category === 'apod' && checkboxesInitialized === false) {
-                // Keep APOD selected on first initialization
-                selectedCategories.add(category);
-            } else {
-                selectedCategories.delete(category);
-            }
+            selectedCategories.delete(category);
         }
         
         const span = document.createElement('span');
@@ -1885,29 +1839,14 @@ async function loadNASAData(forceRefresh = false) {
         console.log('Total events by category:', 
             categories.map(cat => `${cat}: ${allEvents.filter(e => e.category === cat).length}`).join(', '));
         
-        // If this is called after initial load, update checkboxes to include new categories
-        // This ensures APOD checkbox is created and checked when NASA data loads
-        // But only if final update hasn't been done yet (to avoid duplicate updates)
-        if (beforeCount > 0 && !finalCheckboxUpdateDone) {
-            console.log('Updating checkboxes after NASA data load (before final update)...');
-            // Update checkboxes to include new categories (like APOD)
+        // If this is called after initial load, update checkboxes and re-apply filters
+        if (beforeCount > 0) {
+            console.log('Re-applying filters after NASA data load...');
             const allCategories = [...new Set(allEvents.map(e => e.category))];
-            // Always include 'planet' category even if no events
             if (!allCategories.includes('planet')) {
                 allCategories.push('planet');
             }
-            // Ensure APOD is in selectedCategories if APOD events exist
-            const hasAPODEvents = allEvents.some(e => e.category === 'apod');
-            if (hasAPODEvents && !selectedCategories.has('apod')) {
-                console.log('Restoring APOD to selectedCategories after NASA data load');
-                selectedCategories.add('apod');
-            }
-            // Update checkboxes - this will create APOD checkbox and check it if APOD is in selectedCategories
             updateFilterCheckboxes(allCategories);
-            applyFilters();
-        } else if (beforeCount > 0) {
-            // Final update already done, just re-apply filters
-            console.log('Re-applying filters after NASA data load (final update already done)...');
             applyFilters();
         }
         
