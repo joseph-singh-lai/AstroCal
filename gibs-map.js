@@ -189,6 +189,15 @@ function setGibsLayer(layerName) {
         if (tileUrl && !tileUrl.includes('data:image/svg+xml')) {
             successCount++;
             console.log(`Tile loaded successfully (${successCount}):`, tileUrl);
+            
+            // Check if tile is actually visible (not transparent/empty)
+            if (event.tile && event.tile.complete) {
+                // Try to detect if image is mostly transparent/green (might be our fallback)
+                const img = event.tile;
+                if (img.naturalWidth === 1 && img.naturalHeight === 1) {
+                    console.warn('Tile appears to be 1x1 pixel (likely transparent fallback):', tileUrl);
+                }
+            }
         } else {
             console.warn('Tile loaded but appears to be error placeholder:', tileUrl);
         }
