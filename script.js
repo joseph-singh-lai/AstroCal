@@ -178,7 +178,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Only do this once to prevent duplicate updates that reset state
         if (!finalCheckboxUpdateDone) {
             console.log('Performing final checkbox update after all data loaded');
-            updateFilterCheckboxes(actualCategories);
+        updateFilterCheckboxes(actualCategories);
             finalCheckboxUpdateDone = true;
         } else {
             console.log('Skipping duplicate final checkbox update - already done');
@@ -713,13 +713,13 @@ function setupEventListeners() {
     // Removed separate applyFiltersButton - refresh button now does both
     if (applyFiltersButton) {
         // Keep for backwards compatibility, but redirect to refresh
-        applyFiltersButton.addEventListener('click', () => {
+    applyFiltersButton.addEventListener('click', () => {
             if (refreshNASAButton) {
                 refreshNASAButton.click();
             } else {
-                applyFilters();
+        applyFilters();
             }
-        });
+    });
     }
 
     // Location button
@@ -779,7 +779,7 @@ function updateSelectedCategories() {
         
         // Update categories that have checkboxes (add if checked, remove if unchecked)
         // DO NOT clear selectedCategories - preserve categories without checkboxes
-        const checkedBoxes = [];
+    const checkedBoxes = [];
         const preservedCategories = [];
         
         // First, identify which categories don't have checkboxes yet
@@ -790,18 +790,18 @@ function updateSelectedCategories() {
         });
         
         // Update categories that have checkboxes
-        filterCheckboxes.forEach(checkbox => {
-            if (checkbox.checked) {
-                selectedCategories.add(checkbox.value);
-                checkedBoxes.push(checkbox.value);
+    filterCheckboxes.forEach(checkbox => {
+        if (checkbox.checked) {
+            selectedCategories.add(checkbox.value);
+            checkedBoxes.push(checkbox.value);
             } else {
                 // Only remove if checkbox exists and is unchecked
                 selectedCategories.delete(checkbox.value);
-            }
-        });
+        }
+    });
         
-        console.log('Checkbox states:', Array.from(filterCheckboxes).map(cb => ({ value: cb.value, checked: cb.checked })));
-        console.log('Selected categories from checkboxes:', checkedBoxes);
+    console.log('Checkbox states:', Array.from(filterCheckboxes).map(cb => ({ value: cb.value, checked: cb.checked })));
+    console.log('Selected categories from checkboxes:', checkedBoxes);
         if (preservedCategories.length > 0) {
             console.log('Preserved categories (no checkbox yet):', preservedCategories);
         }
@@ -1288,13 +1288,25 @@ function updateFilterCheckboxes(actualCategories) {
         checkbox.value = category;
         
         // Preserve checked state from saved states or selectedCategories
-        checkbox.checked = currentStates.has(category) || selectedCategories.has(category);
+        // For APOD specifically, always check it if it's in selectedCategories (default state)
+        if (category === 'apod' && selectedCategories.has('apod')) {
+            checkbox.checked = true;
+            console.log('APOD checkbox created and checked (was in selectedCategories)');
+        } else {
+            checkbox.checked = currentStates.has(category) || selectedCategories.has(category);
+        }
         
         // Update selectedCategories to match checkbox state
         if (checkbox.checked) {
             selectedCategories.add(category);
         } else {
-            selectedCategories.delete(category);
+            // Don't remove APOD if it's the default and checkbox was just created
+            if (category === 'apod' && checkboxesInitialized === false) {
+                // Keep APOD selected on first initialization
+                selectedCategories.add(category);
+            } else {
+                selectedCategories.delete(category);
+            }
         }
         
         const span = document.createElement('span');
@@ -2057,19 +2069,19 @@ async function loadAstronomyEvents(lat, lon, forceRefresh = false) {
         const moonPhase = calculateMoonPhase(new Date(date));
         const moonPhaseName = getMoonPhaseName(moonPhase);
         const moonIllumination = Math.round(moonPhase * 100);
-        
-        events.push({
-            id: `astronomy-moon-${date}`,
+                    
+                    events.push({
+                        id: `astronomy-moon-${date}`,
             title: `Moon Phase: ${moonPhaseName}`,
-            category: 'astronomy',
-            datetime: `${date}T12:00:00Z`,
+                        category: 'astronomy',
+                        datetime: `${date}T12:00:00Z`,
             description: `Current moon phase: ${moonPhaseName}. Illumination: ${moonIllumination}%`,
-            location: `Lat: ${lat.toFixed(2)}°, Lon: ${lon.toFixed(2)}°`,
+                        location: `Lat: ${lat.toFixed(2)}°, Lon: ${lon.toFixed(2)}°`,
             source: 'Open-Meteo Astronomy (calculated)',
             moonPhase: moonPhaseName,
             illumination: moonIllumination,
-            moonPhaseValue: moonPhase
-        });
+                        moonPhaseValue: moonPhase
+                    });
         console.log('Astronomy event created: Moon Phase (calculated)');
         
         // Process each field (sunrise, sunset)
@@ -2081,16 +2093,16 @@ async function loadAstronomyEvents(lat, lon, forceRefresh = false) {
                 const fieldTitle = field.charAt(0).toUpperCase() + field.slice(1).replace('_', ' ');
                 
                 // For sunrise, sunset - use the actual time value
-                events.push({
-                    id: `astronomy-${field}-${date}`,
-                    title: fieldTitle,
-                    category: 'astronomy',
-                    datetime: fieldValue || `${date}T00:00:00Z`,
-                    description: `${fieldTitle} time for your location: ${fieldValue || 'N/A'}`,
-                    location: `Lat: ${lat.toFixed(2)}°, Lon: ${lon.toFixed(2)}°`,
-                    source: 'Open-Meteo Astronomy'
-                });
-                console.log(`Astronomy event created: ${fieldTitle}`);
+                    events.push({
+                        id: `astronomy-${field}-${date}`,
+                        title: fieldTitle,
+                        category: 'astronomy',
+                        datetime: fieldValue || `${date}T00:00:00Z`,
+                        description: `${fieldTitle} time for your location: ${fieldValue || 'N/A'}`,
+                        location: `Lat: ${lat.toFixed(2)}°, Lon: ${lon.toFixed(2)}°`,
+                        source: 'Open-Meteo Astronomy'
+                    });
+                    console.log(`Astronomy event created: ${fieldTitle}`);
             }
         });
         
