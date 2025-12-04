@@ -745,48 +745,27 @@ function setupEventListeners() {
  * Update selected categories from checkboxes
  */
 function updateSelectedCategories() {
-    // Don't clear selectedCategories - only update categories that have checkboxes
-    // This preserves categories like APOD that don't have checkboxes yet
+    // Simple: Update from checkboxes, but preserve APOD if it's the default and checkbox doesn't exist yet
     if (filterCheckboxes && filterCheckboxes.length > 0) {
-        // Get all available checkbox values
-        const availableCheckboxValues = new Set();
+        const newSelectedCategories = new Set();
+        
+        // Add checked categories
         filterCheckboxes.forEach(checkbox => {
-            availableCheckboxValues.add(checkbox.value);
-        });
-        
-        // Update categories that have checkboxes (add if checked, remove if unchecked)
-        // DO NOT clear selectedCategories - preserve categories without checkboxes
-    const checkedBoxes = [];
-        const preservedCategories = [];
-        
-        // First, identify which categories don't have checkboxes yet
-        selectedCategories.forEach(cat => {
-            if (!availableCheckboxValues.has(cat)) {
-                preservedCategories.push(cat);
+            if (checkbox.checked) {
+                newSelectedCategories.add(checkbox.value);
             }
         });
         
-        // Update categories that have checkboxes
-    filterCheckboxes.forEach(checkbox => {
-        if (checkbox.checked) {
-            selectedCategories.add(checkbox.value);
-            checkedBoxes.push(checkbox.value);
-            } else {
-                // Only remove if checkbox exists and is unchecked
-                selectedCategories.delete(checkbox.value);
+        // Preserve APOD if it was selected but checkbox doesn't exist yet
+        const hasAPODCheckbox = Array.from(filterCheckboxes).some(cb => cb.value === 'apod');
+        if (!hasAPODCheckbox && selectedCategories.has('apod')) {
+            newSelectedCategories.add('apod');
         }
-    });
         
-    console.log('Checkbox states:', Array.from(filterCheckboxes).map(cb => ({ value: cb.value, checked: cb.checked })));
-    console.log('Selected categories from checkboxes:', checkedBoxes);
-        if (preservedCategories.length > 0) {
-            console.log('Preserved categories (no checkbox yet):', preservedCategories);
-        }
-        console.log('Final selectedCategories:', Array.from(selectedCategories));
-    } else {
-        // If no checkboxes exist yet, preserve default (APOD)
-        console.log('No checkboxes yet, preserving default selectedCategories:', Array.from(selectedCategories));
+        selectedCategories = newSelectedCategories;
     }
+    // If no checkboxes exist yet, selectedCategories remains as its default (['apod'])
+    console.log('Selected categories after update:', Array.from(selectedCategories));
 }
 
 /**
