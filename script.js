@@ -797,6 +797,15 @@ function updateSelectedCategories() {
 function applyFilters() {
     updateSelectedCategories();
     
+    // Defensive: If selectedCategories is empty but APOD events exist, restore APOD default
+    if (selectedCategories.size === 0) {
+        const hasAPODEvents = allEvents.some(e => e.category === 'apod');
+        if (hasAPODEvents) {
+            console.log('Restoring APOD default - selectedCategories was empty but APOD events exist');
+            selectedCategories.add('apod');
+        }
+    }
+    
     const searchTerm = searchInput.value.toLowerCase().trim();
     
     console.log('Applying filters...');
