@@ -6,17 +6,17 @@ export default async function handler(req, res) {
     }
 
     // Get query parameters
-    const { days = '30', api_key } = req.query;
-
-    if (!api_key) {
-        return res.status(400).json({ error: 'Missing api_key parameter' });
-    }
+    // Note: New EONET API v3 doesn't require API key and uses different parameters
+    // Documentation: https://eonet.gsfc.nasa.gov/how-to-guide
+    const { limit = '100', status = 'open' } = req.query;
 
     try {
-        // Build EONET API URL
-        const eonetUrl = `https://api.nasa.gov/EONET/events?days=${days}&api_key=${api_key}`;
+        // Build EONET API URL using the new v3 endpoint
+        // New endpoint: https://eonet.gsfc.nasa.gov/api/v3/events
+        // Parameters: status (open/closed/all), limit (number of events)
+        const eonetUrl = `https://eonet.gsfc.nasa.gov/api/v3/events?status=${status}&limit=${limit}`;
         
-        console.log('Proxy fetching EONET data from:', eonetUrl.replace(api_key, 'API_KEY_HIDDEN'));
+        console.log('Proxy fetching EONET data from:', eonetUrl);
 
         // Fetch from NASA EONET API
         const response = await fetch(eonetUrl, {

@@ -1517,8 +1517,11 @@ async function loadEONET(forceRefresh = false) {
     
     try {
         // Use proxy to bypass CORS restrictions
-        const proxyUrl = `/api/eonet.js?days=${config.dateRanges.eonet.days}&api_key=${config.apiKey}`;
-        console.log('Fetching EONET data via proxy:', proxyUrl.replace(config.apiKey, 'API_KEY_HIDDEN'));
+        // Note: EONET v3 API doesn't require API key and uses limit/status instead of days
+        // Documentation: https://eonet.gsfc.nasa.gov/how-to-guide
+        const limit = 100; // Get up to 100 events (we'll filter for astronomy-related ones)
+        const proxyUrl = `/api/eonet.js?status=open&limit=${limit}`;
+        console.log('Fetching EONET data via proxy:', proxyUrl);
         const response = await fetch(proxyUrl, {
             mode: 'cors',
             credentials: 'omit'
