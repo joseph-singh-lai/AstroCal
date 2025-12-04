@@ -684,9 +684,18 @@ function setupEventListeners() {
     });
 
     // Apply filters button
-    applyFiltersButton.addEventListener('click', () => {
-        applyFilters();
-    });
+    // Combined refresh and apply filters button
+    // Removed separate applyFiltersButton - refresh button now does both
+    if (applyFiltersButton) {
+        // Keep for backwards compatibility, but redirect to refresh
+        applyFiltersButton.addEventListener('click', () => {
+            if (refreshNASAButton) {
+                refreshNASAButton.click();
+            } else {
+                applyFilters();
+            }
+        });
+    }
 
     // Location button
     if (locationButton) {
@@ -698,7 +707,7 @@ function setupEventListeners() {
         clearLocationButton.addEventListener('click', clearSavedLocation);
     }
 
-    // Refresh NASA data button
+    // Refresh & Apply Filters button (combines both actions)
     if (refreshNASAButton) {
         refreshNASAButton.addEventListener('click', () => {
             refreshNASAButton.disabled = true;
@@ -706,11 +715,17 @@ function setupEventListeners() {
             clearNASACache();
             Promise.all([
                 loadNASAData(true),
-                loadPlanetVisibility(true) // Also refresh planet visibility
+                loadPlanetVisibility(true), // Also refresh planet visibility
+                loadAstronomyData(true) // Refresh astronomy data too
             ]).then(() => {
                 refreshNASAButton.disabled = false;
-                refreshNASAButton.textContent = '🔄 Refresh NASA Data';
-                applyFilters();
+                refreshNASAButton.textContent = '🔄 Refresh & Apply Filters';
+                applyFilters(); // Apply filters after refresh
+            }).catch((error) => {
+                console.error('Error refreshing data:', error);
+                refreshNASAButton.disabled = false;
+                refreshNASAButton.textContent = '🔄 Refresh & Apply Filters';
+                applyFilters(); // Still apply filters even if refresh fails
             });
         });
     }
