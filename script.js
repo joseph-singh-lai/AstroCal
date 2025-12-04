@@ -97,6 +97,7 @@ let locationStatus;
 let clearLocationButton;
 let refreshNASAButton;
 let checkboxesInitialized = false; // Track if checkboxes have been initialized
+let finalCheckboxUpdateDone = false; // Track if final checkbox update has been done
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
@@ -174,8 +175,14 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Update filter checkboxes to only show categories that have events
         // This is the FINAL update after all data has loaded
-        // Preserve any existing selected categories (like APOD default)
-        updateFilterCheckboxes(actualCategories);
+        // Only do this once to prevent duplicate updates that reset state
+        if (!finalCheckboxUpdateDone) {
+            console.log('Performing final checkbox update after all data loaded');
+            updateFilterCheckboxes(actualCategories);
+            finalCheckboxUpdateDone = true;
+        } else {
+            console.log('Skipping duplicate final checkbox update - already done');
+        }
         
         // Apply filters with the final event set
         applyFilters();
@@ -1851,16 +1858,27 @@ async function loadNASAData(forceRefresh = false) {
         
         // If this is called after initial load, update checkboxes to include new categories
         // This ensures APOD checkbox is created and checked when NASA data loads
-        if (beforeCount > 0) {
-            console.log('Re-applying filters after NASA data load...');
+        // But only if final update hasn't been done yet (to avoid duplicate updates)
+        if (beforeCount > 0 && !finalCheckboxUpdateDone) {
+            console.log('Updating checkboxes after NASA data load (before final update)...');
             // Update checkboxes to include new categories (like APOD)
             const allCategories = [...new Set(allEvents.map(e => e.category))];
             // Always include 'planet' category even if no events
             if (!allCategories.includes('planet')) {
                 allCategories.push('planet');
             }
+            // Ensure APOD is in selectedCategories if APOD events exist
+            const hasAPODEvents = allEvents.some(e => e.category === 'apod');
+            if (hasAPODEvents && !selectedCategories.has('apod')) {
+                console.log('Restoring APOD to selectedCategories after NASA data load');
+                selectedCategories.add('apod');
+            }
             // Update checkboxes - this will create APOD checkbox and check it if APOD is in selectedCategories
             updateFilterCheckboxes(allCategories);
+            applyFilters();
+        } else if (beforeCount > 0) {
+            // Final update already done, just re-apply filters
+            console.log('Re-applying filters after NASA data load (final update already done)...');
             applyFilters();
         }
         
