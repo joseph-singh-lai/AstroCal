@@ -1516,8 +1516,10 @@ async function loadEONET(forceRefresh = false) {
     }
     
     try {
-        const url = `${config.baseUrl}/EONET/events?days=${config.dateRanges.eonet.days}&api_key=${config.apiKey}`;
-        const response = await fetch(url, {
+        // Use proxy to bypass CORS restrictions
+        const proxyUrl = `/api/eonet.js?days=${config.dateRanges.eonet.days}&api_key=${config.apiKey}`;
+        console.log('Fetching EONET data via proxy:', proxyUrl.replace(config.apiKey, 'API_KEY_HIDDEN'));
+        const response = await fetch(proxyUrl, {
             mode: 'cors',
             credentials: 'omit'
         });
@@ -1555,10 +1557,9 @@ async function loadEONET(forceRefresh = false) {
         console.log(`Loaded ${astronomyEvents.length} natural events from EONET`);
         return convertEONETToEvents(astronomyEvents);
     } catch (error) {
-        // CORS errors or service unavailability - handle gracefully
-        // Note: NASA EONET has disabled CORS for browser access, so this will always fail
+        // Handle errors gracefully
         if (error.message.includes('CORS') || error.message.includes('NetworkError') || error.message.includes('503')) {
-            console.warn('EONET API unavailable (CORS disabled by NASA - requires server-side proxy), using cache if available');
+            console.warn('EONET API unavailable via proxy, using cache if available');
         } else {
             console.error('Error loading EONET data:', error);
         }
