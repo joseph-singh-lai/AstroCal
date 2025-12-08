@@ -98,37 +98,41 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
-    // Load all events in parallel
-    Promise.all([
-        loadEvents(),
-        loadISSPasses(),
-        loadNASAData(),
-        loadAstronomyData(),
-        loadPlanetVisibility()
-    ]).then(() => {
-        const actualCategories = [...new Set(allEvents.map(e => e.category))];
-        
-        // Always include 'planet' category even if no events (for filter checkbox)
-        if (!actualCategories.includes('planet')) {
-            actualCategories.push('planet');
-        }
-        
-        // Update filter checkboxes to only show categories that have events
-        updateFilterCheckboxes(actualCategories);
-        
-        applyFilters();
-    }).catch((error) => {
-        console.error('Error loading events:', error);
-        // Even if some fail, show what we have
-        if (allEvents.length > 0) {
+    // Load APOD first (priority - it's the default view)
+    // Show cached APOD immediately if available, then fetch fresh in background
+    loadAPODPriority().then(() => {
+        // After APOD is shown, load other events in parallel
+        Promise.all([
+            loadEvents(),
+            loadISSPasses(),
+            loadNASADataOther(), // Load DONKI and EONET (not APOD)
+            loadAstronomyData(),
+            loadPlanetVisibility()
+        ]).then(() => {
             const actualCategories = [...new Set(allEvents.map(e => e.category))];
-            // Always include 'planet' category
+            
+            // Always include 'planet' category even if no events (for filter checkbox)
             if (!actualCategories.includes('planet')) {
                 actualCategories.push('planet');
             }
+            
+            // Update filter checkboxes to only show categories that have events
             updateFilterCheckboxes(actualCategories);
+            
             applyFilters();
-        }
+        }).catch((error) => {
+            console.error('Error loading events:', error);
+            // Even if some fail, show what we have
+            if (allEvents.length > 0) {
+                const actualCategories = [...new Set(allEvents.map(e => e.category))];
+                // Always include 'planet' category
+                if (!actualCategories.includes('planet')) {
+                    actualCategories.push('planet');
+                }
+                updateFilterCheckboxes(actualCategories);
+                applyFilters();
+            }
+        });
     });
     
     setupEventListeners();
@@ -585,7 +589,17 @@ function setupEventListeners() {
             refreshNASAButton.textContent = '🔄 Refreshing...';
             clearNASACache();
             Promise.all([
-                loadNASAData(true),
+                loadAPOD(true).then(apodEvent => {
+                    if (apodEvent) {
+                        // Remove old APOD and add fresh one
+                        allEvents = allEvents.filter(e => e.category !== 'apod');
+                        allEvents.push(apodEvent);
+                        window.allEvents = allEvents;
+                        allEvents.sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
+                    }
+                    return apodEvent;
+                }),
+                loadNASADataOther(true),
                 loadPlanetVisibility(true) // Also refresh planet visibility
             ]).then(() => {
                 refreshNASAButton.disabled = false;
@@ -1238,6 +1252,74 @@ async function loadAPOD(forceRefresh = false) {
 }
 
 /**
+ * Load APOD with priority - show cached immediately, then refresh in background
+ * This ensures APOD (the default view) appears as fast as possible
+ */
+async function loadAPODPriority() {
+    const config = getNASAConfig();
+    if (!config) return Promise.resolve();
+    
+    const cacheKey = 'nasa_apod';
+    const maxAge = config.cacheSettings.apod;
+    
+    // Step 1: Show cached APOD immediately if available (even if expired)
+    const cached = getCachedData(cacheKey);
+    if (cached) {
+        const cachedEvent = convertAPODToEvent(cached);
+        allEvents.push(cachedEvent);
+        window.allEvents = allEvents;
+        console.log('Showing cached APOD immediately:', cachedEvent.title);
+        
+        // Update UI immediately with cached APOD
+        const categories = [...new Set(allEvents.map(e => e.category))];
+        if (!categories.includes('planet')) {
+            categories.push('planet');
+        }
+        updateFilterCheckboxes(categories);
+        applyFilters();
+    }
+    
+    // Step 2: Check if cache is still valid
+    if (isCacheValid(cacheKey, maxAge) && cached) {
+        // Cache is valid, no need to fetch
+        console.log('APOD cache is still valid, skipping fetch');
+        return Promise.resolve();
+    }
+    
+    // Step 3: Fetch fresh APOD in background (non-blocking)
+    return loadAPOD(false).then(apodEvent => {
+        if (apodEvent) {
+            // Remove old cached APOD event if it exists
+            if (cached && cached.date) {
+                allEvents = allEvents.filter(e => !(e.category === 'apod' && e.id === `apod-${cached.date}`));
+            } else {
+                // Fallback: remove all APOD events and add fresh one
+                allEvents = allEvents.filter(e => e.category !== 'apod');
+            }
+            
+            // Add fresh APOD event
+            allEvents.push(apodEvent);
+            window.allEvents = allEvents;
+            
+            // Sort and update UI
+            allEvents.sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
+            
+            const categories = [...new Set(allEvents.map(e => e.category))];
+            if (!categories.includes('planet')) {
+                categories.push('planet');
+            }
+            updateFilterCheckboxes(categories);
+            applyFilters();
+            
+            console.log('Updated with fresh APOD:', apodEvent.title);
+        }
+    }).catch(error => {
+        console.error('Error refreshing APOD in background:', error);
+        // Don't fail - we already have cached version showing
+    });
+}
+
+/**
  * Convert APOD data to event format
  */
 function convertAPODToEvent(apodData) {
@@ -1565,32 +1647,23 @@ function convertEONETToEvents(eonetData) {
 }
 
 /**
- * Load all NASA data (APOD, DONKI, EONET)
+ * Load NASA data excluding APOD (DONKI, EONET)
+ * APOD is loaded separately with priority via loadAPODPriority()
  */
-async function loadNASAData(forceRefresh = false) {
+async function loadNASADataOther(forceRefresh = false) {
     try {
-        console.log('=== Loading NASA Data ===');
-        const [apodEvent, donkiEvents, eonetEvents] = await Promise.all([
-            loadAPOD(forceRefresh),
+        console.log('=== Loading NASA Data (DONKI, EONET) ===');
+        const [donkiEvents, eonetEvents] = await Promise.all([
             loadDONKI(forceRefresh),
             loadEONET(forceRefresh)
         ]);
         
         console.log('NASA API results:', {
-            apod: apodEvent ? '✓' : '✗',
             donki: donkiEvents ? `${donkiEvents.length} events` : '✗',
             eonet: eonetEvents ? `${eonetEvents.length} events` : '✗'
         });
         
         const nasaEvents = [];
-        
-        // Add APOD if available
-        if (apodEvent) {
-            nasaEvents.push(apodEvent);
-            console.log('Added APOD event:', apodEvent.title);
-        } else {
-            console.warn('No APOD event returned');
-        }
         
         // Add DONKI events
         if (donkiEvents && donkiEvents.length > 0) {
@@ -1633,7 +1706,7 @@ async function loadNASAData(forceRefresh = false) {
         // If this is called after initial load, re-apply filters to show new events
         if (beforeCount > 0) {
             console.log('Re-applying filters after NASA data load...');
-            // Update filter checkboxes to include newly loaded categories (like APOD)
+            // Update filter checkboxes to include newly loaded categories
             const categories = [...new Set(allEvents.map(e => e.category))];
             if (!categories.includes('planet')) {
                 categories.push('planet');
