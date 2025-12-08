@@ -1007,11 +1007,48 @@ function createEventCard(event) {
     const categoryClass = `category-${event.category}`;
     const categoryLabel = getCategoryLabel(event.category);
     
-    // Add image for APOD events
+    // Add image/video for APOD events
     let imageHtml = '';
     if (event.category === 'apod' && event.imageUrl) {
-        // APOD events: show image if available (regardless of mediaType, as some APODs are videos but have thumbnails)
-        imageHtml = `<img src="${escapeHtml(event.imageUrl)}" alt="${escapeHtml(event.title)}" class="event-image" loading="lazy">`;
+        if (event.mediaType === 'video') {
+            // APOD video: check if it's YouTube or direct video
+            const isYouTube = event.imageUrl.includes('youtube.com') || event.imageUrl.includes('youtu.be');
+            if (isYouTube) {
+                // Extract YouTube video ID
+                const videoId = extractYouTubeId(event.imageUrl);
+                if (videoId) {
+                    // Use thumbnail_url if available, otherwise use YouTube thumbnail
+                    const thumbnailUrl = event.thumbnailUrl || `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+                    const fallbackThumbnail = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+                    // Use YouTube thumbnail as preview, clickable to open video
+                    imageHtml = `
+                        <div class="event-image-container">
+                            <a href="${escapeHtml(event.imageUrl)}" target="_blank" rel="noopener noreferrer" class="event-video-thumbnail">
+                                <img src="${escapeHtml(thumbnailUrl)}" alt="${escapeHtml(event.title)}" class="event-image" loading="lazy" onerror="this.src='${escapeHtml(fallbackThumbnail)}'">
+                                <div class="video-play-overlay">▶</div>
+                            </a>
+                            <span class="video-label">Video</span>
+                        </div>
+                    `;
+                } else {
+                    // Fallback: just show link
+                    imageHtml = `<div class="event-video-link"><a href="${escapeHtml(event.imageUrl)}" target="_blank" rel="noopener noreferrer">Watch Video →</a></div>`;
+                }
+            } else {
+                // Direct video URL - show video player
+                imageHtml = `
+                    <div class="event-video-container">
+                        <video class="event-image" controls preload="metadata" loading="lazy">
+                            <source src="${escapeHtml(event.imageUrl)}" type="video/mp4">
+                            Your browser does not support the video tag.
+                        </video>
+                    </div>
+                `;
+            }
+        } else {
+            // APOD image: show image
+            imageHtml = `<img src="${escapeHtml(event.imageUrl)}" alt="${escapeHtml(event.title)}" class="event-image" loading="lazy">`;
+        }
     } else if (event.imageUrl && event.mediaType === 'image') {
         // Other events: only show if mediaType is explicitly 'image'
         imageHtml = `<img src="${escapeHtml(event.imageUrl)}" alt="${escapeHtml(event.title)}" class="event-image" loading="lazy">`;
@@ -1079,13 +1116,60 @@ function showEventDetail(event) {
     const categoryClass = `category-${event.category}`;
     const categoryLabel = getCategoryLabel(event.category);
     
-    // Add image for APOD events
+    // Add image/video for APOD events in detail view
     let imageHtml = '';
-    if (event.imageUrl && event.mediaType === 'image') {
+    if (event.category === 'apod' && event.imageUrl) {
+        if (event.mediaType === 'video') {
+            // APOD video: check if it's YouTube or direct video
+            const isYouTube = event.imageUrl.includes('youtube.com') || event.imageUrl.includes('youtu.be');
+            if (isYouTube) {
+                // Extract YouTube video ID and create embed
+                const videoId = extractYouTubeId(event.imageUrl);
+                if (videoId) {
+                    // Use YouTube iframe embed with proper attributes to reduce cookie warnings
+                    imageHtml = `
+                        <div class="event-detail-video">
+                            <iframe 
+                                src="https://www.youtube.com/embed/${videoId}" 
+                                frameborder="0" 
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                allowfullscreen
+                                loading="lazy"
+                                title="${escapeHtml(event.title)}"
+                                referrerpolicy="no-referrer-when-downgrade">
+                            </iframe>
+                            <a href="${escapeHtml(event.imageUrl)}" target="_blank" rel="noopener noreferrer" class="external-link">Watch on YouTube →</a>
+                        </div>
+                    `;
+                } else {
+                    // Fallback: just show link
+                    imageHtml = `<div class="event-video-link"><a href="${escapeHtml(event.imageUrl)}" target="_blank" rel="noopener noreferrer">Watch Video on YouTube →</a></div>`;
+                }
+            } else {
+                // Direct video URL - show video player
+                imageHtml = `
+                    <div class="event-detail-video">
+                        <video controls preload="metadata" loading="lazy">
+                            <source src="${escapeHtml(event.imageUrl)}" type="video/mp4">
+                            Your browser does not support the video tag.
+                        </video>
+                    </div>
+                `;
+            }
+        } else {
+            // APOD image
+            imageHtml = `
+                <div class="event-detail-image">
+                    <img src="${escapeHtml(event.imageUrl)}" alt="${escapeHtml(event.title)}" loading="lazy">
+                    ${event.hdImageUrl ? `<a href="${escapeHtml(event.hdImageUrl)}" target="_blank" rel="noopener noreferrer" class="hd-link">View HD Image</a>` : ''}
+                </div>
+            `;
+        }
+    } else if (event.imageUrl && event.mediaType === 'image') {
+        // Other events: only show if mediaType is explicitly 'image'
         imageHtml = `
             <div class="event-detail-image">
                 <img src="${escapeHtml(event.imageUrl)}" alt="${escapeHtml(event.title)}" loading="lazy">
-                ${event.hdImageUrl ? `<a href="${escapeHtml(event.hdImageUrl)}" target="_blank" class="hd-link">View HD Image</a>` : ''}
             </div>
         `;
     }
@@ -1196,6 +1280,28 @@ function formatTimeRemaining(timeRemaining, passed = false) {
             return `${seconds} second${seconds !== 1 ? 's' : ''}`;
         }
     }
+}
+
+/**
+ * Extract YouTube video ID from URL
+ */
+function extractYouTubeId(url) {
+    if (!url) return null;
+    
+    // Handle various YouTube URL formats
+    const patterns = [
+        /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
+        /youtube\.com\/v\/([^&\n?#]+)/
+    ];
+    
+    for (const pattern of patterns) {
+        const match = url.match(pattern);
+        if (match && match[1]) {
+            return match[1];
+        }
+    }
+    
+    return null;
 }
 
 /**
@@ -1509,6 +1615,7 @@ function convertAPODToEvent(apodData) {
         imageUrl: apodData.url,
         mediaType: apodData.media_type,
         hdImageUrl: apodData.hdurl,
+        thumbnailUrl: apodData.thumbnail_url, // For videos, NASA sometimes provides a thumbnail
         source: 'NASA APOD'
     };
 }
