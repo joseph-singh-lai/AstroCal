@@ -342,8 +342,10 @@ async function loadEvents() {
         const staticEvents = data.events || [];
         
         
-        // Store static events (ISS passes will be added separately)
-        allEvents = staticEvents;
+        // Merge static events with existing events (don't replace - APOD might already be loaded)
+        // Remove any existing static events first to avoid duplicates
+        allEvents = allEvents.filter(e => e.category !== 'meteor' && e.category !== 'workshop');
+        allEvents = [...allEvents, ...staticEvents];
         
         // Sort events by datetime (earliest first)
         allEvents.sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
