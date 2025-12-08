@@ -733,6 +733,13 @@ function updateSelectedCategories() {
     // Re-query checkboxes in case they were dynamically created
     filterCheckboxes = document.querySelectorAll('.filter-checkbox input[type="checkbox"]');
     
+    // If no checkboxes found, preserve default APOD selection
+    if (filterCheckboxes.length === 0) {
+        console.warn('No filter checkboxes found! Preserving default APOD selection.');
+        selectedCategories.add('apod');
+        return;
+    }
+    
     filterCheckboxes.forEach(checkbox => {
         if (checkbox.checked) {
             selectedCategories.add(checkbox.value);
@@ -760,8 +767,18 @@ function updateSelectedCategories() {
         }
     }
     
+    // CRITICAL: If still no categories selected, default to APOD
+    if (selectedCategories.size === 0) {
+        console.warn('No categories selected after update! Defaulting to APOD.');
+        selectedCategories.add('apod');
+        if (apodCheckbox) {
+            apodCheckbox.checked = true;
+        }
+    }
+    
     console.log('Updated selected categories:', Array.from(selectedCategories));
     console.log('APOD checkbox checked:', apodCheckbox ? apodCheckbox.checked : 'not found');
+    console.log('Total checkboxes found:', filterCheckboxes.length);
 }
 
 /**
@@ -781,6 +798,17 @@ function applyFilters() {
     console.log('Applying filters - Selected categories:', Array.from(selectedCategories));
     console.log('Total events before filter:', allEvents.length);
     console.log('Events by category:', eventCategories);
+    
+    // CRITICAL FIX: If no categories are selected, default to APOD (the default view)
+    if (selectedCategories.size === 0) {
+        console.warn('No categories selected! Defaulting to APOD.');
+        selectedCategories.add('apod');
+        // Also ensure the checkbox is checked
+        const apodCheckbox = document.querySelector('.filter-checkbox input[type="checkbox"][value="apod"]');
+        if (apodCheckbox) {
+            apodCheckbox.checked = true;
+        }
+    }
     
     // Ensure APOD is always selected if APOD events exist and checkbox is checked
     const hasApodEvents = allEvents.some(e => e.category === 'apod');
