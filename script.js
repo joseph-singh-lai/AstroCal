@@ -6,7 +6,7 @@ function getNASAConfig() {
     if (typeof window !== 'undefined' && window.NASA_API_CONFIG) {
         return window.NASA_API_CONFIG;
     }
-    console.error('NASA_API_CONFIG is not defined. Make sure config.js is loaded before script.js');
+    console.error('NASA_API_CONFIG is not defined. Config should be inlined in index.html');
     return null;
 }
 
@@ -31,7 +31,6 @@ const LA_BREA_COORDS = {
    ============================ */
 
 let stellariumFrame = null;
-let geoButton = null;
 
 // Default location (La Brea)
 let skyLat = 10.25;
@@ -40,51 +39,12 @@ let skyLon = -61.63;
 function updateSkyMap(lat, lon) {
     if (stellariumFrame) {
         const newSrc = `https://stellarium-web.org/sky#lat=${lat}&lng=${lon}&fov=60`;
-        console.log('Updating Stellarium sky map to:', newSrc);
         stellariumFrame.src = newSrc;
-    } else {
-        console.warn('Stellarium frame not found');
     }
 }
 
-function initStellariumSkyMap() {
-    // Wait a bit for DOM to be fully ready
-    setTimeout(() => {
-        stellariumFrame = document.getElementById("stellarium-frame");
-        geoButton = document.getElementById("use-geolocation");
-
-        if (!stellariumFrame) {
-            console.warn("Stellarium frame not found");
-            return;
-        }
-
-        // Ensure iframe has src set (it should already be in HTML, but ensure it's set)
-        if (!stellariumFrame.src || stellariumFrame.src === 'about:blank') {
-            updateSkyMap(skyLat, skyLon);
-        }
-
-        // Handle geolocation button if it exists
-        if (geoButton) {
-            geoButton.addEventListener("click", () => {
-                if (!navigator.geolocation) {
-                    alert("Geolocation not supported.");
-                    return;
-                }
-
-                navigator.geolocation.getCurrentPosition(
-                    (pos) => {
-                        skyLat = pos.coords.latitude;
-                        skyLon = pos.coords.longitude;
-                        updateSkyMap(skyLat, skyLon);
-                    },
-                    () => {
-                        alert("Unable to retrieve your location.");
-                    }
-                );
-            });
-        }
-    }, 100);
-}
+// Note: initStellariumSkyMap() removed - not used (sky-map.html handles its own initialization)
+// updateSkyMap() is still used for updating iframe in main page
 
 // DOM Elements (will be initialized after DOM loads)
 let eventsContainer;
@@ -146,15 +106,11 @@ document.addEventListener('DOMContentLoaded', () => {
         loadAstronomyData(),
         loadPlanetVisibility()
     ]).then(() => {
-        console.log('All events loaded. Total:', allEvents.length);
         const actualCategories = [...new Set(allEvents.map(e => e.category))];
-        console.log('Event categories:', actualCategories);
-        console.log('Planet events count:', allEvents.filter(e => e.category === 'planet').length);
         
         // Always include 'planet' category even if no events (for filter checkbox)
         if (!actualCategories.includes('planet')) {
             actualCategories.push('planet');
-            console.log('Added planet category to filter list even though no events');
         }
         
         // Update filter checkboxes to only show categories that have events
@@ -210,132 +166,58 @@ function setupNavigation() {
                         return;
                     }
                     
-                    // Ensure container is visible and has dimensions
-                    const containerVisible = mapContainer.offsetWidth > 0 && mapContainer.offsetHeight > 0;
-                    console.log('Map container dimensions:', {
-                        width: mapContainer.offsetWidth,
-                        height: mapContainer.offsetHeight,
-                        visible: containerVisible
-                    });
-                    
                     if (typeof initGIBSMap === 'function') {
                         if (!window.gibsMap) {
-                            console.log('Initializing GIBS map for the first time...');
                             initGIBSMap();
                         } else {
-                            console.log('GIBS map already exists, forcing re-render...');
-                            
                             // Check if map object is valid
                             if (!window.gibsMap) {
-                                console.error('window.gibsMap is null or undefined');
-                                // Try to re-initialize
                                 initGIBSMap();
                                 return;
                             }
                             
-                            console.log('Map object exists, type:', typeof window.gibsMap);
-                            console.log('Map object:', window.gibsMap);
-                            console.log('Is Leaflet Map?', window.gibsMap instanceof L.Map);
-                            console.log('Map has invalidateSize:', typeof window.gibsMap.invalidateSize);
-                            
                             // If map is not a proper Leaflet map, re-initialize it
                             if (!(window.gibsMap instanceof L.Map) || typeof window.gibsMap.invalidateSize !== 'function') {
-                                console.warn('Map object is not a valid Leaflet map, re-initializing...');
-                                // Clear the invalid map object
                                 window.gibsMap = null;
                                 if (typeof window.gibsMapInitialized !== 'undefined') {
                                     window.gibsMapInitialized = false;
                                 }
-                                // Re-initialize
                                 initGIBSMap();
                                 return;
                             }
                             
                             try {
-                                // Force map to re-render by invalidating size multiple times
+                                // Force map to re-render by invalidating size
                                 if (window.gibsMap.invalidateSize) {
-                                    console.log('Calling invalidateSize()...');
                                     window.gibsMap.invalidateSize();
-                                    console.log('First invalidateSize() completed');
                                     
                                     // Update location if available
                                     if (typeof updateGIBSMapLocation === 'function') {
-                                        console.log('Updating map location...');
                                         updateGIBSMapLocation();
                                     }
                                     
                                     // Force multiple invalidations to ensure tiles reload
                                     setTimeout(() => {
                                         try {
-                                            if (window.gibsMap) {
-                                                console.log('Second invalidateSize() call...');
+                                            if (window.gibsMap && window.gibsMap.invalidateSize) {
                                                 window.gibsMap.invalidateSize();
                                                 
                                                 // Trigger a view change to force tile reload
-                                                if (window.gibsMap.getCenter && window.gibsMap.getZoom) {
+                                                if (window.gibsMap.getCenter && window.gibsMap.getZoom && window.gibsMap.setView) {
                                                     const currentCenter = window.gibsMap.getCenter();
                                                     const currentZoom = window.gibsMap.getZoom();
-                                                    console.log('Current map state - center:', currentCenter, 'zoom:', currentZoom);
-                                                    
-                                                    if (window.gibsMap.setView) {
-                                                        window.gibsMap.setView(currentCenter, currentZoom);
-                                                        console.log('Map view refreshed');
-                                                    }
+                                                    window.gibsMap.setView(currentCenter, currentZoom);
                                                 }
                                             }
                                         } catch (e) {
-                                            console.error('Error in second invalidateSize timeout:', e);
+                                            console.error('Error in map re-render:', e);
                                         }
                                     }, 200);
-                                    
-                                    setTimeout(() => {
-                                        try {
-                                            if (window.gibsMap) {
-                                                console.log('Third invalidateSize() call...');
-                                                window.gibsMap.invalidateSize();
-                                                console.log('Final map size invalidation complete');
-                                                
-                                                // Check if tiles are loading
-                                                if (window.gibsMap._layers) {
-                                                    const layers = Object.values(window.gibsMap._layers);
-                                                    console.log('Total layers on map:', layers.length);
-                                                    
-                                                    const tileLayers = layers.filter(l => l._url || l._tileUrl || (l.options && l.options.getTileUrl));
-                                                    console.log('Active tile layers found:', tileLayers.length);
-                                                    
-                                                    tileLayers.forEach((layer, idx) => {
-                                                        console.log(`Layer ${idx} type:`, layer.constructor.name);
-                                                        if (layer._tiles) {
-                                                            const tiles = Object.values(layer._tiles);
-                                                            const loaded = tiles.filter(t => t.complete && t.naturalWidth > 0).length;
-                                                            const total = tiles.length;
-                                                            console.log(`Layer ${idx}: ${loaded}/${total} tiles loaded`);
-                                                            
-                                                            if (loaded === 0 && total > 0) {
-                                                                console.warn(`Layer ${idx} has no loaded tiles!`);
-                                                            }
-                                                        } else {
-                                                            console.log(`Layer ${idx} has no _tiles property`);
-                                                        }
-                                                    });
-                                                } else {
-                                                    console.warn('Map has no _layers property');
-                                                }
-                                            }
-                                        } catch (e) {
-                                            console.error('Error in third invalidateSize timeout:', e);
-                                        }
-                                    }, 500);
-                                } else {
-                                    console.error('Map does not have invalidateSize method');
                                 }
                             } catch (e) {
                                 console.error('Error during map re-render:', e);
-                                console.error('Error stack:', e.stack);
                             }
                         }
-                    } else {
-                        console.error('initGIBSMap function not found');
                     }
                 }, 100); // Minimal delay - container should be visible immediately when section is active
             }
@@ -362,7 +244,6 @@ async function loadEvents() {
         const data = await response.json();
         const staticEvents = data.events || [];
         
-        console.log(`Loaded ${staticEvents.length} static events`);
         
         // Store static events (ISS passes will be added separately)
         allEvents = staticEvents;
@@ -570,7 +451,6 @@ async function loadISSPasses() {
         // Fetch ISS positions for these timestamps
         const url = `https://api.wheretheiss.at/v1/satellites/25544/positions?timestamps=${timestamps.join(',')}`;
         
-        console.log('Fetching ISS passes from WhereTheISS.at...');
         const response = await fetch(url, {
             mode: 'cors',
             credentials: 'omit'
@@ -634,7 +514,6 @@ async function loadISSPasses() {
             };
         });
         
-        console.log(`Loaded ${issEvents.length} ISS passes from WhereTheISS.at`);
         
         // Add ISS events to allEvents array
         allEvents = [...allEvents, ...issEvents];
@@ -645,7 +524,6 @@ async function loadISSPasses() {
         // Update global reference
         window.allEvents = allEvents;
         
-        console.log(`Total events after ISS merge: ${allEvents.length}`);
         
         return Promise.resolve();
         
@@ -683,10 +561,12 @@ function setupEventListeners() {
         });
     });
 
-    // Apply filters button
-    applyFiltersButton.addEventListener('click', () => {
-        applyFilters();
-    });
+    // Apply filters button (if it exists)
+    if (applyFiltersButton) {
+        applyFiltersButton.addEventListener('click', () => {
+            applyFilters();
+        });
+    }
 
     // Location button
     if (locationButton) {
@@ -736,8 +616,6 @@ function updateSelectedCategories() {
             checkedBoxes.push(checkbox.value);
         }
     });
-    console.log('Checkbox states:', Array.from(filterCheckboxes).map(cb => ({ value: cb.value, checked: cb.checked })));
-    console.log('Selected categories from checkboxes:', checkedBoxes);
 }
 
 /**
@@ -748,17 +626,11 @@ function applyFilters() {
     
     const searchTerm = searchInput.value.toLowerCase().trim();
     
-    console.log('Applying filters...');
-    console.log('Selected categories:', Array.from(selectedCategories));
-    console.log('Total events before filter:', allEvents.length);
-    
     // Debug: Show all event categories
     const eventCategories = {};
     allEvents.forEach(event => {
         eventCategories[event.category] = (eventCategories[event.category] || 0) + 1;
     });
-    console.log('Events by category:', eventCategories);
-    console.log('Sample events:', allEvents.slice(0, 3).map(e => ({ title: e.title, category: e.category })));
     
     filteredEvents = allEvents.filter(event => {
         // Category filter
@@ -783,11 +655,6 @@ function applyFilters() {
         return true;
     });
     
-    console.log('Filtered events count:', filteredEvents.length);
-    console.log('Filtered events by category:', 
-        [...new Set(filteredEvents.map(e => e.category))].map(cat => 
-            `${cat}: ${filteredEvents.filter(e => e.category === cat).length}`
-        ).join(', '));
     
     // Sort events: closest upcoming first, then future, then past (most recent past first)
     filteredEvents = sortEventsByProximity(filteredEvents);
@@ -1195,7 +1062,6 @@ function updateFilterCheckboxes(actualCategories) {
     // Re-setup event listeners for new checkboxes
     setupEventListeners();
     
-    console.log(`Updated filter checkboxes for ${actualCategories.length} categories:`, actualCategories);
 }
 
 /**
@@ -1228,7 +1094,6 @@ function debounce(func, wait) {
 function switchView(viewType) {
     // This function can be expanded to support different view modes
     // (e.g., list view, calendar view, map view)
-    console.log(`Switching to ${viewType} view`);
     // Implementation for future views
 }
 
@@ -1285,7 +1150,6 @@ function clearNASACache() {
     localStorage.removeItem('nasa_apod');
     localStorage.removeItem('nasa_donki');
     localStorage.removeItem('nasa_eonet');
-    console.log('NASA cache cleared');
 }
 
 /**
@@ -1302,16 +1166,13 @@ async function loadAPOD(forceRefresh = false) {
     if (!forceRefresh && isCacheValid(cacheKey, maxAge)) {
         const cached = getCachedData(cacheKey);
         if (cached) {
-            console.log('Using cached APOD data');
             const event = convertAPODToEvent(cached);
-            console.log('APOD event created:', event);
             return event;
         }
     }
     
     try {
         const url = `${config.baseUrl}/planetary/apod?api_key=${config.apiKey}`;
-        console.log('Fetching APOD from:', url);
         const response = await fetch(url, {
             mode: 'cors',
             credentials: 'omit'
