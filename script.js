@@ -608,6 +608,9 @@ function setupEventListeners() {
  * Update selected categories from checkboxes
  */
 function updateSelectedCategories() {
+    // Preserve default 'apod' selection if no checkboxes exist yet or if it was previously selected
+    const hadApod = selectedCategories.has('apod');
+    
     selectedCategories.clear();
     const checkedBoxes = [];
     filterCheckboxes.forEach(checkbox => {
@@ -616,6 +619,20 @@ function updateSelectedCategories() {
             checkedBoxes.push(checkbox.value);
         }
     });
+    
+    // If we had 'apod' selected but no checkbox exists for it yet (because events haven't loaded),
+    // keep it selected so it shows when events do load
+    if (hadApod && !selectedCategories.has('apod')) {
+        // Check if APOD events exist in allEvents
+        const hasApodEvents = allEvents.some(e => e.category === 'apod');
+        if (hasApodEvents) {
+            // APOD events exist but checkbox might not be created yet - keep it selected
+            selectedCategories.add('apod');
+        } else if (filterCheckboxes.length === 0) {
+            // No checkboxes exist yet (initial load) - preserve default
+            selectedCategories.add('apod');
+        }
+    }
 }
 
 /**
@@ -631,6 +648,10 @@ function applyFilters() {
     allEvents.forEach(event => {
         eventCategories[event.category] = (eventCategories[event.category] || 0) + 1;
     });
+    
+    console.log('Applying filters - Selected categories:', Array.from(selectedCategories));
+    console.log('Total events before filter:', allEvents.length);
+    console.log('Events by category:', eventCategories);
     
     filteredEvents = allEvents.filter(event => {
         // Category filter
@@ -658,6 +679,12 @@ function applyFilters() {
     
     // Sort events: closest upcoming first, then future, then past (most recent past first)
     filteredEvents = sortEventsByProximity(filteredEvents);
+    
+    console.log('Filtered events count:', filteredEvents.length);
+    console.log('Filtered events by category:', 
+        [...new Set(filteredEvents.map(e => e.category))].map(cat => 
+            `${cat}: ${filteredEvents.filter(e => e.category === cat).length}`
+        ).join(', '));
     
     renderEvents();
 }
@@ -1166,6 +1193,7 @@ async function loadAPOD(forceRefresh = false) {
     if (!forceRefresh && isCacheValid(cacheKey, maxAge)) {
         const cached = getCachedData(cacheKey);
         if (cached) {
+            console.log('Using cached APOD data');
             const event = convertAPODToEvent(cached);
             return event;
         }
@@ -1183,13 +1211,12 @@ async function loadAPOD(forceRefresh = false) {
         }
         
         const data = await response.json();
-        console.log('APOD API response:', data);
         
         // Cache the data
         setCachedData(cacheKey, data);
         
         const event = convertAPODToEvent(data);
-        console.log('Loaded APOD:', data.title, 'Event:', event);
+        console.log('Loaded APOD:', data.title);
         return event;
     } catch (error) {
         // Handle CORS and network errors gracefully
@@ -1205,6 +1232,7 @@ async function loadAPOD(forceRefresh = false) {
             console.log('Using cached APOD data due to API unavailability');
             return convertAPODToEvent(cached);
         }
+        console.warn('No APOD data available (API failed and no cache)');
         return null;
     }
 }
@@ -1605,6 +1633,12 @@ async function loadNASAData(forceRefresh = false) {
         // If this is called after initial load, re-apply filters to show new events
         if (beforeCount > 0) {
             console.log('Re-applying filters after NASA data load...');
+            // Update filter checkboxes to include newly loaded categories (like APOD)
+            const categories = [...new Set(allEvents.map(e => e.category))];
+            if (!categories.includes('planet')) {
+                categories.push('planet');
+            }
+            updateFilterCheckboxes(categories);
             applyFilters();
         }
         
