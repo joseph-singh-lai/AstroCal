@@ -56,6 +56,23 @@ let locationButton;
 let locationStatus;
 let clearLocationButton;
 let refreshNASAButton;
+let loadingProgressContainer;
+let loadingProgressFill;
+let loadingProgressText;
+
+// Loading progress tracking
+let loadingProgress = {
+    total: 6, // Total number of loading tasks
+    completed: 0,
+    tasks: {
+        apod: false,
+        staticEvents: false,
+        issPasses: false,
+        nasaData: false,
+        astronomy: false,
+        planetVisibility: false
+    }
+};
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
@@ -69,6 +86,9 @@ document.addEventListener('DOMContentLoaded', () => {
     locationStatus = document.getElementById('locationStatus');
     clearLocationButton = document.getElementById('clearLocationButton');
     refreshNASAButton = document.getElementById('refreshNASA');
+    loadingProgressContainer = document.getElementById('loadingProgress');
+    loadingProgressFill = document.getElementById('loadingProgressFill');
+    loadingProgressText = document.getElementById('loadingProgressText');
     
     // Check if elements exist
     if (!eventsContainer) {
@@ -99,22 +119,28 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
+    // Show loading progress bar
+    showLoadingProgress();
+    
     // Load APOD first (priority - it's the default view)
     // Show cached APOD immediately if available, then fetch fresh in background
     loadAPODPriority().then(() => {
+        updateLoadingProgress('apod');
         // After APOD is shown, load other events in parallel
         Promise.all([
-            loadEvents(),
-            loadISSPasses(),
-            loadNASADataOther(), // Load DONKI and EONET (not APOD)
-            loadAstronomyData(),
-            loadPlanetVisibility()
+            loadEvents().then(() => updateLoadingProgress('staticEvents')),
+            loadISSPasses().then(() => updateLoadingProgress('issPasses')),
+            loadNASADataOther().then(() => updateLoadingProgress('nasaData')), // Load DONKI and EONET (not APOD)
+            loadAstronomyData().then(() => updateLoadingProgress('astronomy')),
+            loadPlanetVisibility().then(() => updateLoadingProgress('planetVisibility'))
         ]).then(() => {
             // All categories are always shown in HTML - no need to update checkboxes
+            hideLoadingProgress();
             applyFilters();
         }).catch((error) => {
             console.error('Error loading events:', error);
             // Even if some fail, show what we have
+            hideLoadingProgress();
             if (allEvents.length > 0) {
                 applyFilters();
             }
@@ -124,6 +150,87 @@ document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
     setupNavigation();
 });
+
+/**
+ * Show loading progress bar
+ */
+function showLoadingProgress() {
+    if (loadingProgressContainer) {
+        loadingProgressContainer.style.display = 'block';
+        updateLoadingProgressDisplay();
+    }
+}
+
+/**
+ * Hide loading progress bar
+ */
+function hideLoadingProgress() {
+    if (loadingProgressContainer) {
+        // Small delay to show 100% before hiding
+        setTimeout(() => {
+            if (loadingProgressContainer) {
+                loadingProgressContainer.style.display = 'none';
+            }
+        }, 500);
+    }
+}
+
+/**
+ * Update loading progress for a specific task
+ */
+function updateLoadingProgress(taskName) {
+    if (!loadingProgress.tasks.hasOwnProperty(taskName)) {
+        return;
+    }
+    
+    if (!loadingProgress.tasks[taskName]) {
+        loadingProgress.tasks[taskName] = true;
+        loadingProgress.completed++;
+        updateLoadingProgressDisplay();
+    }
+}
+
+/**
+ * Update the visual progress bar and text
+ */
+function updateLoadingProgressDisplay() {
+    if (!loadingProgressFill || !loadingProgressText) {
+        return;
+    }
+    
+    const percentage = Math.round((loadingProgress.completed / loadingProgress.total) * 100);
+    loadingProgressFill.style.width = `${percentage}%`;
+    
+    // Update text with current status
+    const taskNames = {
+        apod: 'APOD',
+        staticEvents: 'Static Events',
+        issPasses: 'ISS Passes',
+        nasaData: 'NASA Data',
+        astronomy: 'Astronomy Data',
+        planetVisibility: 'Planet Visibility'
+    };
+    
+    const completedTasks = Object.entries(loadingProgress.tasks)
+        .filter(([_, completed]) => completed)
+        .map(([name, _]) => taskNames[name] || name);
+    
+    if (loadingProgress.completed === loadingProgress.total) {
+        loadingProgressText.textContent = 'Loading complete!';
+    } else {
+        loadingProgressText.textContent = `Loading events... (${loadingProgress.completed}/${loadingProgress.total})`;
+    }
+}
+
+/**
+ * Reset loading progress (for refresh)
+ */
+function resetLoadingProgress() {
+    loadingProgress.completed = 0;
+    Object.keys(loadingProgress.tasks).forEach(key => {
+        loadingProgress.tasks[key] = false;
+    });
+}
 
 /**
  * Setup navigation between sections
@@ -574,8 +681,16 @@ function setupEventListeners() {
             refreshNASAButton.disabled = true;
             refreshNASAButton.textContent = '🔄 Refreshing...';
             clearNASACache();
+            
+            // Show progress bar for refresh (only 3 tasks: APOD, NASA Data, Planet Visibility)
+            loadingProgress.total = 3;
+            loadingProgress.completed = 0;
+            loadingProgress.tasks = { apod: false, nasaData: false, planetVisibility: false };
+            showLoadingProgress();
+            
             Promise.all([
                 loadAPOD(true).then(apodEvent => {
+                    updateLoadingProgress('apod');
                     if (apodEvent) {
                         // Remove old APOD and add fresh one
                         allEvents = allEvents.filter(e => e.category !== 'apod');
@@ -585,11 +700,12 @@ function setupEventListeners() {
                     }
                     return apodEvent;
                 }),
-                loadNASADataOther(true),
-                loadPlanetVisibility(true) // Also refresh planet visibility
+                loadNASADataOther(true).then(() => updateLoadingProgress('nasaData')),
+                loadPlanetVisibility(true).then(() => updateLoadingProgress('planetVisibility')) // Also refresh planet visibility
             ]).then(() => {
                 refreshNASAButton.disabled = false;
                 refreshNASAButton.textContent = '🔄 Refresh NASA Data';
+                hideLoadingProgress();
                 applyFilters();
             });
         });
