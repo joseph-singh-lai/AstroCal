@@ -1,0 +1,17 @@
+{
+  "name": "astrocal",
+  "version": "1.0.0",
+  "description": "Astronomy Explorer - Interactive astronomy events, satellite imagery, and sky map",
+  "type": "module",
+  "scripts": {},
+  "keywords": [
+    "astronomy",
+    "nasa",
+    "events",
+    "satellite",
+    "sky-map"
+  ],
+  "author": "",
+  "license": "MIT"
+}
+
