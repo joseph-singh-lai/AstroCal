@@ -729,12 +729,22 @@ function updateSelectedCategories() {
     
     selectedCategories.clear();
     const checkedBoxes = [];
+    
+    // Re-query checkboxes in case they were dynamically created
+    filterCheckboxes = document.querySelectorAll('.filter-checkbox input[type="checkbox"]');
+    
     filterCheckboxes.forEach(checkbox => {
         if (checkbox.checked) {
             selectedCategories.add(checkbox.value);
             checkedBoxes.push(checkbox.value);
         }
     });
+    
+    // Ensure APOD is selected if checkbox is checked (default state)
+    const apodCheckbox = Array.from(filterCheckboxes).find(cb => cb.value === 'apod');
+    if (apodCheckbox && apodCheckbox.checked) {
+        selectedCategories.add('apod');
+    }
     
     // If we had 'apod' selected but no checkbox exists for it yet (because events haven't loaded),
     // keep it selected so it shows when events do load
@@ -749,6 +759,9 @@ function updateSelectedCategories() {
             selectedCategories.add('apod');
         }
     }
+    
+    console.log('Updated selected categories:', Array.from(selectedCategories));
+    console.log('APOD checkbox checked:', apodCheckbox ? apodCheckbox.checked : 'not found');
 }
 
 /**
@@ -768,6 +781,13 @@ function applyFilters() {
     console.log('Applying filters - Selected categories:', Array.from(selectedCategories));
     console.log('Total events before filter:', allEvents.length);
     console.log('Events by category:', eventCategories);
+    
+    // Ensure APOD is always selected if APOD events exist and checkbox is checked
+    const hasApodEvents = allEvents.some(e => e.category === 'apod');
+    const apodCheckbox = document.querySelector('.filter-checkbox input[type="checkbox"][value="apod"]');
+    if (hasApodEvents && apodCheckbox && apodCheckbox.checked) {
+        selectedCategories.add('apod');
+    }
     
     filteredEvents = allEvents.filter(event => {
         // Category filter
@@ -1393,6 +1413,16 @@ async function loadAPODPriority() {
         allEvents.push(cachedEvent);
         window.allEvents = allEvents;
         console.log('Showing cached APOD immediately:', cachedEvent.title);
+        console.log('APOD event added to allEvents. Total events:', allEvents.length);
+        console.log('APOD event details:', { id: cachedEvent.id, category: cachedEvent.category, title: cachedEvent.title });
+        
+        // Ensure APOD checkbox is checked
+        const apodCheckbox = document.querySelector('.filter-checkbox input[type="checkbox"][value="apod"]');
+        if (apodCheckbox) {
+            apodCheckbox.checked = true;
+            selectedCategories.add('apod');
+            console.log('APOD checkbox checked and added to selectedCategories');
+        }
         
         // Update UI immediately with cached APOD
         // All categories are always shown - no need to update checkboxes
