@@ -91,7 +91,8 @@ document.addEventListener('DOMContentLoaded', () => {
         updateLocationStatus(LA_BREA_COORDS);
     }
     
-    // Initialize checkboxes to match default selectedCategories
+    // Initialize checkboxes to match default selectedCategories (APOD is default)
+    // All checkboxes are always visible in HTML - no dynamic generation
     filterCheckboxes.forEach(checkbox => {
         if (selectedCategories.has(checkbox.value)) {
             checkbox.checked = true;
@@ -109,27 +110,12 @@ document.addEventListener('DOMContentLoaded', () => {
             loadAstronomyData(),
             loadPlanetVisibility()
         ]).then(() => {
-            const actualCategories = [...new Set(allEvents.map(e => e.category))];
-            
-            // Always include 'planet' category even if no events (for filter checkbox)
-            if (!actualCategories.includes('planet')) {
-                actualCategories.push('planet');
-            }
-            
-            // Update filter checkboxes to only show categories that have events
-            updateFilterCheckboxes(actualCategories);
-            
+            // All categories are always shown in HTML - no need to update checkboxes
             applyFilters();
         }).catch((error) => {
             console.error('Error loading events:', error);
             // Even if some fail, show what we have
             if (allEvents.length > 0) {
-                const actualCategories = [...new Set(allEvents.map(e => e.category))];
-                // Always include 'planet' category
-                if (!actualCategories.includes('planet')) {
-                    actualCategories.push('planet');
-                }
-                updateFilterCheckboxes(actualCategories);
                 applyFilters();
             }
         });
@@ -1271,11 +1257,7 @@ async function loadAPODPriority() {
         console.log('Showing cached APOD immediately:', cachedEvent.title);
         
         // Update UI immediately with cached APOD
-        const categories = [...new Set(allEvents.map(e => e.category))];
-        if (!categories.includes('planet')) {
-            categories.push('planet');
-        }
-        updateFilterCheckboxes(categories);
+        // All categories are always shown - no need to update checkboxes
         applyFilters();
     }
     
@@ -1304,11 +1286,7 @@ async function loadAPODPriority() {
             // Sort and update UI
             allEvents.sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
             
-            const categories = [...new Set(allEvents.map(e => e.category))];
-            if (!categories.includes('planet')) {
-                categories.push('planet');
-            }
-            updateFilterCheckboxes(categories);
+            // All categories are always shown - no need to update checkboxes
             applyFilters();
             
             console.log('Updated with fresh APOD:', apodEvent.title);
@@ -1706,12 +1684,7 @@ async function loadNASADataOther(forceRefresh = false) {
         // If this is called after initial load, re-apply filters to show new events
         if (beforeCount > 0) {
             console.log('Re-applying filters after NASA data load...');
-            // Update filter checkboxes to include newly loaded categories
-            const categories = [...new Set(allEvents.map(e => e.category))];
-            if (!categories.includes('planet')) {
-                categories.push('planet');
-            }
-            updateFilterCheckboxes(categories);
+            // All categories are always shown - no need to update checkboxes
             applyFilters();
         }
         
