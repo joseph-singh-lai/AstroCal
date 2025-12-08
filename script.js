@@ -544,10 +544,10 @@ function setupEventListeners() {
         applyFilters();
     }, 300));
 
-    // Filter checkboxes
+    // Filter checkboxes - auto-apply filters when changed
     filterCheckboxes.forEach(checkbox => {
         checkbox.addEventListener('change', () => {
-            updateSelectedCategories();
+            applyFilters(); // Auto-apply filters when checkbox changes
         });
     });
 
@@ -843,7 +843,11 @@ function createEventCard(event) {
     
     // Add image for APOD events
     let imageHtml = '';
-    if (event.imageUrl && event.mediaType === 'image') {
+    if (event.category === 'apod' && event.imageUrl) {
+        // APOD events: show image if available (regardless of mediaType, as some APODs are videos but have thumbnails)
+        imageHtml = `<img src="${escapeHtml(event.imageUrl)}" alt="${escapeHtml(event.title)}" class="event-image" loading="lazy">`;
+    } else if (event.imageUrl && event.mediaType === 'image') {
+        // Other events: only show if mediaType is explicitly 'image'
         imageHtml = `<img src="${escapeHtml(event.imageUrl)}" alt="${escapeHtml(event.title)}" class="event-image" loading="lazy">`;
     }
     
@@ -1195,6 +1199,12 @@ async function loadAPOD(forceRefresh = false) {
         if (cached) {
             console.log('Using cached APOD data');
             const event = convertAPODToEvent(cached);
+            console.log('Cached APOD event data:', { 
+                hasImageUrl: !!event.imageUrl, 
+                imageUrl: event.imageUrl, 
+                mediaType: event.mediaType,
+                category: event.category 
+            });
             return event;
         }
     }
@@ -1217,6 +1227,12 @@ async function loadAPOD(forceRefresh = false) {
         
         const event = convertAPODToEvent(data);
         console.log('Loaded APOD:', data.title);
+        console.log('APOD event data:', { 
+            hasImageUrl: !!event.imageUrl, 
+            imageUrl: event.imageUrl, 
+            mediaType: event.mediaType,
+            category: event.category 
+        });
         return event;
     } catch (error) {
         // Handle CORS and network errors gracefully
@@ -1252,6 +1268,12 @@ async function loadAPODPriority() {
     const cached = getCachedData(cacheKey);
     if (cached) {
         const cachedEvent = convertAPODToEvent(cached);
+        console.log('Cached APOD event data:', { 
+            hasImageUrl: !!cachedEvent.imageUrl, 
+            imageUrl: cachedEvent.imageUrl, 
+            mediaType: cachedEvent.mediaType,
+            category: cachedEvent.category 
+        });
         allEvents.push(cachedEvent);
         window.allEvents = allEvents;
         console.log('Showing cached APOD immediately:', cachedEvent.title);
