@@ -73,10 +73,10 @@ function initSkyMap() {
     // Set canvas size
     resizeSkyCanvas();
     window.addEventListener('resize', resizeSkyCanvas);
-    
+
     // Event listeners
     setupSkyMapListeners();
-    
+
     // Initial render
     renderSkyMap();
     skyMapInitialized = true;
@@ -90,7 +90,7 @@ function resizeSkyCanvas() {
     
     const container = skyCanvas.parentElement;
     if (container) {
-        skyCanvas.width = container.clientWidth;
+    skyCanvas.width = container.clientWidth;
         skyCanvas.height = Math.max(500, container.clientHeight || 500);
     }
     
@@ -163,7 +163,7 @@ function setupSkyMapListeners() {
             renderSkyMap();
         });
     }
-    
+
     if (toggleConstellationsBtn) {
         toggleConstellationsBtn.addEventListener('click', () => {
             skyMapState.showConstellations = !skyMapState.showConstellations;
@@ -173,7 +173,7 @@ function setupSkyMapListeners() {
             renderSkyMap();
         });
     }
-    
+
     if (togglePlanetsBtn) {
         togglePlanetsBtn.addEventListener('click', () => {
             skyMapState.showPlanets = !skyMapState.showPlanets;
@@ -208,14 +208,14 @@ function raDecToScreen(ra, dec, width, height) {
  */
 function renderSkyMap() {
     if (!skyCanvas || !skyCtx) return;
-    
+
     const width = skyCanvas.width;
     const height = skyCanvas.height;
-    
+
     // Clear canvas
     skyCtx.fillStyle = '#0a0e27';
     skyCtx.fillRect(0, 0, width, height);
-    
+
     // Draw stars
     skyCtx.fillStyle = '#ffffff';
     BRIGHT_STARS.forEach(star => {
@@ -226,7 +226,7 @@ function renderSkyMap() {
         
         // Only draw if on screen
         if (pos.x >= -50 && pos.x <= width + 50 && pos.y >= -50 && pos.y <= height + 50) {
-            skyCtx.beginPath();
+        skyCtx.beginPath();
             skyCtx.arc(pos.x, pos.y, size, 0, Math.PI * 2);
             skyCtx.fill();
             
@@ -234,8 +234,11 @@ function renderSkyMap() {
             if (star.mag < 1.0) {
                 skyCtx.fillStyle = '#b8c5e0';
                 skyCtx.font = '12px sans-serif';
+                skyCtx.textAlign = 'left';
+                skyCtx.textBaseline = 'middle';
                 skyCtx.fillText(star.name, pos.x + size + 5, pos.y);
                 skyCtx.fillStyle = '#ffffff';
+                skyCtx.textBaseline = 'alphabetic'; // Reset baseline
             }
         }
     });
@@ -260,13 +263,27 @@ function renderSkyMap() {
             const x = width / 2 + skyMapState.panX + Math.cos(angle) * radius * skyMapState.zoom;
             const y = height / 2 + skyMapState.panY + Math.sin(angle) * radius * skyMapState.zoom;
             
+            // Draw planet as a colored circle instead of symbol (more reliable)
             skyCtx.fillStyle = planet.color;
-            skyCtx.font = '20px sans-serif';
-            skyCtx.fillText(planet.symbol, x - 10, y + 5);
+            skyCtx.beginPath();
+            skyCtx.arc(x, y, 8, 0, Math.PI * 2);
+            skyCtx.fill();
             
+            // Add a border for visibility
+            skyCtx.strokeStyle = '#ffffff';
+            skyCtx.lineWidth = 1;
+            skyCtx.stroke();
+            
+            // Draw planet name below
             skyCtx.fillStyle = '#b8c5e0';
             skyCtx.font = '10px sans-serif';
-            skyCtx.fillText(planet.name, x - 15, y + 20);
+            skyCtx.textAlign = 'center';
+            skyCtx.textBaseline = 'top';
+            skyCtx.fillText(planet.name, x, y + 12);
+            
+            // Reset text alignment
+    skyCtx.textAlign = 'left';
+            skyCtx.textBaseline = 'alphabetic';
         });
     }
     
@@ -301,7 +318,7 @@ if (document.readyState === 'loading') {
         // Wait a bit for other scripts to load
         setTimeout(initSkyMap, 100);
     });
-} else {
+    } else {
     setTimeout(initSkyMap, 100);
 }
 
