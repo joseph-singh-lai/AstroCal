@@ -201,22 +201,19 @@
             <section id="sky-section" class="content-section">
                 <div class="section-header">
                     <h2>⭐ Interactive Sky Map</h2>
-                    <p class="section-description">Explore the night sky over your location using Stellarium Web</p>
+                    <p class="section-description">Explore the night sky over your location</p>
                 </div>
                 
                 <div class="sky-controls">
-                    <button id="use-geolocation" class="sky-button">📍 Use My Location</button>
+                    <button id="sky-use-location" class="sky-button">📍 Use My Location</button>
+                    <button id="sky-reset-view" class="sky-button">🔄 Reset View</button>
+                    <button id="sky-toggle-constellations" class="sky-button">✨ Toggle Constellations</button>
+                    <button id="sky-toggle-planets" class="sky-button">🪐 Toggle Planets</button>
                 </div>
                 
-                <div style="width: 100%; height: 500px; margin-top: 1rem; border-radius: 10px; overflow: hidden; background: var(--bg-secondary);">
-                    <iframe
-                        id="stellarium-frame"
-                        src="https://stellarium-web.org/sky#lat=10.25&lng=-61.63&fov=60"
-                        style="width: 100%; height: 100%; border: none;"
-                        allowfullscreen
-                        loading="lazy"
-                        title="Stellarium Web Sky Map">
-                    </iframe>
+                <div class="sky-map-container">
+                    <canvas id="skyCanvas" width="800" height="500"></canvas>
+                    <div id="skyInfo" class="sky-info"></div>
                 </div>
             </section>
 
@@ -331,6 +328,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="script.js"></script>
     <script src="gibs-map.js"></script>
+    <script src="sky-map.js"></script>
 </body>
 </html>
 

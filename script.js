@@ -27,24 +27,9 @@ const LA_BREA_COORDS = {
 };
 
 /* ============================
-   Stellarium Web Sky Map
+   Custom Sky Map
    ============================ */
-
-let stellariumFrame = null;
-
-// Default location (La Brea)
-let skyLat = 10.25;
-let skyLon = -61.63;
-
-function updateSkyMap(lat, lon) {
-    if (stellariumFrame) {
-        const newSrc = `https://stellarium-web.org/sky#lat=${lat}&lng=${lon}&fov=60`;
-        stellariumFrame.src = newSrc;
-    }
-}
-
-// Note: initStellariumSkyMap() removed - not used (sky-map.html handles its own initialization)
-// updateSkyMap() is still used for updating iframe in main page
+// Sky map functionality moved to sky-map.js
 
 // DOM Elements (will be initialized after DOM loads)
 let eventsContainer;
@@ -320,7 +305,15 @@ function setupNavigation() {
             }
 
             if (targetSection === 'sky') {
-                // Stellarium iframe is already loaded, no initialization needed
+                // Initialize custom sky map if not already initialized
+                if (!skyMapInitialized && typeof initSkyMap === 'function') {
+                    setTimeout(() => {
+                        initSkyMap();
+                    }, 100);
+                } else if (skyMapInitialized && typeof renderSkyMap === 'function') {
+                    // Re-render if already initialized
+                    renderSkyMap();
+                }
             }
         });
     });
@@ -436,8 +429,13 @@ function requestUserLocation() {
             if (typeof updateGIBSMapLocation === 'function') {
                 updateGIBSMapLocation();
             }
-            // Update Stellarium sky map location
-            if (stellariumFrame) {
+            // Update custom sky map location
+            if (typeof updateSkyMapLocation === 'function') {
+                updateSkyMapLocation(location.lat, location.lon);
+            }
+            
+            // Legacy Stellarium code (removed)
+            if (false && stellariumFrame) {
                 updateSkyMap(userLocation.lat, userLocation.lon);
             }
 
