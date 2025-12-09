@@ -72,6 +72,7 @@
                 <button class="nav-button active" data-section="events">📅 Events</button>
                 <button class="nav-button" data-section="gibs">🛰️ Satellite Imagery</button>
                 <a href="sky-map.html" class="nav-button" style="text-decoration: none; display: inline-block;">⭐ Sky Map</a>
+                <button class="nav-button" data-section="glossary">📖 Glossary</button>
             </nav>
         </header>
 
@@ -216,6 +217,106 @@
                         loading="lazy"
                         title="Stellarium Web Sky Map">
                     </iframe>
+                </div>
+            </section>
+
+            <!-- Glossary Section -->
+            <section id="glossary-section" class="content-section">
+                <div class="section-header">
+                    <h2>📖 Glossary</h2>
+                    <p class="section-description">Common acronyms and terms used in this application</p>
+                </div>
+                
+                <div class="glossary-container">
+                    <div class="glossary-category">
+                        <h3>NASA APIs & Services</h3>
+                        <div class="glossary-items">
+                            <div class="glossary-item">
+                                <strong>APOD</strong>
+                                <p>Astronomy Picture of the Day - A daily image or video of our fascinating universe, along with a brief explanation written by a professional astronomer.</p>
+                            </div>
+                            <div class="glossary-item">
+                                <strong>DONKI</strong>
+                                <p>Space Weather Database Of Notifications, Knowledge, Information - NASA's comprehensive database for space weather events including solar flares and coronal mass ejections.</p>
+                            </div>
+                            <div class="glossary-item">
+                                <strong>EONET</strong>
+                                <p>Earth Observatory Natural Event Tracker - A system that tracks natural events on Earth such as wildfires, storms, and volcanic activity that may be visible from space.</p>
+                            </div>
+                            <div class="glossary-item">
+                                <strong>GIBS</strong>
+                                <p>Global Imagery Browse Services - NASA's system for providing satellite imagery and Earth observation data in a standardized format.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glossary-category">
+                        <h3>Space Weather Terms</h3>
+                        <div class="glossary-items">
+                            <div class="glossary-item">
+                                <strong>CME</strong>
+                                <p>Coronal Mass Ejection - A massive burst of solar wind and magnetic fields rising above the solar corona or being released into space. CMEs can affect Earth's magnetosphere and cause geomagnetic storms.</p>
+                            </div>
+                            <div class="glossary-item">
+                                <strong>Solar Flare</strong>
+                                <p>A sudden flash of increased brightness on the Sun, usually observed near its surface and in close proximity to a sunspot group. Flares are classified by their X-ray intensity (A, B, C, M, or X class).</p>
+                            </div>
+                            <div class="glossary-item">
+                                <strong>FLR</strong>
+                                <p>Solar Flare - The abbreviation used in NASA's DONKI database for solar flare events.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glossary-category">
+                        <h3>Spacecraft & Stations</h3>
+                        <div class="glossary-items">
+                            <div class="glossary-item">
+                                <strong>ISS</strong>
+                                <p>International Space Station - A modular space station in low Earth orbit. It's the largest human-made object in space and can be seen from Earth with the naked eye.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glossary-category">
+                        <h3>Astronomy Terms</h3>
+                        <div class="glossary-items">
+                            <div class="glossary-item">
+                                <strong>Magnitude</strong>
+                                <p>A measure of the brightness of a celestial object. Lower numbers indicate brighter objects. The brightest stars have negative magnitudes.</p>
+                            </div>
+                            <div class="glossary-item">
+                                <strong>Elevation</strong>
+                                <p>The angle between the object and the observer's local horizon. Objects at 0° are on the horizon, while 90° is directly overhead (zenith).</p>
+                            </div>
+                            <div class="glossary-item">
+                                <strong>Azimuth</strong>
+                                <p>The compass direction of an object, measured in degrees from north (0°) through east (90°), south (180°), and west (270°).</p>
+                            </div>
+                            <div class="glossary-item">
+                                <strong>Meteor Shower</strong>
+                                <p>A celestial event where numerous meteors are observed to radiate from one point in the night sky. These meteors are caused by streams of cosmic debris entering Earth's atmosphere.</p>
+                            </div>
+                            <div class="glossary-item">
+                                <strong>Planet Visibility</strong>
+                                <p>The times when planets are visible in the night sky from a specific location. Visibility depends on the planet's position relative to the Sun and Earth.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glossary-category">
+                        <h3>Technical Terms</h3>
+                        <div class="glossary-items">
+                            <div class="glossary-item">
+                                <strong>CORS</strong>
+                                <p>Cross-Origin Resource Sharing - A security feature that allows web pages to request resources from a different domain. Some APIs require server-side proxies to bypass CORS restrictions.</p>
+                            </div>
+                            <div class="glossary-item">
+                                <strong>Open-Meteo</strong>
+                                <p>A free, open-source weather API that provides astronomical data including sunrise/sunset times and moon phases without requiring an API key.</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </section>
         </main>

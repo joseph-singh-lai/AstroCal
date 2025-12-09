@@ -1220,6 +1220,75 @@ body::after {
     opacity: 0.5;
 }
 
+/* Glossary Styles */
+.glossary-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+}
+
+.glossary-category {
+    margin-bottom: 3rem;
+}
+
+.glossary-category h3 {
+    color: var(--accent-primary);
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.glossary-items {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.glossary-item {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1.5rem;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.glossary-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(107, 141, 214, 0.2);
+}
+
+.glossary-item strong {
+    color: var(--accent-secondary);
+    font-size: 1.2rem;
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.glossary-item p {
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin: 0;
+}
+
+@media (max-width: 768px) {
+    .glossary-container {
+        padding: 1rem;
+    }
+    
+    .glossary-category h3 {
+        font-size: 1.3rem;
+    }
+    
+    .glossary-item {
+        padding: 1rem;
+    }
+    
+    .glossary-item strong {
+        font-size: 1.1rem;
+    }
+}
+
 /* Event Detail Section */
 .event-detail-section {
     background-color: rgba(30, 36, 56, 0.9);
