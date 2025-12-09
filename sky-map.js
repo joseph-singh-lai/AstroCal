@@ -218,7 +218,7 @@ function renderSkyMap() {
     // Fill with background color
     skyCtx.fillStyle = '#0a0e27';
     skyCtx.fillRect(0, 0, width, height);
-    
+
     // Reset all canvas state to defaults to prevent artifacts
     skyCtx.globalAlpha = 1.0;
     skyCtx.lineWidth = 1;
@@ -228,7 +228,7 @@ function renderSkyMap() {
     skyCtx.textBaseline = 'alphabetic';
     skyCtx.font = '10px Arial, sans-serif';
     skyCtx.setLineDash([]); // Ensure no dashed lines
-    
+
     // Draw stars
     skyCtx.fillStyle = '#ffffff';
     BRIGHT_STARS.forEach(star => {
@@ -239,20 +239,20 @@ function renderSkyMap() {
         
         // Only draw if on screen
         if (pos.x >= -50 && pos.x <= width + 50 && pos.y >= -50 && pos.y <= height + 50) {
-            skyCtx.beginPath();
+        skyCtx.beginPath();
             skyCtx.arc(pos.x, pos.y, size, 0, Math.PI * 2);
             skyCtx.fill();
             
-            // Label bright stars - use simple text rendering
-            if (star.mag < 1.0) {
-                skyCtx.save(); // Save state
-                skyCtx.fillStyle = '#b8c5e0';
-                skyCtx.font = '12px Arial, sans-serif';
-                skyCtx.textAlign = 'left';
-                skyCtx.textBaseline = 'middle';
-                skyCtx.fillText(star.name, pos.x + size + 5, pos.y);
-                skyCtx.restore(); // Restore state
-            }
+            // Label bright stars - temporarily disabled to debug line issue
+            // if (star.mag < 1.0) {
+            //     skyCtx.save(); // Save state
+            //     skyCtx.fillStyle = '#b8c5e0';
+            //     skyCtx.font = '12px Arial, sans-serif';
+            //     skyCtx.textAlign = 'left';
+            //     skyCtx.textBaseline = 'middle';
+            //     skyCtx.fillText(star.name, pos.x + size + 5, pos.y);
+            //     skyCtx.restore(); // Restore state
+            // }
         }
     });
     
@@ -274,31 +274,31 @@ function renderSkyMap() {
             // Draw planet as a colored circle
             skyCtx.save(); // Save state
             skyCtx.fillStyle = planet.color;
-            skyCtx.beginPath();
+        skyCtx.beginPath();
             skyCtx.arc(x, y, 8, 0, Math.PI * 2);
-            skyCtx.fill();
-            
+        skyCtx.fill();
+
             // Add a border for visibility
             skyCtx.strokeStyle = '#ffffff';
-            skyCtx.lineWidth = 1;
-            skyCtx.stroke();
+    skyCtx.lineWidth = 1;
+        skyCtx.stroke();
             skyCtx.restore(); // Restore state
             
-            // Draw planet name below - use save/restore to avoid state pollution
-            skyCtx.save();
-            skyCtx.fillStyle = '#b8c5e0';
-            skyCtx.font = '10px Arial, sans-serif';
-            skyCtx.textAlign = 'center';
-            skyCtx.textBaseline = 'top';
-            skyCtx.fillText(planet.name, x, y + 12);
-            skyCtx.restore();
+            // Draw planet name below - temporarily disabled to debug line issue
+            // skyCtx.save();
+            // skyCtx.fillStyle = '#b8c5e0';
+            // skyCtx.font = '10px Arial, sans-serif';
+            // skyCtx.textAlign = 'center';
+            // skyCtx.textBaseline = 'top';
+            // skyCtx.fillText(planet.name, x, y + 12);
+            // skyCtx.restore();
         });
     }
     
     // Draw info
     const infoEl = document.getElementById('skyInfo');
     if (infoEl) {
-        const location = getCurrentLocation();
+    const location = getCurrentLocation();
         const lat = location ? location.lat : skyMapState.lat;
         const lon = location ? location.lon : skyMapState.lon;
         infoEl.innerHTML = `
