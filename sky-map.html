@@ -32,6 +32,8 @@
     .footer{padding:1rem;text-align:center;color:var(--muted);font-size:.85rem}
     .back-link{color:var(--accent);text-decoration:none;display:inline-flex;align-items:center;gap:0.5rem;padding:0.5rem 0;transition:opacity 0.2s ease}
     .back-link:hover{opacity:0.8}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .mapwrap{position:relative}
   </style>
 </head>
 <body>
@@ -86,7 +88,17 @@
     </aside>
 
     <main class="mapwrap">
-      <iframe id="stellarium-frame" src="" allowfullscreen sandbox="allow-scripts allow-same-origin allow-forms"></iframe>
+      <div id="loading-indicator" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:var(--muted);z-index:10;">
+        <div style="text-align:center;">
+          <div style="width:40px;height:40px;border:3px solid rgba(125,211,252,0.3);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 1rem;"></div>
+          <div>Loading sky map...</div>
+        </div>
+      </div>
+      <iframe id="stellarium-frame" src="" allowfullscreen sandbox="allow-scripts allow-same-origin allow-forms" style="opacity:0;transition:opacity 0.3s ease;"></iframe>
+      <div id="error-message" style="display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#ff6b6b;text-align:center;z-index:10;background:var(--card);padding:1rem;border-radius:8px;border:1px solid rgba(255,107,107,0.3);">
+        <div style="margin-bottom:0.5rem;">⚠️ Unable to load sky map</div>
+        <button onclick="location.reload()" class="btn" style="margin-top:0.5rem;">Retry</button>
+      </div>
     </main>
   </div>
 
@@ -127,12 +139,50 @@
       timeInput.value = toLocalTimeString(now);
     }
 
+    function showLoading(){
+      const loading = document.getElementById('loading-indicator');
+      const error = document.getElementById('error-message');
+      if(loading) loading.style.display = 'block';
+      if(error) error.style.display = 'none';
+      if(frame) frame.style.opacity = '0';
+    }
+
+    function hideLoading(){
+      const loading = document.getElementById('loading-indicator');
+      if(loading) loading.style.display = 'none';
+      if(frame) frame.style.opacity = '1';
+    }
+
+    function showError(){
+      const loading = document.getElementById('loading-indicator');
+      const error = document.getElementById('error-message');
+      if(loading) loading.style.display = 'none';
+      if(error) error.style.display = 'block';
+    }
+
     function loadDefault(){
       latInput.value = DEFAULT_LAT;
       lonInput.value = DEFAULT_LON;
       fovInput.value = 60;
       setNowInputs();
+      showLoading();
       frame.src = buildStellariumUrl(DEFAULT_LAT, DEFAULT_LON, 60, dateInput.value, timeInput.value);
+      
+      // Hide loading after iframe loads
+      frame.onload = () => {
+        hideLoading();
+      };
+      
+      frame.onerror = () => {
+        showError();
+      };
+      
+      // Fallback: hide loading after 5 seconds even if onload doesn't fire
+      setTimeout(() => {
+        if(document.getElementById('loading-indicator').style.display !== 'none'){
+          hideLoading();
+        }
+      }, 5000);
     }
 
     btnUpdate.addEventListener('click', ()=>{
@@ -141,7 +191,10 @@
       const fov = parseFloat(fovInput.value) || 60;
       const date = dateInput.value || toLocalIsoDate(new Date());
       const time = timeInput.value || toLocalTimeString(new Date());
+      showLoading();
       frame.src = buildStellariumUrl(lat, lon, fov, date, time);
+      frame.onload = () => hideLoading();
+      frame.onerror = () => showError();
     });
 
     btnNow.addEventListener('click', ()=>{

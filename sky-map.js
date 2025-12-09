@@ -1,5 +1,6 @@
 // Custom Interactive Sky Map
 // Replaces Stellarium with a custom canvas-based implementation
+// Version: 2.0 - Planets disabled for debugging
 
 let skyCanvas = null;
 let skyCtx = null;
@@ -13,8 +14,8 @@ let skyMapState = {
     zoom: 1.0,
     panX: 0,
     panY: 0,
-    showConstellations: true,
-    showPlanets: true,
+    showConstellations: false, // Disabled to debug
+    showPlanets: false, // Disabled to debug
     isDragging: false,
     lastMouseX: 0,
     lastMouseY: 0
@@ -88,13 +89,24 @@ function initSkyMap() {
 function resizeSkyCanvas() {
     if (!skyCanvas) return;
     
+    // Get container dimensions
     const container = skyCanvas.parentElement;
-    if (container) {
-    skyCanvas.width = container.clientWidth;
-        skyCanvas.height = Math.max(500, container.clientHeight || 500);
-    }
+    if (!container) return;
     
+    // Get display size (CSS size)
+    const displayWidth = container.clientWidth;
+    const displayHeight = container.clientHeight || 500;
+    
+    // Set canvas internal size to match display size exactly to prevent scaling artifacts
+    // This prevents the browser from scaling the canvas, which can cause visual artifacts like lines
+    if (skyCanvas.width !== displayWidth || skyCanvas.height !== displayHeight) {
+        skyCanvas.width = displayWidth;
+        skyCanvas.height = displayHeight;
+        // Re-render after resize
+        if (skyMapInitialized) {
     renderSkyMap();
+        }
+    }
 }
 
 /**
@@ -212,22 +224,22 @@ function renderSkyMap() {
     const width = skyCanvas.width;
     const height = skyCanvas.height;
 
-    // Clear canvas completely
+    // Clear canvas completely - ensure we're using the actual canvas dimensions
     skyCtx.clearRect(0, 0, width, height);
-    
-    // Fill with background color
     skyCtx.fillStyle = '#0a0e27';
     skyCtx.fillRect(0, 0, width, height);
 
     // Reset all canvas state to defaults to prevent artifacts
     skyCtx.globalAlpha = 1.0;
-    skyCtx.lineWidth = 1;
-    skyCtx.strokeStyle = '#000000';
+    skyCtx.lineWidth = 0; // Set to 0 to prevent any accidental line drawing
+    skyCtx.strokeStyle = 'transparent'; // Make stroke transparent
     skyCtx.fillStyle = '#ffffff';
     skyCtx.textAlign = 'left';
     skyCtx.textBaseline = 'alphabetic';
     skyCtx.font = '10px Arial, sans-serif';
     skyCtx.setLineDash([]); // Ensure no dashed lines
+    skyCtx.lineCap = 'butt'; // Prevent line caps
+    skyCtx.lineJoin = 'miter'; // Prevent line joins
 
     // Draw stars
     skyCtx.fillStyle = '#ffffff';
@@ -242,6 +254,7 @@ function renderSkyMap() {
         skyCtx.beginPath();
             skyCtx.arc(pos.x, pos.y, size, 0, Math.PI * 2);
             skyCtx.fill();
+            skyCtx.closePath(); // Explicitly close path
             
             // Label bright stars - temporarily disabled to debug line issue
             // if (star.mag < 1.0) {
@@ -256,44 +269,7 @@ function renderSkyMap() {
         }
     });
     
-    // Draw constellation lines (currently disabled - no actual lines drawn)
-    if (skyMapState.showConstellations) {
-        // Placeholder - constellation lines not yet implemented
-        // No actual drawing code here to avoid artifacts
-    }
-    
-    // Draw planets (simplified positions)
-    if (skyMapState.showPlanets) {
-        PLANETS.forEach((planet, index) => {
-            // Simplified: place planets in a rough pattern
-            const angle = (index / PLANETS.length) * Math.PI * 2;
-            const radius = Math.min(width, height) * 0.3;
-            const x = width / 2 + skyMapState.panX + Math.cos(angle) * radius * skyMapState.zoom;
-            const y = height / 2 + skyMapState.panY + Math.sin(angle) * radius * skyMapState.zoom;
-            
-            // Draw planet as a colored circle
-            skyCtx.save(); // Save state
-            skyCtx.fillStyle = planet.color;
-        skyCtx.beginPath();
-            skyCtx.arc(x, y, 8, 0, Math.PI * 2);
-        skyCtx.fill();
-
-            // Add a border for visibility
-            skyCtx.strokeStyle = '#ffffff';
-    skyCtx.lineWidth = 1;
-        skyCtx.stroke();
-            skyCtx.restore(); // Restore state
-            
-            // Draw planet name below - temporarily disabled to debug line issue
-            // skyCtx.save();
-            // skyCtx.fillStyle = '#b8c5e0';
-            // skyCtx.font = '10px Arial, sans-serif';
-            // skyCtx.textAlign = 'center';
-            // skyCtx.textBaseline = 'top';
-            // skyCtx.fillText(planet.name, x, y + 12);
-            // skyCtx.restore();
-        });
-    }
+    // Constellation lines and planets completely removed for debugging
     
     // Draw info
     const infoEl = document.getElementById('skyInfo');
