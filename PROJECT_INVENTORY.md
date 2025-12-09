@@ -19,7 +19,7 @@ This document provides a comprehensive inventory of what has been **accomplished
 - [x] **JavaScript logic** (`script.js`) - Full event management system
 - [x] **Styling** (`styles.css`) - Dark theme, responsive design
 - [x] **Static event data** (`data/events.json`) - 9 meteor shower events (planet visibility now generated dynamically)
-- [x] **Navigation system** - Three main sections (Events, Satellite Imagery, Sky Map)
+- [x] **Navigation system** - Four main sections (Events, Satellite Imagery, Sky Map, Glossary)
 - [x] **Responsive design** - Mobile-first approach implemented
 - [x] **Dark theme** - Optimized for astronomy viewing
 
@@ -43,8 +43,11 @@ This document provides a comprehensive inventory of what has been **accomplished
 - [x] **Time remaining** - Countdown to upcoming events
 - [x] **Chronological sorting** - Events sorted by date/time
 - [x] **Image support** - APOD images display in cards and detail view
+- [x] **Video support** - APOD videos (YouTube embeds and direct video) with thumbnails
 - [x] **HD image links** - APOD HD image links in detail view
 - [x] **Default filter state** - Only NASA APOD checked on first visit (shows Astronomy Picture of the Day first)
+- [x] **Auto-apply filters** - Filters apply automatically when checkboxes change (no button click needed)
+- [x] **Loading progress bar** - Visual progress indicator showing data loading status (6 tasks tracked)
 
 #### Event Loading Pipeline:
 All events load in parallel using `Promise.all()`:
@@ -127,15 +130,18 @@ All events are merged, sorted chronologically, and displayed together.
 
 ### 6. Interactive Sky Map ✅
 
-#### Stellarium Web Integration:
-- [x] **Standalone page** (`sky-map.html`) - Full-page sky map
-- [x] **Iframe integration** - Stellarium Web embed in main page
-- [x] **Location controls** - "Use My Location" button
-- [x] **Default location** - La Brea, Trinidad coordinates
-- [x] **Time controls** - Date/time picker
-- [x] **Field of view** - FOV adjustment
-- [x] **Navigation** - Back link to main page
-- [x] **Full Stellarium link** - Opens stellarium-web.org in new tab
+#### Custom Sky Map Implementation:
+- [x] **Custom canvas-based sky map** (`sky-map.js`) - Replaced Stellarium iframe
+- [x] **Bright stars rendering** - 15 major stars with labels (Sirius, Vega, Arcturus, etc.)
+- [x] **Constellation lines** - Big Dipper, Orion, Cassiopeia patterns
+- [x] **Planet display** - Mercury, Venus, Mars, Jupiter, Saturn with symbols
+- [x] **Interactive controls** - Pan (drag), zoom (mouse wheel), reset view
+- [x] **Toggle features** - Show/hide constellations and planets
+- [x] **Location-based view** - Uses user coordinates for sky positioning
+- [x] **Real-time info** - Displays location, zoom level, and current time
+- [x] **Responsive canvas** - Adapts to container size
+- [x] **Dark space theme** - Gradient background matching app theme
+- [x] **Section integration** - Sky Map is now a section like Events/GIBS (not separate page)
 
 ### 7. Geolocation Support ✅
 
@@ -166,15 +172,26 @@ All events are merged, sorted chronologically, and displayed together.
 - [x] **Headers configuration** - Security headers set
 - [x] **URL rewrites** - Proper routing configuration
 
-### 10. Documentation ✅
+### 10. Glossary Section ✅
+
+- [x] **Glossary section** - New section explaining acronyms and astronomy terms
+- [x] **NASA API terms** - APOD, DONKI, EONET, GIBS explanations
+- [x] **Space weather terms** - CME, Solar Flare, FLR definitions
+- [x] **Astronomy terms** - Magnitude, Elevation, Azimuth, Meteor Shower, Planet Visibility
+- [x] **Technical terms** - CORS, Open-Meteo explanations
+- [x] **Organized layout** - Categorized glossary items with hover effects
+- [x] **Navigation integration** - Accessible from main navigation menu
+
+### 11. Documentation ✅
 
 - [x] **README.md** - Project overview and quick start
 - [x] **NASA_INTEGRATION.md** - NASA API integration details
 - [x] **API_INTEGRATION.md** - ISS API integration details
-- [x] **STELLARIUM_INTEGRATION.md** - Sky map integration guide
+- [x] **STELLARIUM_INTEGRATION.md** - Sky map integration guide (legacy - now using custom sky map)
 - [x] **GEOLOCATION_REQUIREMENTS.md** - Geolocation documentation
 - [x] **VERCEL_DEPLOYMENT.md** - Deployment guide
 - [x] **Multiple troubleshooting docs** - Build and setup guides
+- [x] **PROJECT_INVENTORY.md** - Comprehensive project status documentation
 
 ---
 
@@ -199,27 +216,21 @@ All events are merged, sorted chronologically, and displayed together.
 
 **Note:** Default filter state changed so only NASA APOD is checked on first visit, giving users the Astronomy Picture of the Day as the first thing they see.
 
-### 2. Stellarium Web Engine Build ⚠️
+### 2. Stellarium Web Engine Build ❌ DEPRECATED
 
-**Status:** Attempted but not completed
+**Status:** No longer needed - Custom sky map implemented instead
 
-- [x] **Stellarium Web Engine cloned** - Directory exists
-- [x] **Emscripten SDK installed** - `emsdk` directory exists
-- [x] **Build scripts created** - Multiple build scripts exist
-- [ ] **Build NOT completed** - `stellarium-engine.js` exists but is a placeholder
-- [ ] **Engine NOT integrated** - Currently using iframe only
+- [x] **Custom sky map created** - Replaced Stellarium with custom canvas implementation
+- [x] **Full functionality** - Pan, zoom, stars, constellations, planets
+- [ ] **Stellarium build** - Not needed (custom solution works better)
 
 **Current State:**
-- Using Stellarium Web via iframe (works but limited)
-- `stellarium-engine.js` is a placeholder file
-- Build process was attempted but encountered SCons/Emscripten tool issues
-- No built `.wasm` or compiled engine files
+- ✅ Custom sky map (`sky-map.js`) fully implemented
+- ✅ No external dependencies for sky map
+- ✅ Better integration with app theme and controls
+- ❌ Stellarium engine build no longer required
 
-**Files Present:**
-- `stellarium-web-engine/` directory (cloned)
-- `emsdk/` directory (installed)
-- `build-stellarium-engine.ps1` (build script)
-- `stellarium-engine.js` (placeholder, not functional)
+**Note:** The custom sky map provides all needed functionality without requiring complex build processes. Stellarium Web Engine build is no longer a priority.
 
 ### 3. Workshop Events ⚠️
 
@@ -253,22 +264,11 @@ All events are merged, sorted chronologically, and displayed together.
 
 ## ❌ MISSING FEATURES
 
-### 1. Stellarium Web Engine Integration ❌
+### 1. Stellarium Web Engine Integration ❌ DEPRECATED
 
-**Objective:** Build and integrate Stellarium Web Engine for full control
+**Status:** No longer needed - Custom sky map implemented
 
-**Missing:**
-- [ ] Successful build of Stellarium Web Engine
-- [ ] Compiled `.wasm` files
-- [ ] Compiled JavaScript bindings
-- [ ] Integration into main app (currently iframe only)
-- [ ] Custom UI controls for engine
-- [ ] Performance optimizations
-
-**Blockers:**
-- SCons can't find Emscripten tool (environment variable issues)
-- Build process not completed
-- No working engine files
+**Note:** Custom sky map (`sky-map.js`) has been implemented, providing all necessary functionality without requiring Stellarium Web Engine build. This feature is no longer a priority.
 
 ### 2. Workshop Events Data ❌
 
@@ -284,20 +284,25 @@ All events are merged, sorted chronologically, and displayed together.
 
 **Status:** ✅ Complete - See "Partially Implemented" section above for details
 
-### 4. Advanced Sky Map Features ❌
+### 4. Advanced Sky Map Features ✅ MOSTLY COMPLETE
 
-**Objective:** Full-featured sky map with custom controls
+**Status:** Custom sky map implemented with most features
 
-**Missing (if using built engine):**
-- [ ] Constellation toggle
-- [ ] Planet toggle
-- [ ] Grid toggle
-- [ ] Time travel controls (forward/backward)
-- [ ] Custom styling
-- [ ] Object information on click
-- [ ] Search for objects
+**Implemented:**
+- [x] Constellation toggle - Show/hide constellation lines
+- [x] Planet toggle - Show/hide planets
+- [x] Custom styling - Dark space theme matching app
+- [x] Pan and zoom - Interactive navigation
+- [x] Location-based view - Uses user coordinates
+- [x] Real-time info display - Location, zoom, time
 
-**Note:** These features are available in Stellarium Web iframe, but not as integrated controls in the main app.
+**Could Be Enhanced:**
+- [ ] Grid toggle - Coordinate grid overlay
+- [ ] Time travel controls - Forward/backward time navigation
+- [ ] Object information on click - Click stars/planets for details
+- [ ] Search for objects - Search and center on specific objects
+- [ ] More stars - Expand star catalog
+- [ ] More constellations - Add more constellation patterns
 
 ### 5. Event Data Expansion ⚠️ Partially Fixed
 
@@ -409,18 +414,18 @@ All events are merged, sorted chronologically, and displayed together.
 | **NASA API Integration** | ✅ Complete | 100% |
 | **ISS Pass Integration** | ⚠️ Partial | 80% (CORS issue) |
 | **GIBS Satellite Imagery** | ✅ Complete | 90% (OSM fallback works, NOAA/GIBS require auth) |
-| **Sky Map (Iframe)** | ✅ Complete | 100% |
-| **Sky Map (Engine Build)** | ❌ Missing | 0% |
+| **Sky Map (Custom)** | ✅ Complete | 95% |
+| **Glossary** | ✅ Complete | 100% |
 | **Geolocation** | ✅ Complete | 100% |
 | **Caching** | ✅ Complete | 100% |
 | **Deployment** | ✅ Complete | 100% |
 | **Documentation** | ✅ Complete | 90% |
 
-### Overall Project Completion: **~88%** (updated from 85% - Open-Meteo and OSM fallback improvements)
+### Overall Project Completion: **~92%** (updated from 88% - Custom sky map, glossary, video support, and UI improvements)
 
 **Fully Functional:** Yes - The app is fully functional for its core features  
 **Production Ready:** Partially - Needs API key security and testing  
-**Feature Complete:** No - Missing Stellarium engine build and some event types
+**Feature Complete:** Mostly - Core features complete, some enhancements possible (more stars/constellations, time travel, object search)
 
 ---
 
@@ -434,7 +439,7 @@ All events are merged, sorted chronologically, and displayed together.
 5. **Add more event data** - Expand static events (lunar events, etc.)
 
 ### Medium Priority:
-5. **Complete Stellarium Web Engine build** - If full control is desired
+5. **Enhance sky map** - Add more stars, constellations, time travel, object search
 6. **Modularize code** - Split `script.js` into modules
 7. **Add testing** - Unit and integration tests
 8. **Improve error handling** - Better user-facing messages
@@ -450,13 +455,85 @@ All events are merged, sorted chronologically, and displayed together.
 
 - The app is **fully functional** for its implemented features
 - Most missing items are **enhancements** rather than core functionality
-- The Stellarium Web Engine build is **optional** - iframe solution works well
+- Custom sky map **replaces Stellarium** - no external dependencies needed
 - API integrations are **complete and working**
-- Main gaps are in **data expansion** and **advanced features**
+- Main gaps are in **data expansion** and **sky map enhancements** (more stars/constellations)
 
 ---
 
 ## 📝 CHANGELOG
+
+### Recent Major Updates
+
+#### [2025-01-XX] - Custom Sky Map Implementation
+- **Change:** Replaced Stellarium Web iframe with custom canvas-based sky map
+- **Features Added:**
+  - Custom sky map (`sky-map.js`) with canvas rendering
+  - 15 bright stars with labels (Sirius, Vega, Arcturus, etc.)
+  - Constellation lines (Big Dipper, Orion, Cassiopeia)
+  - Planet display (Mercury, Venus, Mars, Jupiter, Saturn)
+  - Interactive controls: pan (drag), zoom (mouse wheel), reset
+  - Toggle constellations and planets visibility
+  - Location-based sky view
+  - Real-time info display
+- **Status:** ✅ Complete
+- **Files Added:** `sky-map.js`
+- **Files Modified:** `index.html`, `script.js`, `styles.css`
+- **Impact:** Sky map is now fully custom with no external dependencies. Better integration with app theme and controls.
+
+#### [2025-01-XX] - Glossary Section Added
+- **Change:** Added new Glossary section explaining acronyms and astronomy terms
+- **Features Added:**
+  - Glossary section accessible from main navigation
+  - NASA API terms (APOD, DONKI, EONET, GIBS)
+  - Space weather terms (CME, Solar Flare, FLR)
+  - Astronomy terms (Magnitude, Elevation, Azimuth, etc.)
+  - Technical terms (CORS, Open-Meteo)
+  - Organized layout with categories
+- **Status:** ✅ Complete
+- **Files Modified:** `index.html`, `styles.css`
+- **Impact:** Users can now understand all acronyms and terms used throughout the app.
+
+#### [2025-01-XX] - APOD Video Support
+- **Change:** Added support for APOD videos (not just images)
+- **Features Added:**
+  - YouTube video support with thumbnail previews
+  - Direct video URL support with HTML5 player
+  - Video thumbnails in event cards
+  - Full video embeds in detail view
+  - Play overlay on video thumbnails
+- **Status:** ✅ Complete
+- **Files Modified:** `script.js`, `styles.css`
+- **Impact:** APOD videos now display correctly with proper video players and thumbnails.
+
+#### [2025-01-XX] - Loading Progress Bar
+- **Change:** Added visual loading progress indicator
+- **Features Added:**
+  - Animated progress bar showing data loading status
+  - Tracks 6 loading tasks (APOD, Static Events, ISS, NASA Data, Astronomy, Planet Visibility)
+  - Shows progress percentage and task count
+  - Auto-hides when loading completes
+  - Works during NASA data refresh
+- **Status:** ✅ Complete
+- **Files Modified:** `script.js`, `index.html`, `styles.css`
+- **Impact:** Users always know when data is loading and how much progress has been made.
+
+#### [2025-XX-XX] - Auto-Apply Filters
+- **Change:** Filters now apply automatically when checkboxes change
+- **Features Added:**
+  - No need to click "Apply Filters" button
+  - Instant filter updates when checkboxes change
+  - Better user experience
+- **Status:** ✅ Complete
+- **Files Modified:** `script.js`
+- **Impact:** Faster, more intuitive filtering experience.
+
+#### [2025-XX-XX] - Footer Credit Update
+- **Change:** Updated footer to credit creator and acknowledge AI tools
+- **Text:** "Created by Joseph Singh, utilizing AI tools in conjunction with vanilla JavaScript, HTML, and CSS"
+- **Status:** ✅ Complete
+- **Files Modified:** `index.html`
+- **Impact:** Proper attribution for creator and development process.
 
 ### Fixes and Improvements
 
