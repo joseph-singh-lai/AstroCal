@@ -1,3 +1,11 @@
+// Global error handler to catch JS errors
+window.onerror = function(msg, url, lineNo, columnNo, error) {
+    console.error('Global Error:', { msg, url, lineNo, columnNo, error });
+    return false;
+};
+
+console.log('AstroCal script.js loaded - v3.1');
+
 // Helper function to get NASA API config
 function getNASAConfig() {
     if (typeof NASA_API_CONFIG !== 'undefined') {
@@ -61,6 +69,8 @@ let loadingProgress = {
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOMContentLoaded fired - initializing AstroCal...');
+    
     // Initialize DOM elements
     eventsContainer = document.getElementById('eventsContainer');
     searchInput = document.getElementById('searchInput');
@@ -226,8 +236,10 @@ function resetLoadingProgress() {
  * Setup navigation between sections
  */
 function setupNavigation() {
+    console.log('setupNavigation called');
     const navButtons = document.querySelectorAll('.nav-button');
     const sections = document.querySelectorAll('.content-section');
+    console.log('Found nav buttons:', navButtons.length, 'sections:', sections.length);
 
     navButtons.forEach(button => {
         button.addEventListener('click', () => {

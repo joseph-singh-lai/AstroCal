@@ -1324,11 +1324,23 @@ window.lookAt = function(azimuth, altitude) {
 // UI CONTROL HANDLERS
 // ============================================
 
+let controlsInitialized = false;
+
 function setupUIControls() {
+    if (controlsInitialized) {
+        console.log('Sky map controls already initialized');
+        return;
+    }
+    
+    console.log('Setting up sky map UI controls...');
+    
     // Location button
     const locationBtn = document.getElementById('sky-use-location');
+    console.log('Location button found:', !!locationBtn);
     if (locationBtn) {
-        locationBtn.addEventListener('click', () => {
+        locationBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            console.log('Location button clicked');
             if (navigator.geolocation) {
                 locationBtn.innerHTML = '<span>⏳</span> Locating...';
                 navigator.geolocation.getCurrentPosition(
@@ -1350,8 +1362,11 @@ function setupUIControls() {
     
     // Reset view button
     const resetBtn = document.getElementById('sky-reset-view');
+    console.log('Reset button found:', !!resetBtn);
     if (resetBtn) {
-        resetBtn.addEventListener('click', () => {
+        resetBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            console.log('Reset button clicked');
             SkyMap.view.azimuth = 180;
             SkyMap.view.altitude = 45;
             SkyMap.view.fov = 60;
@@ -1363,10 +1378,14 @@ function setupUIControls() {
     }
     
     // Direction buttons
-    document.querySelectorAll('.sky-dir').forEach(btn => {
-        btn.addEventListener('click', () => {
+    const dirButtons = document.querySelectorAll('.sky-dir');
+    console.log('Direction buttons found:', dirButtons.length);
+    dirButtons.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
             const az = parseFloat(btn.dataset.az);
             const alt = parseFloat(btn.dataset.alt);
+            console.log('Direction clicked:', az, alt);
             SkyMap.view.azimuth = az;
             SkyMap.view.altitude = alt;
             Renderer.render();
@@ -1398,9 +1417,12 @@ function setupUIControls() {
     const timeSlower = document.getElementById('sky-time-slower');
     const timeNow = document.getElementById('sky-time-now');
     const timeFaster = document.getElementById('sky-time-faster');
+    console.log('Time controls found:', !!timeSlower, !!timeNow, !!timeFaster);
     
     if (timeSlower) {
-        timeSlower.addEventListener('click', () => {
+        timeSlower.addEventListener('click', (e) => {
+            e.preventDefault();
+            console.log('Time slower clicked');
             if (SkyMap.observer.timeSpeed === 1) {
                 SkyMap.observer.timeSpeed = 0;
             } else if (SkyMap.observer.timeSpeed === 0) {
@@ -1415,7 +1437,9 @@ function setupUIControls() {
     }
     
     if (timeNow) {
-        timeNow.addEventListener('click', () => {
+        timeNow.addEventListener('click', (e) => {
+            e.preventDefault();
+            console.log('Time now clicked');
             SkyMap.observer.date = new Date();
             SkyMap.observer.timeSpeed = 1;
             updateTimeSpeedIndicator();
@@ -1424,7 +1448,9 @@ function setupUIControls() {
     }
     
     if (timeFaster) {
-        timeFaster.addEventListener('click', () => {
+        timeFaster.addEventListener('click', (e) => {
+            e.preventDefault();
+            console.log('Time faster clicked');
             if (SkyMap.observer.timeSpeed === 0) {
                 SkyMap.observer.timeSpeed = 60;
             } else if (SkyMap.observer.timeSpeed === 1) {
