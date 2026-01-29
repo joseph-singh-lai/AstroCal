@@ -29,7 +29,7 @@ const SkyMap = {
         fov: 60,            // Field of view in degrees
         minFov: 10,
         maxFov: 120,
-        isDragging: false,
+    isDragging: false,
         lastX: 0,
         lastY: 0,
         touchStartDist: 0
@@ -1267,6 +1267,9 @@ function startAnimation() {
             }
         }
         
+        // Update clock display
+        updateClockDisplay();
+        
         Renderer.render();
         SkyMap.animationId = requestAnimationFrame(animate);
     }
@@ -1449,6 +1452,7 @@ function setupUIControls() {
             SkyMap.observer.date = new Date();
             SkyMap.observer.timeSpeed = 1;
             updateTimeSpeedIndicator();
+            updateClockDisplay();
             Renderer.render();
         });
     }
@@ -1515,6 +1519,37 @@ function updateTimeSpeedIndicator() {
     indicator.textContent = text;
 }
 
+function updateClockDisplay() {
+    const timeEl = document.getElementById('sky-clock-time');
+    const dateEl = document.getElementById('sky-clock-date');
+    
+    if (!timeEl || !dateEl) return;
+    
+    const date = SkyMap.observer.date;
+    
+    // Format time as HH:MM:SS
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    const seconds = date.getSeconds().toString().padStart(2, '0');
+    timeEl.textContent = `${hours}:${minutes}:${seconds}`;
+    
+    // Format date
+    const options = { month: 'short', day: 'numeric', year: 'numeric' };
+    dateEl.textContent = date.toLocaleDateString('en-US', options);
+    
+    // Add visual indicator when time is not "now"
+    const now = new Date();
+    const timeDiff = Math.abs(date.getTime() - now.getTime());
+    
+    if (timeDiff > 60000) { // More than 1 minute difference
+        timeEl.style.color = '#fbbf24'; // Yellow/gold for past/future
+        dateEl.style.color = 'rgba(251, 191, 36, 0.7)';
+    } else {
+        timeEl.style.color = '#7dd3fc'; // Cyan for present
+        dateEl.style.color = 'rgba(150, 180, 220, 0.8)';
+    }
+}
+
 // Initialize when DOM is ready
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
@@ -1523,7 +1558,7 @@ if (document.readyState === 'loading') {
             setupUIControls();
         }, 200);
     });
-} else {
+    } else {
     setTimeout(() => {
         initSkyMap();
         setupUIControls();
