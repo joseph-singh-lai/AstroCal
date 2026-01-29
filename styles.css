@@ -35,7 +35,7 @@
     --animation-fast: 4s;
 }
 
-/* Reduce motion preference */
+/* Reduce motion preference - only affects users who have system-level reduce motion enabled */
 @media (prefers-reduced-motion: reduce) {
     :root {
         --animation-slow: 0s;
@@ -43,10 +43,12 @@
         --animation-fast: 0s;
     }
     
-    *, *::before, *::after {
+    /* Only reduce motion for background effects, not all animations */
+    .sun, .planet-1, .planet-2, .planet-3, .planet-4, .planet-5, .planet-6,
+    .galaxy-1, .galaxy-2, .galaxy-3,
+    body::before, body::after {
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
     }
 }
 
@@ -122,7 +124,7 @@ body::before {
         radial-gradient(2px 2px at 55% 55%, rgba(255, 255, 255, 0.8), transparent);
     background-size: 200% 200%;
     background-position: 0% 0%;
-    animation: starfield var(--animation-slow) linear infinite;
+    animation: starfield 60s linear infinite;
     pointer-events: none;
     z-index: 0;
     opacity: 0.9;
@@ -151,7 +153,7 @@ body::after {
         radial-gradient(1px 1px at 65% 35%, rgba(107, 141, 214, 0.8), transparent);
     background-size: 300% 300%;
     background-position: 0% 0%;
-    animation: twinkle var(--animation-medium) ease-in-out infinite alternate, starfield 80s linear infinite reverse;
+    animation: twinkle 8s ease-in-out infinite alternate, starfield 80s linear infinite reverse;
     pointer-events: none;
     z-index: 0;
     opacity: 0.7;
@@ -205,7 +207,7 @@ body::after {
     transform: translate(-50%, -50%);
     pointer-events: none;
     z-index: 0;
-    animation: sunPulse var(--animation-fast) ease-in-out infinite;
+    animation: sunPulse 4s ease-in-out infinite;
     filter: blur(0.5px);
 }
 

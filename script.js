@@ -311,11 +311,11 @@ function setupNavigation() {
 
             if (targetSection === 'sky') {
                 // Initialize custom sky map if not already initialized
-                if (!skyMapInitialized && typeof initSkyMap === 'function') {
+                if (!window.skyMapInitialized && typeof initSkyMap === 'function') {
                     setTimeout(() => {
                         initSkyMap();
                     }, 100);
-                } else if (skyMapInitialized && typeof renderSkyMap === 'function') {
+                } else if (window.skyMapInitialized && typeof renderSkyMap === 'function') {
                     // Re-render if already initialized
                     renderSkyMap();
                 }
@@ -2453,3 +2453,260 @@ function checkMercuryVisibility(month) {
     return elongationMonths.includes(month);
 }
 
+/* ============================
+   UI ENHANCEMENTS
+   ============================ */
+
+/**
+ * Setup header condensing on scroll
+ */
+function setupHeaderScroll() {
+    const header = document.getElementById('mainHeader');
+    if (!header) return;
+    
+    let lastScrollY = window.scrollY;
+    let ticking = false;
+    
+    const handleScroll = () => {
+        const scrollY = window.scrollY;
+        
+        if (scrollY > 80) {
+            header.classList.add('condensed');
+        } else {
+            header.classList.remove('condensed');
+        }
+        
+        lastScrollY = scrollY;
+        ticking = false;
+    };
+    
+    window.addEventListener('scroll', () => {
+        if (!ticking) {
+            window.requestAnimationFrame(handleScroll);
+            ticking = true;
+        }
+    }, { passive: true });
+}
+
+/**
+ * Setup motion toggle for accessibility
+ */
+function setupMotionToggle() {
+    const motionToggle = document.getElementById('motionToggle');
+    if (!motionToggle) return;
+    
+    // Check saved preference - only reduce motion if explicitly set to 'true'
+    const savedMotionPref = localStorage.getItem('reduceMotion');
+    if (savedMotionPref === 'true') {
+        document.body.classList.add('reduce-motion');
+    } else {
+        // Ensure animations are running by default
+        document.body.classList.remove('reduce-motion');
+    }
+    
+    motionToggle.addEventListener('click', () => {
+        document.body.classList.toggle('reduce-motion');
+        const isReduced = document.body.classList.contains('reduce-motion');
+        localStorage.setItem('reduceMotion', isReduced.toString());
+        
+        // Announce to screen readers
+        const announcement = isReduced ? 'Background animations paused' : 'Background animations resumed';
+        announceToScreenReader(announcement);
+    });
+}
+
+/**
+ * Announce message to screen readers
+ */
+function announceToScreenReader(message) {
+    const announcement = document.createElement('div');
+    announcement.setAttribute('aria-live', 'polite');
+    announcement.setAttribute('aria-atomic', 'true');
+    announcement.className = 'sr-only';
+    announcement.style.cssText = 'position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;';
+    announcement.textContent = message;
+    document.body.appendChild(announcement);
+    
+    setTimeout(() => {
+        document.body.removeChild(announcement);
+    }, 1000);
+}
+
+/**
+ * Setup filter panel mobile behavior
+ */
+function setupFilterPanel() {
+    const filterPanel = document.getElementById('filterPanel');
+    const filterToggleMobile = document.getElementById('filterToggleMobile');
+    const filterCloseMobile = document.getElementById('filterCloseMobile');
+    const selectAllBtn = document.getElementById('selectAllFilters');
+    const clearAllBtn = document.getElementById('clearAllFilters');
+    
+    console.log('Setting up filter panel:', { 
+        filterPanel: !!filterPanel, 
+        selectAllBtn: !!selectAllBtn, 
+        clearAllBtn: !!clearAllBtn 
+    });
+    
+    // Mobile toggle
+    if (filterToggleMobile && filterPanel) {
+        filterToggleMobile.addEventListener('click', () => {
+            filterPanel.classList.add('open');
+            document.body.style.overflow = 'hidden'; // Prevent background scroll
+        });
+    }
+    
+    if (filterCloseMobile && filterPanel) {
+        filterCloseMobile.addEventListener('click', () => {
+            filterPanel.classList.remove('open');
+            document.body.style.overflow = ''; // Restore scroll
+        });
+    }
+    
+    // Close on escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && filterPanel && filterPanel.classList.contains('open')) {
+            filterPanel.classList.remove('open');
+            document.body.style.overflow = '';
+        }
+    });
+    
+    // Select All - use event delegation as backup
+    if (selectAllBtn) {
+        selectAllBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Select All clicked');
+            const checkboxes = document.querySelectorAll('.filter-checkbox input[type="checkbox"]');
+            console.log('Found checkboxes:', checkboxes.length);
+            checkboxes.forEach(cb => {
+                cb.checked = true;
+            });
+            updateFilterCount();
+            applyFilters();
+        });
+    } else {
+        console.warn('Select All button not found!');
+    }
+    
+    // Clear All
+    if (clearAllBtn) {
+        clearAllBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Clear All clicked');
+            const checkboxes = document.querySelectorAll('.filter-checkbox input[type="checkbox"]');
+            checkboxes.forEach(cb => {
+                cb.checked = false;
+            });
+            // Keep at least APOD checked as default
+            const apodCheckbox = document.querySelector('.filter-checkbox input[value="apod"]');
+            if (apodCheckbox) apodCheckbox.checked = true;
+            updateFilterCount();
+            applyFilters();
+        });
+    } else {
+        console.warn('Clear All button not found!');
+    }
+    
+    // Update filter count when checkboxes change
+    const checkboxes = document.querySelectorAll('.filter-checkbox input[type="checkbox"]');
+    checkboxes.forEach(cb => {
+        cb.addEventListener('change', updateFilterCount);
+    });
+}
+
+/**
+ * Update filter count badge
+ */
+function updateFilterCount() {
+    const filterCount = document.getElementById('filterCount');
+    if (!filterCount) return;
+    
+    const checkedCount = document.querySelectorAll('.filter-checkbox input[type="checkbox"]:checked').length;
+    filterCount.textContent = checkedCount;
+    
+    // Add visual emphasis if many filters selected
+    if (checkedCount > 3) {
+        filterCount.style.background = 'var(--accent-secondary)';
+    } else {
+        filterCount.style.background = 'var(--accent-primary)';
+    }
+}
+
+/**
+ * Setup glossary search functionality
+ */
+function setupGlossarySearch() {
+    const glossarySearch = document.getElementById('glossarySearch');
+    if (!glossarySearch) return;
+    
+    glossarySearch.addEventListener('input', debounce((e) => {
+        const searchTerm = e.target.value.toLowerCase().trim();
+        const glossaryItems = document.querySelectorAll('.glossary-item');
+        const glossaryCategories = document.querySelectorAll('.glossary-category');
+        
+        if (!searchTerm) {
+            // Show all items and categories
+            glossaryItems.forEach(item => item.style.display = '');
+            glossaryCategories.forEach(cat => cat.style.display = '');
+            return;
+        }
+        
+        // Search through items
+        glossaryItems.forEach(item => {
+            const term = item.querySelector('strong')?.textContent.toLowerCase() || '';
+            const definition = item.querySelector('p')?.textContent.toLowerCase() || '';
+            
+            if (term.includes(searchTerm) || definition.includes(searchTerm)) {
+                item.style.display = '';
+                // Highlight matching text
+                highlightSearchTerm(item, searchTerm);
+            } else {
+                item.style.display = 'none';
+            }
+        });
+        
+        // Hide empty categories
+        glossaryCategories.forEach(cat => {
+            const visibleItems = cat.querySelectorAll('.glossary-item:not([style*="display: none"])');
+            cat.style.display = visibleItems.length === 0 ? 'none' : '';
+        });
+    }, 200));
+}
+
+/**
+ * Highlight search term in glossary items
+ */
+function highlightSearchTerm(item, searchTerm) {
+    // Simple highlight - could be enhanced with mark.js or similar
+    const strongEl = item.querySelector('strong');
+    const pEl = item.querySelector('p');
+    
+    // Reset any previous highlights
+    if (strongEl) {
+        strongEl.innerHTML = strongEl.textContent;
+    }
+    if (pEl) {
+        pEl.innerHTML = pEl.textContent;
+    }
+    
+    // Add highlight for matching term
+    if (searchTerm && searchTerm.length > 1) {
+        const regex = new RegExp(`(${escapeRegExp(searchTerm)})`, 'gi');
+        
+        if (strongEl && strongEl.textContent.toLowerCase().includes(searchTerm)) {
+            strongEl.innerHTML = strongEl.textContent.replace(regex, '<mark style="background: var(--accent-warning); color: var(--bg-primary); padding: 0 2px; border-radius: 2px;">$1</mark>');
+        }
+        if (pEl && pEl.textContent.toLowerCase().includes(searchTerm)) {
+            pEl.innerHTML = pEl.textContent.replace(regex, '<mark style="background: var(--accent-warning); color: var(--bg-primary); padding: 0 2px; border-radius: 2px;">$1</mark>');
+        }
+    }
+}
+
+/**
+ * Escape special regex characters
+ */
+function escapeRegExp(string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}

@@ -1,10 +1,11 @@
 // Custom Interactive Sky Map
 // Replaces Stellarium with a custom canvas-based implementation
-// Version: 2.0 - Planets disabled for debugging
+// Version: 2.1 - Fixed initialization
 
 let skyCanvas = null;
 let skyCtx = null;
-let skyMapInitialized = false;
+// Make skyMapInitialized global so script.js can access it
+window.skyMapInitialized = false;
 
 // Sky map state
 let skyMapState = {
@@ -80,7 +81,7 @@ function initSkyMap() {
 
     // Initial render
     renderSkyMap();
-    skyMapInitialized = true;
+    window.skyMapInitialized = true;
 }
 
 /**
@@ -103,8 +104,8 @@ function resizeSkyCanvas() {
         skyCanvas.width = displayWidth;
         skyCanvas.height = displayHeight;
         // Re-render after resize
-        if (skyMapInitialized) {
-    renderSkyMap();
+        if (window.skyMapInitialized) {
+            renderSkyMap();
         }
     }
 }
@@ -299,7 +300,7 @@ function renderSkyMap() {
 function updateSkyMapLocation(lat, lon) {
     skyMapState.lat = lat;
     skyMapState.lon = lon;
-    if (skyMapInitialized) {
+    if (window.skyMapInitialized) {
         renderSkyMap();
     }
 }
