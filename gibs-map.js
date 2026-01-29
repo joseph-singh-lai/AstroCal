@@ -1,362 +1,454 @@
-// Satellite Imagery - NOAA GOES with OSM fallback
-// Uses Leaflet to display satellite imagery with fallback options
+/**
+ * AstroCal Satellite Imagery Module
+ * Uses NASA GIBS (Global Imagery Browse Services) and other free satellite sources
+ * Version: 2.0
+ */
 
 let gibsMap = null;
-let currentGibsLayer = null;
+let currentLayer = null;
+let baseLayer = null;
+window.gibsMapInitialized = false;
 
-// NOAA GOES Satellite Imagery Sources
-// Note: These are experimental - may need adjustment based on actual availability
-const NOAA_GOES_TEMPLATES = {
-    // GOES-East GeoColor (near real-time)
-    "GOES-East_GeoColor": "https://rammb-slider.cira.colostate.edu/data/imagery/{date}/goes-16---geocolor/{z}/{y}/{x}.jpg",
-    // Alternative: Try NOAA CoastWatch if available
-    "NOAA_CoastWatch": "https://coastwatch.noaa.gov/cw_html/cwView_EPA.html"
-};
+// NASA GIBS WMTS Configuration
+const GIBS_WMTS_BASE = 'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best';
 
-// OpenStreetMap fallback (reliable base layer)
-const OSM_TEMPLATE = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
-
-// Available satellite imagery layers
+// Available Satellite Layers
 const SATELLITE_LAYERS = {
-    "OpenStreetMap": {
-        type: "osm",
-        url: OSM_TEMPLATE,
+    // Base Maps
+    "osm": {
+        name: "OpenStreetMap",
+        type: "base",
+        url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
         attribution: '© OpenStreetMap contributors',
         subdomains: ['a', 'b', 'c'],
         maxZoom: 19,
-        description: "Standard map view (reliable fallback)"
+        category: "base"
     },
-    "NOAA_GOES_East": {
-        type: "noaa",
-        // NOTE: NOWCoast service returns 403 Forbidden - requires authentication or not publicly accessible
-        // URL format is correct but service blocks direct tile access
-        url: "https://nowcoast.noaa.gov/arcgis/rest/services/nowcoast/sat_meteo_imagery_goes16geocolor/MapServer/tile/{z}/{y}/{x}",
-        attribution: 'Imagery © NOAA (Currently unavailable - requires authentication)',
-        maxZoom: 8,
-        minZoom: 2,
-        description: "NOAA GOES-East GeoColor - Currently unavailable (service requires authentication)",
-        tms: true, // ArcGIS uses TMS (Y coordinate flipped)
-        disabled: true // Mark as disabled since service requires auth
+    "esri_satellite": {
+        name: "ESRI World Imagery",
+        type: "base",
+        url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+        attribution: '© Esri, Maxar, Earthstar Geographics',
+        maxZoom: 18,
+        category: "satellite"
     },
-    "NOAA_GOES_West": {
-        type: "noaa",
-        // NOTE: NOWCoast service returns 403 Forbidden - requires authentication or not publicly accessible
-        url: "https://nowcoast.noaa.gov/arcgis/rest/services/nowcoast/sat_meteo_imagery_goes17geocolor/MapServer/tile/{z}/{y}/{x}",
-        attribution: 'Imagery © NOAA (Currently unavailable - requires authentication)',
+    "carto_dark": {
+        name: "Dark Map",
+        type: "base",
+        url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+        attribution: '© CARTO',
+        subdomains: ['a', 'b', 'c', 'd'],
+        maxZoom: 19,
+        category: "base"
+    },
+    
+    // NASA GIBS Layers (WMTS)
+    "modis_terra": {
+        name: "MODIS Terra True Color",
+        type: "gibs",
+        layer: "MODIS_Terra_CorrectedReflectance_TrueColor",
+        format: "image/jpeg",
+        time: "today",
+        attribution: '© NASA GIBS',
+        maxZoom: 9,
+        category: "nasa"
+    },
+    "modis_aqua": {
+        name: "MODIS Aqua True Color", 
+        type: "gibs",
+        layer: "MODIS_Aqua_CorrectedReflectance_TrueColor",
+        format: "image/jpeg",
+        time: "today",
+        attribution: '© NASA GIBS',
+        maxZoom: 9,
+        category: "nasa"
+    },
+    "viirs_snpp": {
+        name: "VIIRS SNPP True Color",
+        type: "gibs",
+        layer: "VIIRS_SNPP_CorrectedReflectance_TrueColor",
+        format: "image/jpeg",
+        time: "today",
+        attribution: '© NASA GIBS',
+        maxZoom: 9,
+        category: "nasa"
+    },
+    "blue_marble": {
+        name: "Blue Marble (Monthly)",
+        type: "gibs",
+        layer: "BlueMarble_NextGeneration",
+        format: "image/jpeg",
+        time: null, // No time dimension
+        attribution: '© NASA GIBS',
         maxZoom: 8,
-        minZoom: 2,
-        description: "NOAA GOES-West GeoColor - Currently unavailable (service requires authentication)",
-        tms: true,
-        disabled: true // Mark as disabled since service requires auth
+        category: "nasa"
+    },
+    "earth_at_night": {
+        name: "Earth at Night 2012",
+        type: "gibs",
+        layer: "VIIRS_Black_Marble",
+        format: "image/png",
+        time: null,
+        attribution: '© NASA GIBS',
+        maxZoom: 8,
+        category: "nasa"
+    },
+    "cloud_tops": {
+        name: "Cloud Top Temperature",
+        type: "gibs",
+        layer: "MODIS_Terra_Cloud_Top_Temp_Day",
+        format: "image/png",
+        time: "today",
+        attribution: '© NASA GIBS',
+        maxZoom: 7,
+        category: "weather"
+    },
+    "sea_surface_temp": {
+        name: "Sea Surface Temperature",
+        type: "gibs",
+        layer: "GHRSST_L4_MUR_Sea_Surface_Temperature",
+        format: "image/png",
+        time: "today",
+        attribution: '© NASA GIBS',
+        maxZoom: 7,
+        category: "ocean"
+    },
+    "fires": {
+        name: "Active Fires (MODIS)",
+        type: "gibs",
+        layer: "MODIS_Terra_Thermal_Anomalies_All",
+        format: "image/png",
+        time: "today",
+        attribution: '© NASA GIBS',
+        maxZoom: 9,
+        category: "hazards"
+    },
+    "aerosol": {
+        name: "Aerosol Optical Depth",
+        type: "gibs",
+        layer: "MODIS_Terra_Aerosol_Optical_Depth_3km",
+        format: "image/png",
+        time: "today",
+        attribution: '© NASA GIBS',
+        maxZoom: 7,
+        category: "atmosphere"
     }
 };
 
-// Legacy GIBS layer names mapped to new options
-const LEGACY_LAYER_MAP = {
-    "MODIS_Terra_CorrectedReflectance_TrueColor": "NOAA_GOES_East",
-    "MODIS_Aqua_CorrectedReflectance_TrueColor": "NOAA_GOES_West",
-    "VIIRS_SNPP_CorrectedReflectance_TrueColor": "NOAA_GOES_East",
-    "GOES-East_ABI_GeoColor": "NOAA_GOES_East",
-    "VIIRS_SNPP_DayNightBand_At_Sensor_Radiance": "OpenStreetMap",
-    "MODIS_Terra_Aerosol": "NOAA_GOES_East",
-    "MODIS_Aqua_Cloud_Top_Temperature_Day": "NOAA_GOES_West",
-    "MODIS_Terra_Thermal_Anomalies_250m": "NOAA_GOES_East"
-};
-
-function setGibsLayer(layerName) {
-    if (!gibsMap) {
-        console.error("Map not initialized");
-        return;
-    }
-
-    // Map legacy layer names to new layer system
-    const mappedLayer = LEGACY_LAYER_MAP[layerName] || layerName;
-    
-    // Get layer configuration
-    const layerConfig = SATELLITE_LAYERS[mappedLayer];
-    
-    if (!layerConfig) {
-        console.warn(`Layer ${layerName} not found, using OpenStreetMap fallback`);
-        setGibsLayer("OpenStreetMap");
-        return;
-    }
-    
-    // Check if layer is disabled (e.g., requires authentication)
-    if (layerConfig.disabled) {
-        console.warn(`Layer ${mappedLayer} is disabled: ${layerConfig.description}`);
-        // Show user-friendly message
-        const mapContainer = document.getElementById("gibs-map");
-        if (mapContainer) {
-            const existingMsg = mapContainer.querySelector('.layer-disabled-message');
-            if (!existingMsg) {
-                const msg = document.createElement('div');
-                msg.className = 'layer-disabled-message';
-                msg.style.cssText = 'position: absolute; top: 10px; left: 10px; right: 10px; background: rgba(255, 200, 0, 0.9); color: #000; padding: 10px; border-radius: 5px; z-index: 1000; font-size: 0.9rem;';
-                msg.innerHTML = `⚠️ ${layerConfig.description}. Switching to OpenStreetMap.`;
-                mapContainer.style.position = 'relative';
-                mapContainer.appendChild(msg);
-                
-                // Remove message after 5 seconds
-                setTimeout(() => {
-                    if (msg.parentNode) {
-                        msg.parentNode.removeChild(msg);
-                    }
-                }, 5000);
-            }
-        }
-        // Fallback to OSM
-        setGibsLayer("OpenStreetMap");
-        return;
-    }
-
-    console.log(`Loading satellite layer: ${mappedLayer} (${layerConfig.description})`);
-
-    if (currentGibsLayer) {
-        gibsMap.removeLayer(currentGibsLayer);
-    }
-
-    // Create tile layer with appropriate configuration
-    const tileOptions = {
-        tileSize: 256,
-        noWrap: false,
-        attribution: layerConfig.attribution,
-        maxZoom: layerConfig.maxZoom || 18,
-        minZoom: layerConfig.minZoom || 2,
-        errorTileUrl: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjU2IiBoZWlnaHQ9IjI1NiIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjU2IiBoZWlnaHQ9IjI1NiIgZmlsbD0iIzAwMCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM2NjYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5UaWxlIGVycm9yPC90ZXh0Pjwvc3ZnPg=='
-    };
-
-    // Add subdomains for OSM
-    if (layerConfig.subdomains) {
-        tileOptions.subdomains = layerConfig.subdomains;
-    }
-
-    // Handle TMS format (Y coordinate flipped) for ArcGIS services
-    if (layerConfig.tms) {
-        tileOptions.tms = true;
-    }
-
-    // For NOAA layers, use proxy to bypass CORS
-    // Create custom tile layer class that properly overrides getTileUrl
-    if (layerConfig.type === "noaa") {
-        // Extend L.TileLayer to properly override getTileUrl
-        const ProxyTileLayer = L.TileLayer.extend({
-            getTileUrl: function(coords) {
-                console.log('getTileUrl called with coords:', coords);
-                
-                // Build the actual NOAA tile URL with coordinates
-                // Note: TMS format uses {z}/{y}/{x}, Leaflet will handle TMS flag via tms: true
-                let actualUrl = layerConfig.url
-                    .replace('{z}', coords.z)
-                    .replace('{y}', coords.y)
-                    .replace('{x}', coords.x);
-                
-                // Route through proxy to avoid CORS
-                const proxyUrl = `/api/gibs-tile.js?url=${encodeURIComponent(actualUrl)}`;
-                console.log(`NOAA tile request: z=${coords.z}, y=${coords.y}, x=${coords.x}`);
-                console.log(`Actual URL: ${actualUrl}`);
-                console.log(`Proxy URL: ${proxyUrl}`);
-                return proxyUrl;
-            }
-        });
-        
-        // Create instance with placeholder URL (required by Leaflet but won't be used)
-        currentGibsLayer = new ProxyTileLayer('https://placeholder/{z}/{x}/{y}.png', tileOptions);
-        
-        console.log('Using proxy for NOAA tiles to bypass CORS');
-        console.log('NOAA tile URL template:', layerConfig.url);
-    } else {
-        // For OSM, use standard tile layer
-        currentGibsLayer = L.tileLayer(layerConfig.url, tileOptions);
-    }
-
-    // Add error handler - fallback to OSM if satellite imagery fails
-    let errorCount = 0;
-    let successCount = 0;
-    const maxErrors = 3; // Lower threshold for faster fallback
-    
-    currentGibsLayer.on('tileerror', function(error) {
-        errorCount++;
-        console.warn(`Tile error (${errorCount}/${maxErrors}):`, error);
-        
-        // Safely get tile URL if available
-        const tileUrl = error.tile ? (error.tile.src || 'unknown') : 'tile object unavailable';
-        console.warn('Failed tile URL:', tileUrl);
-        console.warn('Error details:', error);
-        
-        // If too many errors and not already on OSM, switch to OSM
-        if (errorCount >= maxErrors && mappedLayer !== "OpenStreetMap") {
-            console.warn('NOAA satellite imagery unavailable, falling back to OpenStreetMap');
-            console.warn(`Total errors: ${errorCount}, Successes: ${successCount}`);
-            
-            // Show user-friendly message
-            const mapContainer = document.getElementById("gibs-map");
-            if (mapContainer) {
-                const existingMsg = mapContainer.querySelector('.layer-error-message');
-                if (!existingMsg) {
-                    const msg = document.createElement('div');
-                    msg.className = 'layer-error-message';
-                    msg.style.cssText = 'position: absolute; top: 10px; left: 10px; right: 10px; background: rgba(255, 100, 100, 0.9); color: white; padding: 10px; border-radius: 5px; z-index: 1000; font-size: 0.9rem;';
-                    msg.innerHTML = '⚠️ NOAA satellite imagery unavailable. Switched to OpenStreetMap.';
-                    mapContainer.style.position = 'relative';
-                    mapContainer.appendChild(msg);
-                    
-                    // Remove message after 5 seconds
-                    setTimeout(() => {
-                        if (msg.parentNode) {
-                            msg.parentNode.removeChild(msg);
-                        }
-                    }, 5000);
-                }
-            }
-            
-            setGibsLayer("OpenStreetMap");
-        }
-    });
-    
-    // Track successful tile loads (but ignore error placeholder tiles)
-    currentGibsLayer.on('tileload', function(event) {
-        const tileUrl = event.tile ? event.tile.src : 'unknown';
-        // Only count as success if it's not the error placeholder
-        if (tileUrl && !tileUrl.includes('data:image/svg+xml')) {
-            successCount++;
-            console.log(`Tile loaded successfully (${successCount}):`, tileUrl);
-            
-            // Check if tile is actually visible (not transparent/empty)
-            if (event.tile && event.tile.complete) {
-                // Try to detect if image is mostly transparent/green (might be our fallback)
-                const img = event.tile;
-                if (img.naturalWidth === 1 && img.naturalHeight === 1) {
-                    console.warn('Tile appears to be 1x1 pixel (likely transparent fallback):', tileUrl);
-                }
-            }
-        } else {
-            console.warn('Tile loaded but appears to be error placeholder:', tileUrl);
-        }
-    });
-    
-    // Track when tiles start loading
-    currentGibsLayer.on('loading', function() {
-        console.log('Tiles loading for layer:', mappedLayer);
-    });
-
-    // Reset error count on successful tile load
-    currentGibsLayer.on('tileload', function() {
-        if (errorCount > 0) {
-            errorCount = 0; // Reset on successful load
-        }
-    });
-
-    currentGibsLayer.addTo(gibsMap);
-    console.log(`Layer ${mappedLayer} loaded successfully`);
+// Get formatted date for GIBS (YYYY-MM-DD)
+function getGIBSDate(daysAgo = 1) {
+    const date = new Date();
+    date.setDate(date.getDate() - daysAgo); // GIBS data is usually 1 day behind
+    return date.toISOString().split('T')[0];
 }
 
+// Create NASA GIBS WMTS layer
+function createGIBSLayer(config) {
+    const date = config.time === "today" ? getGIBSDate(1) : config.time;
+    
+    // GIBS WMTS URL template
+    let url = `${GIBS_WMTS_BASE}/${config.layer}/default/`;
+    if (date) {
+        url += `${date}/`;
+    }
+    url += `GoogleMapsCompatible_Level${config.maxZoom}/{z}/{y}/{x}.${config.format.split('/')[1]}`;
+    
+    return L.tileLayer(url, {
+        attribution: config.attribution,
+        maxZoom: config.maxZoom,
+        tileSize: 256,
+        opacity: 1
+    });
+}
+
+// Create standard tile layer
+function createTileLayer(config) {
+    return L.tileLayer(config.url, {
+        attribution: config.attribution,
+        subdomains: config.subdomains || [],
+        maxZoom: config.maxZoom || 18
+    });
+}
+
+// Initialize the map
 function initGIBSMap() {
+    console.log('Initializing Satellite Map...');
+    
+    const container = document.getElementById('gibs-map');
+    if (!container) {
+        console.error('Map container not found');
+        return;
+    }
+    
+    // Check if already initialized
     if (gibsMap && gibsMap instanceof L.Map) {
-        // Map already exists, just invalidate size
+        console.log('Map already initialized');
+        gibsMap.invalidateSize();
+        return;
+    }
+    
+    // Clear any existing content
+    container.innerHTML = '';
+    
+    // Default location (La Brea, Trinidad)
+    const defaultLat = window.userLocation?.lat || 10.25;
+    const defaultLon = window.userLocation?.lon || -61.63;
+    
+    try {
+        // Create map
+        gibsMap = L.map(container, {
+            center: [defaultLat, defaultLon],
+            zoom: 4,
+            minZoom: 2,
+            maxZoom: 18,
+            worldCopyJump: true
+        });
+        
+        // Add default base layer (ESRI Satellite)
+        const defaultConfig = SATELLITE_LAYERS["esri_satellite"];
+        baseLayer = createTileLayer(defaultConfig);
+        baseLayer.addTo(gibsMap);
+        
+        // Set up layer control
+        setupLayerControl();
+        
+        // Add scale
+        L.control.scale({ position: 'bottomleft' }).addTo(gibsMap);
+        
+        window.gibsMap = gibsMap;
+        window.gibsMapInitialized = true;
+        
+        console.log('Satellite map initialized successfully');
+        
+        // Force size update after a moment
         setTimeout(() => {
-            if (gibsMap.invalidateSize) {
+            if (gibsMap) {
                 gibsMap.invalidateSize();
             }
         }, 100);
-        return;
+        
+    } catch (error) {
+        console.error('Error initializing map:', error);
+        container.innerHTML = `<div style="padding: 20px; color: #ff6b6b;">Error loading map: ${error.message}</div>`;
     }
+}
 
-    const mapContainer = document.getElementById("gibs-map");
-    if (!mapContainer) {
-        console.warn("GIBS map container not found");
-        return;
-    }
-
-    // Check if Leaflet is loaded
-    if (typeof L === 'undefined') {
-        console.error("Leaflet library not loaded");
-        mapContainer.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--text-secondary);">Error: Leaflet map library failed to load. Please check your internet connection.</div>';
-        return;
-    }
-
-    // Initialize Leaflet map with Web Mercator (EPSG3857)
-    gibsMap = L.map("gibs-map", {
-        center: [10.25, -61.63], // La Brea, Trinidad & Tobago
-        zoom: 4,
-        minZoom: 2,
-        maxZoom: 8,
-        worldCopyJump: false
+// Setup layer selection dropdown
+function setupLayerControl() {
+    const select = document.getElementById('gibs-layer-select');
+    if (!select) return;
+    
+    // Clear existing options
+    select.innerHTML = '';
+    
+    // Group layers by category
+    const categories = {
+        satellite: { label: '🛰️ Satellite Imagery', layers: [] },
+        nasa: { label: '🚀 NASA GIBS (Daily)', layers: [] },
+        weather: { label: '🌤️ Weather', layers: [] },
+        ocean: { label: '🌊 Ocean', layers: [] },
+        atmosphere: { label: '💨 Atmosphere', layers: [] },
+        hazards: { label: '🔥 Hazards', layers: [] },
+        base: { label: '🗺️ Base Maps', layers: [] }
+    };
+    
+    // Sort layers into categories
+    Object.entries(SATELLITE_LAYERS).forEach(([key, config]) => {
+        const cat = config.category || 'base';
+        if (categories[cat]) {
+            categories[cat].layers.push({ key, ...config });
+        }
     });
-
-    // Load default layer - start with OSM (reliable), NOAA available but may have issues
-    setGibsLayer("OpenStreetMap");
-
-    // Change layer dynamically
-    const layerSelect = document.getElementById("gibs-layer-select");
-    if (layerSelect) {
-        layerSelect.addEventListener("change", (e) => {
-            setGibsLayer(e.target.value);
+    
+    // Create optgroups
+    Object.entries(categories).forEach(([catKey, category]) => {
+        if (category.layers.length === 0) return;
+        
+        const optgroup = document.createElement('optgroup');
+        optgroup.label = category.label;
+        
+        category.layers.forEach(layer => {
+            const option = document.createElement('option');
+            option.value = layer.key;
+            option.textContent = layer.name;
+            if (layer.key === 'esri_satellite') {
+                option.selected = true;
+            }
+            optgroup.appendChild(option);
         });
-    }
+        
+        select.appendChild(optgroup);
+    });
+    
+    // Handle layer change
+    select.addEventListener('change', (e) => {
+        setGibsLayer(e.target.value);
+    });
+}
 
-    // Center on user location button
-    const centerMapButton = document.getElementById("centerMapButton");
-    if (centerMapButton) {
-        centerMapButton.addEventListener("click", () => {
+// Set the active layer
+function setGibsLayer(layerKey) {
+    if (!gibsMap) {
+        console.error('Map not initialized');
+        return;
+    }
+    
+    const config = SATELLITE_LAYERS[layerKey];
+    if (!config) {
+        console.error('Layer not found:', layerKey);
+        return;
+    }
+    
+    console.log('Switching to layer:', config.name);
+    
+    // Remove current layer
+    if (currentLayer) {
+        gibsMap.removeLayer(currentLayer);
+        currentLayer = null;
+    }
+    if (baseLayer) {
+        gibsMap.removeLayer(baseLayer);
+        baseLayer = null;
+    }
+    
+    // Create new layer based on type
+    let newLayer;
+    if (config.type === 'gibs') {
+        newLayer = createGIBSLayer(config);
+    } else {
+        newLayer = createTileLayer(config);
+    }
+    
+    // Add loading indicator
+    showLoadingIndicator(true);
+    
+    newLayer.on('load', () => {
+        showLoadingIndicator(false);
+        console.log('Layer loaded:', config.name);
+    });
+    
+    newLayer.on('tileerror', (e) => {
+        console.warn('Tile error:', e);
+    });
+    
+    // For NASA GIBS layers, add a dark base layer underneath
+    if (config.type === 'gibs') {
+        baseLayer = createTileLayer(SATELLITE_LAYERS['carto_dark']);
+        baseLayer.addTo(gibsMap);
+        newLayer.addTo(gibsMap);
+        currentLayer = newLayer;
+    } else {
+        newLayer.addTo(gibsMap);
+        baseLayer = newLayer;
+    }
+    
+    // Update layer info
+    updateLayerInfo(config);
+}
+
+// Show/hide loading indicator
+function showLoadingIndicator(show) {
+    let indicator = document.getElementById('map-loading');
+    
+    if (show) {
+        if (!indicator) {
+            indicator = document.createElement('div');
+            indicator.id = 'map-loading';
+            indicator.innerHTML = `
+                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+                            background: rgba(0,0,0,0.8); padding: 15px 25px; border-radius: 8px; 
+                            color: white; z-index: 1000; display: flex; align-items: center; gap: 10px;">
+                    <div class="spinner" style="width: 20px; height: 20px; border: 3px solid #666; 
+                                                border-top-color: #fff; border-radius: 50%; 
+                                                animation: spin 1s linear infinite;"></div>
+                    Loading imagery...
+                </div>
+                <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
+            `;
+            const container = document.getElementById('gibs-map');
+            if (container) {
+                container.style.position = 'relative';
+                container.appendChild(indicator);
+            }
+        }
+    } else if (indicator) {
+        indicator.remove();
+    }
+}
+
+// Update layer information display
+function updateLayerInfo(config) {
+    const infoEl = document.getElementById('layer-info');
+    if (!infoEl) return;
+    
+    let timeInfo = '';
+    if (config.time === 'today') {
+        timeInfo = `<br><small>📅 Data from: ${getGIBSDate(1)}</small>`;
+    }
+    
+    infoEl.innerHTML = `
+        <strong>${config.name}</strong>
+        ${timeInfo}
+    `;
+}
+
+// Center map on location
+function centerGIBSMap(lat, lon, zoom = 8) {
+    if (!gibsMap) return;
+    gibsMap.setView([lat, lon], zoom);
+}
+
+// Update map location (called from main script)
+function updateGIBSMapLocation() {
+    if (!gibsMap) return;
+    
+    const lat = window.userLocation?.lat || 10.25;
+    const lon = window.userLocation?.lon || -61.63;
+    
+    centerGIBSMap(lat, lon);
+}
+
+// Setup map control buttons
+function setupMapControls() {
+    // Center on user location
+    const centerBtn = document.getElementById('centerMapButton');
+    if (centerBtn) {
+        centerBtn.addEventListener('click', () => {
             if (navigator.geolocation) {
+                centerBtn.innerHTML = '⏳ Locating...';
                 navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        const lat = position.coords.latitude;
-                        const lon = position.coords.longitude;
-                        gibsMap.setView([lat, lon], 6);
+                    (pos) => {
+                        centerGIBSMap(pos.coords.latitude, pos.coords.longitude, 10);
+                        centerBtn.innerHTML = '📍 Center on My Location';
                     },
-                    (error) => {
-                        console.error("Error getting location:", error);
-                        alert("Unable to retrieve your location.");
+                    (err) => {
+                        console.error('Geolocation error:', err);
+                        centerBtn.innerHTML = '📍 Center on My Location';
+                        alert('Could not get location');
                     }
                 );
-            } else {
-                alert("Geolocation is not supported by your browser.");
             }
         });
     }
-
-    // Center on default location button
-    const centerDefaultButton = document.getElementById("centerDefaultButton");
-    if (centerDefaultButton) {
-        centerDefaultButton.addEventListener("click", () => {
-            gibsMap.setView([10.25, -61.63], 4);
+    
+    // Center on default location
+    const defaultBtn = document.getElementById('centerDefaultButton');
+    if (defaultBtn) {
+        defaultBtn.addEventListener('click', () => {
+            centerGIBSMap(10.25, -61.63, 8);
         });
     }
-
-    // Make map available globally
-    window.gibsMap = gibsMap;
 }
 
-// Initialize when DOM is ready
-if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", initGIBSMap);
+// Expose functions globally
+window.initGIBSMap = initGIBSMap;
+window.setGibsLayer = setGibsLayer;
+window.centerGIBSMap = centerGIBSMap;
+window.updateGIBSMapLocation = updateGIBSMapLocation;
+
+// Initialize controls when DOM ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupMapControls);
 } else {
-    initGIBSMap();
+    setupMapControls();
 }
-
-// Re-initialize when the section becomes visible
-document.addEventListener("DOMContentLoaded", () => {
-    const setupNavigation = () => {
-        const navButtons = document.querySelectorAll(".nav-button");
-        navButtons.forEach(button => {
-            button.addEventListener("click", () => {
-                const section = button.getAttribute("data-section");
-                if (section === "gibs") {
-                    // Delay initialization slightly to ensure container is visible
-                    setTimeout(() => {
-                        if (!gibsMap) {
-                            initGIBSMap();
-                        } else {
-                            // Invalidate size if map already exists
-                            setTimeout(() => {
-                                gibsMap.invalidateSize();
-                            }, 100);
-                        }
-                    }, 100);
-                }
-            });
-        });
-    };
-    setupNavigation();
-});

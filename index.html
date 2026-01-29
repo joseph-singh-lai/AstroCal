@@ -252,29 +252,36 @@
             </section>
             </section>
 
-            <!-- GIBS Satellite Imagery Section -->
+            <!-- Satellite Imagery Section -->
             <section id="gibs-section" class="content-section">
                 <div class="section-header">
                     <h2>🛰️ Satellite Imagery Explorer</h2>
-                    <p class="section-description">Explore Earth using NOAA GOES satellite imagery and map views</p>
+                    <p class="section-description">Explore Earth with NASA GIBS satellite imagery, ESRI, and live weather data</p>
                 </div>
                 
                 <div class="map-controls">
                     <div class="layer-controls">
-                        <label for="gibs-layer-select" class="label">Choose Satellite Layer:</label>
+                        <label for="gibs-layer-select" class="layer-label">Imagery Layer:</label>
                         <select id="gibs-layer-select" class="layer-select">
-                            <option value="OpenStreetMap" selected>OpenStreetMap (Map View - Recommended)</option>
-                            <option value="NOAA_GOES_East">NOAA GOES-East GeoColor (Satellite - May show errors)</option>
-                            <option value="NOAA_GOES_West">NOAA GOES-West GeoColor (Satellite - May show errors)</option>
+                            <!-- Options populated by JavaScript -->
                         </select>
                     </div>
-                    <button id="centerMapButton" class="map-button">📍 Center on My Location</button>
-                    <button id="centerDefaultButton" class="map-button">📍 Center on La Brea</button>
+                    <div class="map-buttons">
+                        <button id="centerMapButton" class="map-button">📍 My Location</button>
+                        <button id="centerDefaultButton" class="map-button">🏠 La Brea</button>
+                    </div>
                 </div>
                 
-                <div id="gibs-map" class="map-container" style="height: 500px; margin-top: 1rem; border-radius: 10px; overflow: hidden;"></div>
-                <div class="map-info">
-                    <p>Pan and zoom to explore satellite imagery. Use the layer selector to switch between different views.</p>
+                <div id="gibs-map" class="map-container"></div>
+                
+                <div class="map-info-bar">
+                    <div id="layer-info" class="layer-info">
+                        <strong>ESRI World Imagery</strong>
+                    </div>
+                    <div class="map-tips">
+                        <span>🖱️ Drag to pan</span>
+                        <span>🔍 Scroll to zoom</span>
+                    </div>
                 </div>
             </section>
 
@@ -488,9 +495,9 @@
 
     <!-- Leaflet JS for GIBS map -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="script.js?v=3.6"></script>
-    <script src="gibs-map.js?v=3.6"></script>
-    <script src="sky-map.js?v=3.6"></script>
+    <script src="script.js?v=4.0"></script>
+    <script src="gibs-map.js?v=4.0"></script>
+    <script src="sky-map.js?v=4.0"></script>
 </body>
 </html>
 
