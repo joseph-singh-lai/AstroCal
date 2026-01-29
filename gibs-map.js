@@ -1,7 +1,7 @@
 /**
  * AstroCal Satellite Imagery Module
- * Uses NASA GIBS (Global Imagery Browse Services) and other free satellite sources
- * Version: 2.0
+ * Uses reliable, CORS-friendly satellite and map tile sources
+ * Version: 3.0
  */
 
 let gibsMap = null;
@@ -9,165 +9,210 @@ let currentLayer = null;
 let baseLayer = null;
 window.gibsMapInitialized = false;
 
-// NASA GIBS WMTS Configuration
-const GIBS_WMTS_BASE = 'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best';
-
-// Available Satellite Layers
+// Available Satellite & Map Layers - All CORS-friendly
 const SATELLITE_LAYERS = {
-    // Base Maps
+    // === SATELLITE IMAGERY ===
+    "esri_satellite": {
+        name: "ESRI World Imagery",
+        type: "tile",
+        url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+        attribution: '© Esri, Maxar, Earthstar Geographics',
+        maxZoom: 19,
+        category: "satellite",
+        description: "High-resolution satellite imagery worldwide"
+    },
+    "esri_satellite_labels": {
+        name: "ESRI Satellite + Labels",
+        type: "dual",
+        baseUrl: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+        overlayUrl: "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
+        attribution: '© Esri',
+        maxZoom: 19,
+        category: "satellite",
+        description: "Satellite imagery with place names"
+    },
+    "esri_terrain": {
+        name: "ESRI World Terrain",
+        type: "tile",
+        url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Terrain_Base/MapServer/tile/{z}/{y}/{x}",
+        attribution: '© Esri',
+        maxZoom: 13,
+        category: "terrain",
+        description: "Terrain and topography"
+    },
+    "esri_topo": {
+        name: "ESRI Topographic",
+        type: "tile",
+        url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}",
+        attribution: '© Esri',
+        maxZoom: 19,
+        category: "terrain",
+        description: "Detailed topographic map"
+    },
+    "esri_natgeo": {
+        name: "National Geographic",
+        type: "tile",
+        url: "https://server.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/{z}/{y}/{x}",
+        attribution: '© Esri, National Geographic',
+        maxZoom: 16,
+        category: "terrain",
+        description: "National Geographic style map"
+    },
+    "esri_ocean": {
+        name: "ESRI Ocean Basemap",
+        type: "tile",
+        url: "https://server.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}",
+        attribution: '© Esri',
+        maxZoom: 13,
+        category: "ocean",
+        description: "Ocean bathymetry and features"
+    },
+    
+    // === WEATHER OVERLAYS ===
+    "openweather_clouds": {
+        name: "Cloud Cover (Live)",
+        type: "overlay",
+        url: "https://tile.openweathermap.org/map/clouds_new/{z}/{x}/{y}.png?appid=YOUR_API_KEY",
+        fallbackUrl: "https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/goes-vis-1km-900913/{z}/{x}/{y}.png",
+        attribution: '© Iowa Environmental Mesonet',
+        maxZoom: 8,
+        category: "weather",
+        description: "GOES visible satellite imagery"
+    },
+    "radar_us": {
+        name: "Weather Radar (US)",
+        type: "overlay",
+        url: "https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/nexrad-n0q-900913/{z}/{x}/{y}.png",
+        attribution: '© Iowa Environmental Mesonet / NOAA',
+        maxZoom: 8,
+        category: "weather",
+        description: "Live NEXRAD radar reflectivity"
+    },
+    "goes_visible": {
+        name: "GOES Visible (US)",
+        type: "overlay",
+        url: "https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/goes-vis-1km-900913/{z}/{x}/{y}.png",
+        attribution: '© Iowa Environmental Mesonet / NOAA',
+        maxZoom: 8,
+        category: "weather",
+        description: "GOES visible satellite"
+    },
+    "goes_ir": {
+        name: "GOES Infrared (US)",
+        type: "overlay",
+        url: "https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/goes-ir-4km-900913/{z}/{x}/{y}.png",
+        attribution: '© Iowa Environmental Mesonet / NOAA',
+        maxZoom: 6,
+        category: "weather",
+        description: "GOES infrared satellite"
+    },
+
+    // === BASE MAPS ===
     "osm": {
         name: "OpenStreetMap",
-        type: "base",
+        type: "tile",
         url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
         attribution: '© OpenStreetMap contributors',
         subdomains: ['a', 'b', 'c'],
         maxZoom: 19,
-        category: "base"
+        category: "base",
+        description: "Standard street map"
     },
-    "esri_satellite": {
-        name: "ESRI World Imagery",
-        type: "base",
-        url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-        attribution: '© Esri, Maxar, Earthstar Geographics',
-        maxZoom: 18,
-        category: "satellite"
+    "carto_light": {
+        name: "Light Map",
+        type: "tile",
+        url: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+        attribution: '© CARTO © OpenStreetMap',
+        subdomains: ['a', 'b', 'c', 'd'],
+        maxZoom: 19,
+        category: "base",
+        description: "Clean light theme"
     },
     "carto_dark": {
         name: "Dark Map",
-        type: "base",
+        type: "tile",
         url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-        attribution: '© CARTO',
+        attribution: '© CARTO © OpenStreetMap',
         subdomains: ['a', 'b', 'c', 'd'],
         maxZoom: 19,
-        category: "base"
+        category: "base",
+        description: "Dark theme for night viewing"
     },
-    
-    // NASA GIBS Layers (WMTS)
-    "modis_terra": {
-        name: "MODIS Terra True Color",
-        type: "gibs",
-        layer: "MODIS_Terra_CorrectedReflectance_TrueColor",
-        format: "image/jpeg",
-        time: "today",
-        attribution: '© NASA GIBS',
-        maxZoom: 9,
-        category: "nasa"
+    "carto_voyager": {
+        name: "Voyager (Colorful)",
+        type: "tile",
+        url: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+        attribution: '© CARTO © OpenStreetMap',
+        subdomains: ['a', 'b', 'c', 'd'],
+        maxZoom: 19,
+        category: "base",
+        description: "Colorful detailed map"
     },
-    "modis_aqua": {
-        name: "MODIS Aqua True Color", 
-        type: "gibs",
-        layer: "MODIS_Aqua_CorrectedReflectance_TrueColor",
-        format: "image/jpeg",
-        time: "today",
-        attribution: '© NASA GIBS',
-        maxZoom: 9,
-        category: "nasa"
+    "stadia_outdoors": {
+        name: "Outdoors / Hiking",
+        type: "tile",
+        url: "https://tiles.stadiamaps.com/tiles/outdoors/{z}/{x}/{y}{r}.png",
+        attribution: '© Stadia Maps © OpenStreetMap',
+        maxZoom: 18,
+        category: "terrain",
+        description: "Great for outdoor activities"
     },
-    "viirs_snpp": {
-        name: "VIIRS SNPP True Color",
-        type: "gibs",
-        layer: "VIIRS_SNPP_CorrectedReflectance_TrueColor",
-        format: "image/jpeg",
-        time: "today",
-        attribution: '© NASA GIBS',
-        maxZoom: 9,
-        category: "nasa"
-    },
-    "blue_marble": {
-        name: "Blue Marble (Monthly)",
-        type: "gibs",
-        layer: "BlueMarble_NextGeneration",
-        format: "image/jpeg",
-        time: null, // No time dimension
-        attribution: '© NASA GIBS',
-        maxZoom: 8,
-        category: "nasa"
-    },
-    "earth_at_night": {
-        name: "Earth at Night 2012",
-        type: "gibs",
-        layer: "VIIRS_Black_Marble",
-        format: "image/png",
-        time: null,
-        attribution: '© NASA GIBS',
-        maxZoom: 8,
-        category: "nasa"
-    },
-    "cloud_tops": {
-        name: "Cloud Top Temperature",
-        type: "gibs",
-        layer: "MODIS_Terra_Cloud_Top_Temp_Day",
-        format: "image/png",
-        time: "today",
-        attribution: '© NASA GIBS',
-        maxZoom: 7,
-        category: "weather"
-    },
-    "sea_surface_temp": {
-        name: "Sea Surface Temperature",
-        type: "gibs",
-        layer: "GHRSST_L4_MUR_Sea_Surface_Temperature",
-        format: "image/png",
-        time: "today",
-        attribution: '© NASA GIBS',
-        maxZoom: 7,
-        category: "ocean"
-    },
-    "fires": {
-        name: "Active Fires (MODIS)",
-        type: "gibs",
-        layer: "MODIS_Terra_Thermal_Anomalies_All",
-        format: "image/png",
-        time: "today",
-        attribution: '© NASA GIBS',
-        maxZoom: 9,
-        category: "hazards"
-    },
-    "aerosol": {
-        name: "Aerosol Optical Depth",
-        type: "gibs",
-        layer: "MODIS_Terra_Aerosol_Optical_Depth_3km",
-        format: "image/png",
-        time: "today",
-        attribution: '© NASA GIBS',
-        maxZoom: 7,
-        category: "atmosphere"
+    "opentopomap": {
+        name: "OpenTopoMap",
+        type: "tile",
+        url: "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",
+        attribution: '© OpenTopoMap (CC-BY-SA)',
+        subdomains: ['a', 'b', 'c'],
+        maxZoom: 17,
+        category: "terrain",
+        description: "Topographic contour map"
     }
 };
 
-// Get formatted date for GIBS (YYYY-MM-DD)
-function getGIBSDate(daysAgo = 1) {
-    const date = new Date();
-    date.setDate(date.getDate() - daysAgo); // GIBS data is usually 1 day behind
-    return date.toISOString().split('T')[0];
-}
-
-// Create NASA GIBS WMTS layer
-function createGIBSLayer(config) {
-    const date = config.time === "today" ? getGIBSDate(1) : config.time;
-    
-    // GIBS WMTS URL template
-    let url = `${GIBS_WMTS_BASE}/${config.layer}/default/`;
-    if (date) {
-        url += `${date}/`;
-    }
-    url += `GoogleMapsCompatible_Level${config.maxZoom}/{z}/{y}/{x}.${config.format.split('/')[1]}`;
-    
-    return L.tileLayer(url, {
-        attribution: config.attribution,
-        maxZoom: config.maxZoom,
-        tileSize: 256,
-        opacity: 1
-    });
-}
-
-// Create standard tile layer
+// Create a tile layer from config
 function createTileLayer(config) {
     return L.tileLayer(config.url, {
         attribution: config.attribution,
         subdomains: config.subdomains || [],
+        maxZoom: config.maxZoom || 18,
+        crossOrigin: 'anonymous'
+    });
+}
+
+// Create overlay layer (with dark base underneath)
+function createOverlayLayers(config) {
+    const base = L.tileLayer(SATELLITE_LAYERS['carto_dark'].url, {
+        attribution: SATELLITE_LAYERS['carto_dark'].attribution,
+        subdomains: SATELLITE_LAYERS['carto_dark'].subdomains,
+        maxZoom: 19
+    });
+    
+    // Use fallback URL if available (for weather layers that need API keys)
+    const overlayUrl = config.fallbackUrl || config.url;
+    const overlay = L.tileLayer(overlayUrl, {
+        attribution: config.attribution,
+        maxZoom: config.maxZoom || 8,
+        opacity: 0.7,
+        crossOrigin: 'anonymous'
+    });
+    
+    return { base, overlay };
+}
+
+// Create dual layer (satellite + labels)
+function createDualLayers(config) {
+    const base = L.tileLayer(config.baseUrl, {
+        attribution: config.attribution,
         maxZoom: config.maxZoom || 18
     });
+    
+    const labels = L.tileLayer(config.overlayUrl, {
+        attribution: '',
+        maxZoom: config.maxZoom || 18,
+        pane: 'overlayPane'
+    });
+    
+    return { base, labels };
 }
 
 // Initialize the map
@@ -200,7 +245,7 @@ function initGIBSMap() {
             center: [defaultLat, defaultLon],
             zoom: 4,
             minZoom: 2,
-            maxZoom: 18,
+            maxZoom: 19,
             worldCopyJump: true
         });
         
@@ -211,6 +256,9 @@ function initGIBSMap() {
         
         // Set up layer control
         setupLayerControl();
+        
+        // Update layer info
+        updateLayerInfo(defaultConfig);
         
         // Add scale
         L.control.scale({ position: 'bottomleft' }).addTo(gibsMap);
@@ -244,12 +292,10 @@ function setupLayerControl() {
     // Group layers by category
     const categories = {
         satellite: { label: '🛰️ Satellite Imagery', layers: [] },
-        nasa: { label: '🚀 NASA GIBS (Daily)', layers: [] },
-        weather: { label: '🌤️ Weather', layers: [] },
+        terrain: { label: '⛰️ Terrain & Topography', layers: [] },
         ocean: { label: '🌊 Ocean', layers: [] },
-        atmosphere: { label: '💨 Atmosphere', layers: [] },
-        hazards: { label: '🔥 Hazards', layers: [] },
-        base: { label: '🗺️ Base Maps', layers: [] }
+        weather: { label: '🌦️ Live Weather (US/Americas)', layers: [] },
+        base: { label: '🗺️ Street Maps', layers: [] }
     };
     
     // Sort layers into categories
@@ -301,7 +347,7 @@ function setGibsLayer(layerKey) {
     
     console.log('Switching to layer:', config.name);
     
-    // Remove current layer
+    // Remove current layers
     if (currentLayer) {
         gibsMap.removeLayer(currentLayer);
         currentLayer = null;
@@ -311,39 +357,50 @@ function setGibsLayer(layerKey) {
         baseLayer = null;
     }
     
-    // Create new layer based on type
-    let newLayer;
-    if (config.type === 'gibs') {
-        newLayer = createGIBSLayer(config);
-    } else {
-        newLayer = createTileLayer(config);
-    }
-    
-    // Add loading indicator
+    // Show loading indicator
     showLoadingIndicator(true);
     
-    newLayer.on('load', () => {
-        showLoadingIndicator(false);
-        console.log('Layer loaded:', config.name);
-    });
-    
-    newLayer.on('tileerror', (e) => {
-        console.warn('Tile error:', e);
-    });
-    
-    // For NASA GIBS layers, add a dark base layer underneath
-    if (config.type === 'gibs') {
-        baseLayer = createTileLayer(SATELLITE_LAYERS['carto_dark']);
+    // Create layer based on type
+    if (config.type === 'overlay') {
+        // Weather/overlay layers need a base map underneath
+        const layers = createOverlayLayers(config);
+        baseLayer = layers.base;
+        currentLayer = layers.overlay;
+        
         baseLayer.addTo(gibsMap);
-        newLayer.addTo(gibsMap);
-        currentLayer = newLayer;
+        currentLayer.addTo(gibsMap);
+        
+        currentLayer.on('load', () => showLoadingIndicator(false));
+        currentLayer.on('tileerror', handleTileError);
+        
+    } else if (config.type === 'dual') {
+        // Dual layers (satellite + labels)
+        const layers = createDualLayers(config);
+        baseLayer = layers.base;
+        currentLayer = layers.labels;
+        
+        baseLayer.addTo(gibsMap);
+        currentLayer.addTo(gibsMap);
+        
+        baseLayer.on('load', () => showLoadingIndicator(false));
+        baseLayer.on('tileerror', handleTileError);
+        
     } else {
-        newLayer.addTo(gibsMap);
-        baseLayer = newLayer;
+        // Standard tile layer
+        baseLayer = createTileLayer(config);
+        baseLayer.addTo(gibsMap);
+        
+        baseLayer.on('load', () => showLoadingIndicator(false));
+        baseLayer.on('tileerror', handleTileError);
     }
     
     // Update layer info
     updateLayerInfo(config);
+}
+
+// Handle tile loading errors
+function handleTileError(e) {
+    console.warn('Tile error (may be normal for edge tiles):', e.coords);
 }
 
 // Show/hide loading indicator
@@ -381,14 +438,15 @@ function updateLayerInfo(config) {
     const infoEl = document.getElementById('layer-info');
     if (!infoEl) return;
     
-    let timeInfo = '';
-    if (config.time === 'today') {
-        timeInfo = `<br><small>📅 Data from: ${getGIBSDate(1)}</small>`;
+    let extraInfo = '';
+    if (config.category === 'weather') {
+        extraInfo = `<br><small>⚡ Live data - refreshes automatically</small>`;
     }
     
     infoEl.innerHTML = `
         <strong>${config.name}</strong>
-        ${timeInfo}
+        <span style="color: #8892b0; margin-left: 0.5rem;">— ${config.description || ''}</span>
+        ${extraInfo}
     `;
 }
 
@@ -419,12 +477,12 @@ function setupMapControls() {
                 navigator.geolocation.getCurrentPosition(
                     (pos) => {
                         centerGIBSMap(pos.coords.latitude, pos.coords.longitude, 10);
-                        centerBtn.innerHTML = '📍 Center on My Location';
+                        centerBtn.innerHTML = '📍 My Location';
                     },
                     (err) => {
                         console.error('Geolocation error:', err);
-                        centerBtn.innerHTML = '📍 Center on My Location';
-                        alert('Could not get location');
+                        centerBtn.innerHTML = '📍 My Location';
+                        alert('Could not get location. Please enable location access.');
                     }
                 );
             }
