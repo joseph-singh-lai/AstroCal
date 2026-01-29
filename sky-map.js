@@ -1088,8 +1088,14 @@ function getDirectionName(azimuth) {
 // EVENT HANDLERS
 // ============================================
 
-function setupEventListeners() {
+function setupSkyMapEventListeners() {
     const canvas = SkyMap.canvas;
+    
+    // Guard: Don't set up if canvas not ready
+    if (!canvas) {
+        console.log('Canvas not ready for event listeners, will set up later');
+        return;
+    }
     
     // Mouse events
     canvas.addEventListener('mousedown', (e) => {
@@ -1236,7 +1242,7 @@ function initSkyMap() {
     }
     
     resizeCanvas();
-    setupEventListeners();
+    setupSkyMapEventListeners();
     
     SkyMap.initialized = true;
     window.skyMapInitialized = true;

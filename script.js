@@ -4,7 +4,7 @@ window.onerror = function(msg, url, lineNo, columnNo, error) {
     return false;
 };
 
-console.log('AstroCal script.js loaded - v3.2');
+console.log('AstroCal script.js loaded - v3.3');
 
 // Helper function to get NASA API config
 function getNASAConfig() {
