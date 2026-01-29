@@ -4,7 +4,7 @@ window.onerror = function(msg, url, lineNo, columnNo, error) {
     return false;
 };
 
-console.log('AstroCal script.js loaded - v3.1');
+console.log('AstroCal script.js loaded - v3.2');
 
 // Helper function to get NASA API config
 function getNASAConfig() {
@@ -242,22 +242,27 @@ function setupNavigation() {
     console.log('Found nav buttons:', navButtons.length, 'sections:', sections.length);
 
     navButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            const targetSection = button.getAttribute('data-section');
+        button.addEventListener('click', (e) => {
+            console.log('Nav button clicked:', button.getAttribute('data-section'));
+            try {
+                const targetSection = button.getAttribute('data-section');
 
-            // Update active button
-            navButtons.forEach(btn => btn.classList.remove('active'));
-            button.classList.add('active');
+                // Update active button
+                navButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
 
-            // Update active section
-            sections.forEach(section => section.classList.remove('active'));
-            const targetElement = document.getElementById(`${targetSection}-section`);
-            if (targetElement) {
-                targetElement.classList.add('active');
-            }
+                // Update active section
+                sections.forEach(section => section.classList.remove('active'));
+                const targetElement = document.getElementById(`${targetSection}-section`);
+                if (targetElement) {
+                    targetElement.classList.add('active');
+                    console.log('Activated section:', targetSection);
+                } else {
+                    console.error('Section not found:', `${targetSection}-section`);
+                }
 
-            // Initialize maps when their sections become active
-            if (targetSection === 'gibs') {
+                // Initialize maps when their sections become active
+                if (targetSection === 'gibs') {
                 setTimeout(() => {
                     const mapContainer = document.getElementById('gibsMap');
                     if (!mapContainer) {
@@ -276,7 +281,7 @@ function setupNavigation() {
                             }
                             
                             // If map is not a proper Leaflet map, re-initialize it
-                            if (!(window.gibsMap instanceof L.Map) || typeof window.gibsMap.invalidateSize !== 'function') {
+                            if (typeof L === 'undefined' || !(window.gibsMap instanceof L.Map) || typeof window.gibsMap.invalidateSize !== 'function') {
                                 window.gibsMap = null;
                                 if (typeof window.gibsMapInitialized !== 'undefined') {
                                     window.gibsMapInitialized = false;
@@ -332,6 +337,9 @@ function setupNavigation() {
                         renderSkyMap();
                     }
                 }, 150); // Wait for section to be visible
+            }
+            } catch (err) {
+                console.error('Error in navigation handler:', err);
             }
         });
     });
