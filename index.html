@@ -281,36 +281,88 @@
             <!-- Interactive Sky Map Section -->
             <section id="sky-section" class="content-section">
                 <div class="section-header">
-                    <h2>⭐ Interactive Sky Map</h2>
-                    <p class="section-description">Explore the night sky over your location</p>
+                    <h2>🌌 Interactive Sky Map</h2>
+                    <p class="section-description">A real-time planetarium – explore the night sky from your location</p>
                 </div>
                 
+                <!-- Sky Map Controls -->
                 <div class="sky-controls">
-                    <button id="sky-use-location" class="sky-button">
-                        <span class="btn-icon">📍</span>
-                        <span>Use My Location</span>
-                    </button>
-                    <button id="sky-reset-view" class="sky-button">
-                        <span class="btn-icon">🔄</span>
-                        <span>Reset View</span>
-                    </button>
-                    <button id="sky-toggle-constellations" class="sky-button sky-toggle" data-active="false">
-                        <span class="toggle-track">
-                            <span class="toggle-thumb"></span>
-                        </span>
-                        <span class="toggle-label">✨ Constellations</span>
-                    </button>
-                    <button id="sky-toggle-planets" class="sky-button sky-toggle" data-active="false">
-                        <span class="toggle-track">
-                            <span class="toggle-thumb"></span>
-                        </span>
-                        <span class="toggle-label">🪐 Planets</span>
-                    </button>
+                    <!-- Location & View Controls -->
+                    <div class="sky-control-group">
+                        <button id="sky-use-location" class="sky-btn sky-btn-primary">
+                            <span>📍</span> My Location
+                        </button>
+                        <button id="sky-reset-view" class="sky-btn">
+                            <span>🔄</span> Reset View
+                        </button>
+                    </div>
+                    
+                    <!-- Direction Quick-Look -->
+                    <div class="sky-control-group sky-directions">
+                        <button class="sky-btn sky-dir" data-az="0" data-alt="45">N</button>
+                        <button class="sky-btn sky-dir" data-az="90" data-alt="45">E</button>
+                        <button class="sky-btn sky-dir" data-az="180" data-alt="45">S</button>
+                        <button class="sky-btn sky-dir" data-az="270" data-alt="45">W</button>
+                        <button class="sky-btn sky-dir" data-az="0" data-alt="90">↑</button>
+                    </div>
+                    
+                    <!-- Display Toggles -->
+                    <div class="sky-control-group sky-toggles">
+                        <label class="sky-toggle-label">
+                            <input type="checkbox" id="sky-show-constellations" checked>
+                            <span class="sky-toggle-switch"></span>
+                            <span>Constellations</span>
+                        </label>
+                        <label class="sky-toggle-label">
+                            <input type="checkbox" id="sky-show-constellation-names" checked>
+                            <span class="sky-toggle-switch"></span>
+                            <span>Names</span>
+                        </label>
+                        <label class="sky-toggle-label">
+                            <input type="checkbox" id="sky-show-planets" checked>
+                            <span class="sky-toggle-switch"></span>
+                            <span>Planets</span>
+                        </label>
+                        <label class="sky-toggle-label">
+                            <input type="checkbox" id="sky-show-grid">
+                            <span class="sky-toggle-switch"></span>
+                            <span>Grid</span>
+                        </label>
+                    </div>
+                    
+                    <!-- Time Controls -->
+                    <div class="sky-control-group sky-time-controls">
+                        <button id="sky-time-slower" class="sky-btn sky-time-btn">⏪</button>
+                        <button id="sky-time-now" class="sky-btn sky-btn-primary">Now</button>
+                        <button id="sky-time-faster" class="sky-btn sky-time-btn">⏩</button>
+                        <span id="sky-time-speed" class="sky-time-indicator">1×</span>
+                    </div>
                 </div>
                 
+                <!-- Sky Map Canvas -->
                 <div class="sky-map-container">
                     <canvas id="skyCanvas"></canvas>
-                    <div id="skyInfo" class="sky-info"></div>
+                    
+                    <!-- Compass Overlay -->
+                    <div class="sky-compass">
+                        <span class="compass-n">N</span>
+                        <span class="compass-e">E</span>
+                        <span class="compass-s">S</span>
+                        <span class="compass-w">W</span>
+                    </div>
+                    
+                    <!-- Zoom Controls -->
+                    <div class="sky-zoom-controls">
+                        <button id="sky-zoom-in" class="sky-btn sky-zoom-btn">+</button>
+                        <button id="sky-zoom-out" class="sky-btn sky-zoom-btn">−</button>
+                    </div>
+                </div>
+                
+                <!-- Quick Legend -->
+                <div class="sky-legend">
+                    <div class="legend-item"><span class="legend-dot star"></span> Stars</div>
+                    <div class="legend-item"><span class="legend-dot planet"></span> Planets</div>
+                    <div class="legend-item"><span class="legend-line"></span> Constellations</div>
                 </div>
             </section>
 
