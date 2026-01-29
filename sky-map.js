@@ -1254,27 +1254,39 @@ function initSkyMap() {
     return true;
 }
 
+let lastAnimationTime = 0;
+const MIN_FRAME_INTERVAL = 1000 / 30; // Cap at 30fps for performance
+
 function startAnimation() {
-    function animate() {
-        if (SkyMap.observer.timeSpeed !== 0) {
-            // Update time
-            const now = new Date();
-            if (SkyMap.observer.timeSpeed === 1) {
-                SkyMap.observer.date = now;
-            } else {
-                // Accelerated time
-                SkyMap.observer.date = new Date(SkyMap.observer.date.getTime() + SkyMap.observer.timeSpeed * 1000);
+    function animate(currentTime) {
+        // Throttle to ~30fps to reduce CPU usage and prevent glitches
+        const elapsed = currentTime - lastAnimationTime;
+        
+        if (elapsed >= MIN_FRAME_INTERVAL) {
+            lastAnimationTime = currentTime;
+            
+            if (SkyMap.observer.timeSpeed !== 0) {
+                // Update time
+                const now = new Date();
+                if (SkyMap.observer.timeSpeed === 1) {
+                    SkyMap.observer.date = now;
+                } else {
+                    // Accelerated time - scale by actual elapsed time for smooth animation
+                    const timeStep = (elapsed / 1000) * SkyMap.observer.timeSpeed * 1000;
+                    SkyMap.observer.date = new Date(SkyMap.observer.date.getTime() + timeStep);
+                }
             }
+            
+            // Update clock display
+            updateClockDisplay();
+            
+            Renderer.render();
         }
         
-        // Update clock display
-        updateClockDisplay();
-        
-        Renderer.render();
         SkyMap.animationId = requestAnimationFrame(animate);
     }
     
-    animate();
+    animate(0);
 }
 
 function stopAnimation() {
@@ -1519,6 +1531,11 @@ function updateTimeSpeedIndicator() {
     indicator.textContent = text;
 }
 
+// Track last displayed values to avoid unnecessary DOM updates
+let lastClockTime = '';
+let lastClockDate = '';
+let lastClockColor = '';
+
 function updateClockDisplay() {
     const timeEl = document.getElementById('sky-clock-time');
     const dateEl = document.getElementById('sky-clock-date');
@@ -1531,22 +1548,37 @@ function updateClockDisplay() {
     const hours = date.getHours().toString().padStart(2, '0');
     const minutes = date.getMinutes().toString().padStart(2, '0');
     const seconds = date.getSeconds().toString().padStart(2, '0');
-    timeEl.textContent = `${hours}:${minutes}:${seconds}`;
+    const timeStr = `${hours}:${minutes}:${seconds}`;
     
     // Format date
     const options = { month: 'short', day: 'numeric', year: 'numeric' };
-    dateEl.textContent = date.toLocaleDateString('en-US', options);
+    const dateStr = date.toLocaleDateString('en-US', options);
     
-    // Add visual indicator when time is not "now"
+    // Determine color based on time difference
     const now = new Date();
     const timeDiff = Math.abs(date.getTime() - now.getTime());
+    const colorMode = timeDiff > 60000 ? 'future' : 'present';
     
-    if (timeDiff > 60000) { // More than 1 minute difference
-        timeEl.style.color = '#fbbf24'; // Yellow/gold for past/future
-        dateEl.style.color = 'rgba(251, 191, 36, 0.7)';
-    } else {
-        timeEl.style.color = '#7dd3fc'; // Cyan for present
-        dateEl.style.color = 'rgba(150, 180, 220, 0.8)';
+    // Only update DOM if values changed (prevents layout thrashing)
+    if (timeStr !== lastClockTime) {
+        timeEl.textContent = timeStr;
+        lastClockTime = timeStr;
+    }
+    
+    if (dateStr !== lastClockDate) {
+        dateEl.textContent = dateStr;
+        lastClockDate = dateStr;
+    }
+    
+    if (colorMode !== lastClockColor) {
+        if (colorMode === 'future') {
+            timeEl.style.color = '#fbbf24'; // Yellow/gold for past/future
+            dateEl.style.color = 'rgba(251, 191, 36, 0.7)';
+        } else {
+            timeEl.style.color = '#7dd3fc'; // Cyan for present
+            dateEl.style.color = 'rgba(150, 180, 220, 0.8)';
+        }
+        lastClockColor = colorMode;
     }
 }
 
