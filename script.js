@@ -264,7 +264,7 @@ function setupNavigation() {
                 // Initialize maps when their sections become active
                 if (targetSection === 'gibs') {
                 setTimeout(() => {
-                    const mapContainer = document.getElementById('gibsMap');
+                    const mapContainer = document.getElementById('gibs-map');
                     if (!mapContainer) {
                         console.error('GIBS map container not found');
                         return;
