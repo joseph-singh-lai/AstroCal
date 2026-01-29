@@ -187,7 +187,6 @@ All events are merged, sorted chronologically, and displayed together.
 - [x] **README.md** - Project overview and quick start
 - [x] **NASA_INTEGRATION.md** - NASA API integration details
 - [x] **API_INTEGRATION.md** - ISS API integration details
-- [x] **STELLARIUM_INTEGRATION.md** - Sky map integration guide (legacy - now using custom sky map)
 - [x] **GEOLOCATION_REQUIREMENTS.md** - Geolocation documentation
 - [x] **VERCEL_DEPLOYMENT.md** - Deployment guide
 - [x] **Multiple troubleshooting docs** - Build and setup guides
@@ -694,9 +693,7 @@ _This section tracks confirmed fixes and improvements made to the project._
 - `FIX_EMSDK_COMMANDS.md` - Emscripten fixes
 - `FIX_SCONS_EMSCRIPTEN.md` - SCons fixes
 - `QUICK_BUILD.md` - Quick build guide
-- `BUILD_STELLARIUM.md` - Stellarium build
 - `BUILD_TROUBLESHOOTING.md` - Build troubleshooting
-- `STELLARIUM_QUICKSTART.md` - Quick start
 
 **Note:** These are build/development docs, not app feature docs, so less critical for inventory. Could add reference section if needed.
 

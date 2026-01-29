@@ -179,9 +179,8 @@ function setupSkyMapListeners() {
     if (toggleConstellationsBtn) {
         toggleConstellationsBtn.addEventListener('click', () => {
             skyMapState.showConstellations = !skyMapState.showConstellations;
-            toggleConstellationsBtn.textContent = skyMapState.showConstellations 
-                ? '✨ Hide Constellations' 
-                : '✨ Show Constellations';
+            // Update the data-active attribute for visual toggle state
+            toggleConstellationsBtn.setAttribute('data-active', skyMapState.showConstellations.toString());
             renderSkyMap();
         });
     }
@@ -189,9 +188,8 @@ function setupSkyMapListeners() {
     if (togglePlanetsBtn) {
         togglePlanetsBtn.addEventListener('click', () => {
             skyMapState.showPlanets = !skyMapState.showPlanets;
-            togglePlanetsBtn.textContent = skyMapState.showPlanets 
-                ? '🪐 Hide Planets' 
-                : '🪐 Show Planets';
+            // Update the data-active attribute for visual toggle state
+            togglePlanetsBtn.setAttribute('data-active', skyMapState.showPlanets.toString());
             renderSkyMap();
         });
     }
@@ -226,6 +224,11 @@ function renderSkyMap() {
 
     // Clear canvas completely - ensure we're using the actual canvas dimensions
     skyCtx.clearRect(0, 0, width, height);
+    
+    // Reset transform to identity to prevent any transform artifacts
+    skyCtx.setTransform(1, 0, 0, 1, 0, 0);
+    
+    // Fill background
     skyCtx.fillStyle = '#0a0e27';
     skyCtx.fillRect(0, 0, width, height);
 
@@ -240,6 +243,9 @@ function renderSkyMap() {
     skyCtx.setLineDash([]); // Ensure no dashed lines
     skyCtx.lineCap = 'butt'; // Prevent line caps
     skyCtx.lineJoin = 'miter'; // Prevent line joins
+    
+    // Ensure no composite operations that could cause artifacts
+    skyCtx.globalCompositeOperation = 'source-over';
 
     // Draw stars
     skyCtx.fillStyle = '#ffffff';
@@ -251,10 +257,12 @@ function renderSkyMap() {
         
         // Only draw if on screen
         if (pos.x >= -50 && pos.x <= width + 50 && pos.y >= -50 && pos.y <= height + 50) {
-        skyCtx.beginPath();
+            // Isolate each star drawing to prevent path artifacts
+            skyCtx.save();
+            skyCtx.beginPath();
             skyCtx.arc(pos.x, pos.y, size, 0, Math.PI * 2);
             skyCtx.fill();
-            skyCtx.closePath(); // Explicitly close path
+            skyCtx.restore(); // Restore state after each star
             
             // Label bright stars - temporarily disabled to debug line issue
             // if (star.mag < 1.0) {

@@ -134,6 +134,11 @@ document.addEventListener('DOMContentLoaded', () => {
     
     setupEventListeners();
     setupNavigation();
+    setupHeaderScroll();
+    setupMotionToggle();
+    setupFilterPanel();
+    setupGlossarySearch();
+    updateFilterCount();
 });
 
 /**
@@ -432,11 +437,6 @@ function requestUserLocation() {
             // Update custom sky map location
             if (typeof updateSkyMapLocation === 'function') {
                 updateSkyMapLocation(location.lat, location.lon);
-            }
-            
-            // Legacy Stellarium code (removed)
-            if (false && stellariumFrame) {
-                updateSkyMap(userLocation.lat, userLocation.lon);
             }
 
             locationButton.textContent = '✅ Location Set';

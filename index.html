@@ -4,8 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Astronomy Explorer - Interactive astronomy events, satellite imagery, and sky map for La Brea, Trinidad & Tobago">
-    <title>Astronomy Explorer - La Brea, Trinidad & Tobago</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔭</text></svg>">
+    <meta name="theme-color" content="#0a0e27">
+    <meta property="og:title" content="AstroCal - Astronomy Explorer">
+    <meta property="og:description" content="Track meteor showers, ISS passes, NASA APOD, and more for La Brea, Trinidad & Tobago">
+    <meta property="og:type" content="website">
+    <title>AstroCal - Astronomy Explorer</title>
+    <!-- Custom favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%236b8dd6'/%3E%3Cstop offset='100%25' stop-color='%239d7ce8'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='50' cy='50' r='45' fill='%230a0e27'/%3E%3Ccircle cx='50' cy='50' r='40' fill='none' stroke='url(%23g)' stroke-width='3'/%3E%3Ccircle cx='35' cy='40' r='3' fill='%23fff'/%3E%3Ccircle cx='60' cy='35' r='2' fill='%236b8dd6'/%3E%3Ccircle cx='55' cy='55' r='2.5' fill='%239d7ce8'/%3E%3Ccircle cx='40' cy='60' r='1.5' fill='%23fff'/%3E%3Cpath d='M65 60 L75 50 L85 55 L75 45 L80 35' stroke='%23ffd700' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+    <!-- Google Fonts - Distinctive space-themed typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
     <!-- Leaflet CSS for GIBS map -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -63,62 +72,134 @@
     <div class="galaxy-3"></div>
     
     <div id="app">
-        <header class="main-header">
-            <div class="header-content">
-                <h1>Astronomy Explorer</h1>
-                <p class="location-subtitle">La Brea, Trinidad & Tobago</p>
+        <header class="main-header" id="mainHeader">
+            <div class="header-inner">
+                <div class="header-content">
+                    <h1 class="site-title">
+                        <span class="title-icon">✦</span>
+                        AstroCal
+                    </h1>
+                    <p class="location-subtitle">
+                        <span class="location-dot"></span>
+                        La Brea, Trinidad & Tobago
+                    </p>
+                </div>
+                <nav class="main-nav">
+                    <button class="nav-button active" data-section="events">
+                        <span class="nav-icon">📅</span>
+                        <span class="nav-text">Events</span>
+                    </button>
+                    <button class="nav-button" data-section="gibs">
+                        <span class="nav-icon">🛰️</span>
+                        <span class="nav-text">Satellite</span>
+                    </button>
+                    <button class="nav-button" data-section="sky">
+                        <span class="nav-icon">⭐</span>
+                        <span class="nav-text">Sky Map</span>
+                    </button>
+                    <button class="nav-button" data-section="glossary">
+                        <span class="nav-icon">📖</span>
+                        <span class="nav-text">Glossary</span>
+                    </button>
+                </nav>
             </div>
-            <nav class="main-nav">
-                <button class="nav-button active" data-section="events">📅 Events</button>
-                <button class="nav-button" data-section="gibs">🛰️ Satellite Imagery</button>
-                <button class="nav-button" data-section="sky">⭐ Sky Map</button>
-                <button class="nav-button" data-section="glossary">📖 Glossary</button>
-            </nav>
+            <!-- Motion toggle for accessibility -->
+            <button class="motion-toggle" id="motionToggle" title="Toggle background animations" aria-label="Toggle background animations">
+                <span class="motion-icon">🌌</span>
+            </button>
         </header>
 
         <main class="main-content">
             <!-- Events Section -->
             <section id="events-section" class="content-section active">
+                <!-- Quick Actions Bar -->
+                <div class="quick-actions-bar">
+                    <button id="refreshNASA" class="refresh-button">
+                        <span class="refresh-icon">🔄</span>
+                        <span class="refresh-text">Refresh NASA Data</span>
+                    </button>
+                    <button id="filterToggleMobile" class="filter-toggle-mobile">
+                        <span>🎛️ Filters</span>
+                        <span class="filter-count" id="filterCount">1</span>
+                    </button>
+                </div>
+                
                 <div class="events-layout">
-                    <aside class="filter-panel">
-                        <h2>Filters</h2>
+                    <aside class="filter-panel" id="filterPanel">
+                        <div class="filter-header">
+                            <h2>🎛️ Filters</h2>
+                            <button class="filter-close-mobile" id="filterCloseMobile">✕</button>
+                        </div>
                         <div class="filter-options">
                             <label class="filter-checkbox">
                                 <input type="checkbox" value="meteor">
-                                <span>Meteor Showers</span>
+                                <span class="checkbox-custom"></span>
+                                <span class="filter-label">
+                                    <span class="filter-emoji">☄️</span>
+                                    Meteor Showers
+                                </span>
                             </label>
                             <label class="filter-checkbox">
                                 <input type="checkbox" value="planet">
-                                <span>Planet Visibility</span>
+                                <span class="checkbox-custom"></span>
+                                <span class="filter-label">
+                                    <span class="filter-emoji">🪐</span>
+                                    Planet Visibility
+                                </span>
                             </label>
                             <label class="filter-checkbox">
                                 <input type="checkbox" value="iss">
-                                <span>ISS Passes</span>
+                                <span class="checkbox-custom"></span>
+                                <span class="filter-label">
+                                    <span class="filter-emoji">🚀</span>
+                                    ISS Passes
+                                </span>
                             </label>
                             <label class="filter-checkbox">
                                 <input type="checkbox" value="apod" checked>
-                                <span>NASA APOD</span>
+                                <span class="checkbox-custom"></span>
+                                <span class="filter-label">
+                                    <span class="filter-emoji">📸</span>
+                                    NASA APOD
+                                </span>
                             </label>
                             <label class="filter-checkbox">
                                 <input type="checkbox" value="solar">
-                                <span>Solar Events</span>
+                                <span class="checkbox-custom"></span>
+                                <span class="filter-label">
+                                    <span class="filter-emoji">☀️</span>
+                                    Solar Events
+                                </span>
                             </label>
                             <label class="filter-checkbox">
                                 <input type="checkbox" value="natural">
-                                <span>Natural Events</span>
+                                <span class="checkbox-custom"></span>
+                                <span class="filter-label">
+                                    <span class="filter-emoji">🌋</span>
+                                    Natural Events
+                                </span>
                             </label>
                             <label class="filter-checkbox">
                                 <input type="checkbox" value="workshop">
-                                <span>Workshops</span>
+                                <span class="checkbox-custom"></span>
+                                <span class="filter-label">
+                                    <span class="filter-emoji">🎓</span>
+                                    Workshops
+                                </span>
                             </label>
                             <label class="filter-checkbox">
                                 <input type="checkbox" value="astronomy">
-                                <span>Astronomy</span>
+                                <span class="checkbox-custom"></span>
+                                <span class="filter-label">
+                                    <span class="filter-emoji">🌙</span>
+                                    Astronomy
+                                </span>
                             </label>
                         </div>
-                        <button id="refreshNASA" class="apply-button" style="background-color: var(--accent-secondary);">
-                            🔄 Refresh NASA Data
-                        </button>
+                        <div class="filter-actions">
+                            <button id="selectAllFilters" class="filter-action-btn">Select All</button>
+                            <button id="clearAllFilters" class="filter-action-btn">Clear All</button>
+                        </div>
                     </aside>
 
                     <div class="events-content">
@@ -205,10 +286,26 @@
                 </div>
                 
                 <div class="sky-controls">
-                    <button id="sky-use-location" class="sky-button">📍 Use My Location</button>
-                    <button id="sky-reset-view" class="sky-button">🔄 Reset View</button>
-                    <button id="sky-toggle-constellations" class="sky-button">✨ Toggle Constellations</button>
-                    <button id="sky-toggle-planets" class="sky-button">🪐 Toggle Planets</button>
+                    <button id="sky-use-location" class="sky-button">
+                        <span class="btn-icon">📍</span>
+                        <span>Use My Location</span>
+                    </button>
+                    <button id="sky-reset-view" class="sky-button">
+                        <span class="btn-icon">🔄</span>
+                        <span>Reset View</span>
+                    </button>
+                    <button id="sky-toggle-constellations" class="sky-button sky-toggle" data-active="false">
+                        <span class="toggle-track">
+                            <span class="toggle-thumb"></span>
+                        </span>
+                        <span class="toggle-label">✨ Constellations</span>
+                    </button>
+                    <button id="sky-toggle-planets" class="sky-button sky-toggle" data-active="false">
+                        <span class="toggle-track">
+                            <span class="toggle-thumb"></span>
+                        </span>
+                        <span class="toggle-label">🪐 Planets</span>
+                    </button>
                 </div>
                 
                 <div class="sky-map-container">
@@ -219,9 +316,15 @@
 
             <!-- Glossary Section -->
             <section id="glossary-section" class="content-section">
-                <div class="section-header">
-                    <h2>📖 Glossary</h2>
-                    <p class="section-description">Common acronyms and terms used in this application</p>
+                <div class="section-header glossary-header">
+                    <div class="glossary-hero">
+                        <div class="glossary-hero-bg"></div>
+                        <h2>📖 Glossary</h2>
+                        <p class="section-description">Your guide to astronomy terminology and NASA acronyms</p>
+                    </div>
+                    <div class="glossary-search-wrapper">
+                        <input type="text" id="glossarySearch" class="glossary-search" placeholder="🔍 Search terms...">
+                    </div>
                 </div>
                 
                 <div class="glossary-container">
@@ -319,8 +422,9 @@
         </main>
 
         <footer class="main-footer">
-            <p>Astronomy Events – La Brea, Trinidad & Tobago</p>
-            <p class="footer-credit">Created by Joseph Singh, utilizing AI tools in conjunction with vanilla JavaScript, HTML, and CSS</p>
+            <p class="footer-brand">✦ AstroCal – La Brea, Trinidad & Tobago</p>
+            <p class="footer-credit">Created by Joseph Singh, utilizing AI tools with vanilla JavaScript, HTML, and CSS</p>
+            <p class="footer-apis">Powered by NASA APIs • Open-Meteo • Leaflet</p>
         </footer>
     </div>
 
