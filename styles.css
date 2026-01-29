@@ -35,36 +35,13 @@
     --animation-fast: 4s;
 }
 
-/* Reduce motion preference - only affects users who have system-level reduce motion enabled */
-@media (prefers-reduced-motion: reduce) {
-    :root {
-        --animation-slow: 0s;
-        --animation-medium: 0s;
-        --animation-fast: 0s;
-    }
-    
-    /* Only reduce motion for background effects, not all animations */
-    .sun, .planet-1, .planet-2, .planet-3, .planet-4, .planet-5, .planet-6,
-    .galaxy-1, .galaxy-2, .galaxy-3,
-    body::before, body::after {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-    }
-}
+/* 
+ * Note: prefers-reduced-motion is intentionally NOT used for background animations
+ * because the motion toggle button provides manual control.
+ * System reduced motion preferences won't affect the cosmic background.
+ */
 
-/* Motion reduced state (toggle) */
-body.reduce-motion {
-    --animation-slow: 0s;
-    --animation-medium: 0s;
-    --animation-fast: 0s;
-}
-
-body.reduce-motion *, 
-body.reduce-motion *::before, 
-body.reduce-motion *::after {
-    animation-play-state: paused !important;
-}
-
+/* Motion reduced state (toggle) - only affects cosmic background elements */
 body.reduce-motion .sun,
 body.reduce-motion .planet-1,
 body.reduce-motion .planet-2,
@@ -74,7 +51,11 @@ body.reduce-motion .planet-5,
 body.reduce-motion .planet-6,
 body.reduce-motion .galaxy-1,
 body.reduce-motion .galaxy-2,
-body.reduce-motion .galaxy-3 {
+body.reduce-motion .galaxy-3,
+body.reduce-motion .orbit-container,
+body.reduce-motion::before,
+body.reduce-motion::after {
+    animation-play-state: paused !important;
     opacity: 0.3;
 }
 
@@ -250,7 +231,7 @@ body::after {
     box-shadow: 0 0 60px rgba(255, 215, 0, 0.6), 0 0 100px rgba(255, 140, 0, 0.3), inset -15px -15px 30px rgba(255, 140, 0, 0.3);
     top: -60px;
     left: -60px;
-    animation: orbit1 20s linear infinite, planetRotate 15s linear infinite;
+    animation: orbit1 20s linear infinite;
     filter: blur(1px);
 }
 
@@ -261,7 +242,7 @@ body::after {
     box-shadow: 0 0 50px rgba(157, 124, 232, 0.7), 0 0 80px rgba(107, 141, 214, 0.4), inset -12px -12px 25px rgba(107, 141, 214, 0.4);
     top: -45px;
     left: -45px;
-    animation: orbit2 25s linear infinite, planetRotate 12s linear infinite reverse;
+    animation: orbit2 25s linear infinite;
     animation-delay: -3s;
     filter: blur(0.8px);
 }
@@ -273,7 +254,7 @@ body::after {
     box-shadow: 0 0 70px rgba(107, 141, 214, 0.6), 0 0 120px rgba(99, 102, 241, 0.3), inset -18px -18px 35px rgba(99, 102, 241, 0.3);
     top: -75px;
     left: -75px;
-    animation: orbit3 30s linear infinite, planetRotate 18s linear infinite;
+    animation: orbit3 30s linear infinite;
     animation-delay: -6s;
     filter: blur(1.2px);
 }
@@ -285,7 +266,7 @@ body::after {
     box-shadow: 0 0 55px rgba(255, 215, 0, 0.5), 0 0 90px rgba(255, 200, 0, 0.3), inset -12px -12px 25px rgba(255, 200, 0, 0.25);
     top: -50px;
     left: -50px;
-    animation: orbit4 22s linear infinite, planetRotate 14s linear infinite reverse;
+    animation: orbit4 22s linear infinite;
     animation-delay: -9s;
     filter: blur(0.8px);
 }
@@ -297,7 +278,7 @@ body::after {
     box-shadow: 0 0 45px rgba(236, 72, 153, 0.6), 0 0 75px rgba(219, 39, 119, 0.3), inset -10px -10px 20px rgba(219, 39, 119, 0.3);
     top: -40px;
     left: -40px;
-    animation: orbit5 18s linear infinite, planetRotate 10s linear infinite;
+    animation: orbit5 18s linear infinite;
     animation-delay: -12s;
     filter: blur(0.7px);
 }
@@ -309,7 +290,7 @@ body::after {
     box-shadow: 0 0 60px rgba(34, 197, 94, 0.5), 0 0 95px rgba(22, 163, 74, 0.3), inset -13px -13px 26px rgba(22, 163, 74, 0.25);
     top: -55px;
     left: -55px;
-    animation: orbit6 24s linear infinite, planetRotate 16s linear infinite reverse;
+    animation: orbit6 24s linear infinite;
     animation-delay: -15s;
     filter: blur(0.9px);
 }

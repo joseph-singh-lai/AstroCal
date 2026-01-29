@@ -64,13 +64,20 @@ const CONSTELLATION_LINES = [
  * Initialize the sky map
  */
 function initSkyMap() {
+    console.log('initSkyMap called');
     skyCanvas = document.getElementById('skyCanvas');
     if (!skyCanvas) {
         console.error('Sky canvas not found');
         return;
     }
     
+    console.log('Sky canvas found:', skyCanvas);
     skyCtx = skyCanvas.getContext('2d');
+    
+    if (!skyCtx) {
+        console.error('Could not get 2D context');
+        return;
+    }
     
     // Set canvas size
     resizeSkyCanvas();
@@ -80,8 +87,10 @@ function initSkyMap() {
     setupSkyMapListeners();
 
     // Initial render
+    console.log('Calling renderSkyMap...');
     renderSkyMap();
     window.skyMapInitialized = true;
+    console.log('Sky map initialized successfully');
 }
 
 /**
@@ -94,9 +103,15 @@ function resizeSkyCanvas() {
     const container = skyCanvas.parentElement;
     if (!container) return;
     
-    // Get display size (CSS size)
-    const displayWidth = container.clientWidth;
-    const displayHeight = container.clientHeight || 500;
+    // Get display size (CSS size) - use fallbacks if container is hidden/collapsed
+    let displayWidth = container.clientWidth || container.offsetWidth;
+    let displayHeight = container.clientHeight || container.offsetHeight;
+    
+    // If dimensions are still 0 (hidden section), use minimum defaults
+    if (!displayWidth || displayWidth < 100) displayWidth = 800;
+    if (!displayHeight || displayHeight < 100) displayHeight = 500;
+    
+    console.log('Sky canvas resize:', { width: displayWidth, height: displayHeight });
     
     // Set canvas internal size to match display size exactly to prevent scaling artifacts
     // This prevents the browser from scaling the canvas, which can cause visual artifacts like lines
@@ -218,10 +233,22 @@ function raDecToScreen(ra, dec, width, height) {
  * Render the sky map
  */
 function renderSkyMap() {
-    if (!skyCanvas || !skyCtx) return;
+    if (!skyCanvas || !skyCtx) {
+        console.error('renderSkyMap: canvas or context not available');
+        return;
+    }
 
     const width = skyCanvas.width;
     const height = skyCanvas.height;
+    
+    console.log('renderSkyMap called:', { width, height, canvasVisible: skyCanvas.offsetParent !== null });
+    
+    // If dimensions are 0, try to fix them
+    if (width === 0 || height === 0) {
+        console.warn('Canvas has zero dimensions, attempting to resize...');
+        resizeSkyCanvas();
+        return;
+    }
 
     // Clear canvas completely - ensure we're using the actual canvas dimensions
     skyCtx.clearRect(0, 0, width, height);
@@ -305,13 +332,31 @@ function updateSkyMapLocation(lat, lon) {
     }
 }
 
+// Expose functions globally for script.js to access
+window.initSkyMap = initSkyMap;
+window.renderSkyMap = renderSkyMap;
+window.resizeSkyCanvas = resizeSkyCanvas;
+
+// Force re-render function (can be called when section becomes visible)
+window.forceSkyMapRender = function() {
+    console.log('forceSkyMapRender called');
+    if (!window.skyMapInitialized) {
+        console.log('Sky map not initialized, initializing now...');
+        initSkyMap();
+    } else {
+        console.log('Sky map already initialized, resizing and re-rendering...');
+        resizeSkyCanvas();
+        renderSkyMap();
+    }
+};
+
 // Initialize when DOM is ready
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
         // Wait a bit for other scripts to load
         setTimeout(initSkyMap, 100);
     });
-    } else {
+} else {
     setTimeout(initSkyMap, 100);
 }
 

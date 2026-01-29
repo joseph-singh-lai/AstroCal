@@ -310,15 +310,16 @@ function setupNavigation() {
             }
 
             if (targetSection === 'sky') {
-                // Initialize custom sky map if not already initialized
-                if (!window.skyMapInitialized && typeof initSkyMap === 'function') {
-                    setTimeout(() => {
+                // Force render sky map when section becomes visible
+                setTimeout(() => {
+                    if (typeof window.forceSkyMapRender === 'function') {
+                        window.forceSkyMapRender();
+                    } else if (!window.skyMapInitialized && typeof initSkyMap === 'function') {
                         initSkyMap();
-                    }, 100);
-                } else if (window.skyMapInitialized && typeof renderSkyMap === 'function') {
-                    // Re-render if already initialized
-                    renderSkyMap();
-                }
+                    } else if (window.skyMapInitialized && typeof renderSkyMap === 'function') {
+                        renderSkyMap();
+                    }
+                }, 150); // Wait for section to be visible
             }
         });
     });
@@ -2495,13 +2496,20 @@ function setupMotionToggle() {
     const motionToggle = document.getElementById('motionToggle');
     if (!motionToggle) return;
     
+    // ALWAYS ensure animations run by default - remove reduce-motion class first
+    document.body.classList.remove('reduce-motion');
+    
     // Check saved preference - only reduce motion if explicitly set to 'true'
     const savedMotionPref = localStorage.getItem('reduceMotion');
+    console.log('Motion preference:', savedMotionPref);
+    
     if (savedMotionPref === 'true') {
         document.body.classList.add('reduce-motion');
+        console.log('Reduce motion enabled from saved preference');
     } else {
-        // Ensure animations are running by default
-        document.body.classList.remove('reduce-motion');
+        // Clear any stale preference
+        localStorage.removeItem('reduceMotion');
+        console.log('Animations enabled by default');
     }
     
     motionToggle.addEventListener('click', () => {
