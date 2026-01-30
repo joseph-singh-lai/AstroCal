@@ -33,7 +33,7 @@ export default async function handler(req, res) {
         console.log('Proxy fetching tile from:', tileUrl);
         const response = await fetch(tileUrl, {
             headers: {
-                'User-Agent': 'AstroCal/1.0',
+                'User-Agent': 'AstroCalTT/1.0',
                 'Referer': 'https://astrocal.vercel.app/'
             }
         });

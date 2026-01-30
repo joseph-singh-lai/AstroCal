@@ -21,7 +21,7 @@ export default async function handler(req, res) {
         // Fetch from NASA EONET API
         const response = await fetch(eonetUrl, {
             headers: {
-                'User-Agent': 'AstroCal/1.0',
+                'User-Agent': 'AstroCalTT/1.0',
                 'Referer': 'https://astrocal.vercel.app/'
             }
         });

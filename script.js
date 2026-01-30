@@ -4,7 +4,7 @@ window.onerror = function(msg, url, lineNo, columnNo, error) {
     return false;
 };
 
-console.log('AstroCal script.js loaded - v3.3');
+console.log('AstroCalTT script.js loaded - v4.0');
 
 // Helper function to get NASA API config
 function getNASAConfig() {
@@ -69,7 +69,7 @@ let loadingProgress = {
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOMContentLoaded fired - initializing AstroCal...');
+    console.log('DOMContentLoaded fired - initializing AstroCalTT...');
     
     // Initialize DOM elements
     eventsContainer = document.getElementById('eventsContainer');

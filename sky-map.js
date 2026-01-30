@@ -1,5 +1,5 @@
 /**
- * AstroCal Interactive Sky Map
+ * AstroCalTT Interactive Sky Map
  * A Stellarium-inspired interactive planetarium
  * Version: 3.0
  */
@@ -1221,7 +1221,7 @@ function resizeCanvas() {
 }
 
 function initSkyMap() {
-    console.log('Initializing AstroCal Sky Map v3.0');
+    console.log('Initializing AstroCalTT Sky Map v4.0');
     
     SkyMap.canvas = document.getElementById('skyCanvas');
     if (!SkyMap.canvas) {

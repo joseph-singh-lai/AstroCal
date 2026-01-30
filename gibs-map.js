@@ -1,5 +1,5 @@
 /**
- * AstroCal Satellite Imagery Module
+ * AstroCalTT Satellite Imagery Module
  * Uses reliable, CORS-friendly satellite and map tile sources
  * Version: 3.0
  */
