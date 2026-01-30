@@ -473,6 +473,193 @@ const METEOR_SHOWERS = [
 ];
 
 /**
+ * Eclipse Data - Solar and Lunar eclipses (calculated astronomically)
+ * Data from NASA Eclipse predictions
+ */
+const ECLIPSES = [
+    // 2026
+    { year: 2026, month: 2, day: 17, type: 'lunar', subtype: 'penumbral', name: 'Penumbral Lunar Eclipse', visibility: 'Americas, Europe, Africa' },
+    { year: 2026, month: 3, day: 3, type: 'solar', subtype: 'total', name: 'Total Solar Eclipse', visibility: 'Antarctica, Atlantic Ocean' },
+    { year: 2026, month: 8, day: 12, type: 'solar', subtype: 'partial', name: 'Partial Solar Eclipse', visibility: 'Arctic, North Atlantic, Europe' },
+    { year: 2026, month: 8, day: 28, type: 'lunar', subtype: 'partial', name: 'Partial Lunar Eclipse', visibility: 'Americas, Europe, Africa, Asia' },
+    // 2027
+    { year: 2027, month: 2, day: 6, type: 'solar', subtype: 'annular', name: 'Annular Solar Eclipse', visibility: 'South America, Antarctica' },
+    { year: 2027, month: 2, day: 20, type: 'lunar', subtype: 'penumbral', name: 'Penumbral Lunar Eclipse', visibility: 'Americas, Europe, Africa' },
+    { year: 2027, month: 7, day: 18, type: 'lunar', subtype: 'penumbral', name: 'Penumbral Lunar Eclipse', visibility: 'Asia, Australia, Pacific' },
+    { year: 2027, month: 8, day: 2, type: 'solar', subtype: 'total', name: 'Total Solar Eclipse', visibility: 'Africa, Europe, Middle East' },
+    // 2028
+    { year: 2028, month: 1, day: 12, type: 'lunar', subtype: 'partial', name: 'Partial Lunar Eclipse', visibility: 'Americas, Europe, Africa' },
+    { year: 2028, month: 1, day: 26, type: 'solar', subtype: 'annular', name: 'Annular Solar Eclipse', visibility: 'South America' },
+    { year: 2028, month: 7, day: 6, type: 'lunar', subtype: 'partial', name: 'Partial Lunar Eclipse', visibility: 'Americas, Europe, Africa, Asia' },
+    { year: 2028, month: 7, day: 22, type: 'solar', subtype: 'total', name: 'Total Solar Eclipse', visibility: 'Australia, New Zealand' },
+    { year: 2028, month: 12, day: 31, type: 'lunar', subtype: 'total', name: 'Total Lunar Eclipse', visibility: 'Europe, Africa, Asia, Australia' },
+    // 2029
+    { year: 2029, month: 1, day: 14, type: 'solar', subtype: 'partial', name: 'Partial Solar Eclipse', visibility: 'North America, Central America' },
+    { year: 2029, month: 6, day: 12, type: 'solar', subtype: 'partial', name: 'Partial Solar Eclipse', visibility: 'Arctic, Scandinavia, Russia' },
+    { year: 2029, month: 6, day: 26, type: 'lunar', subtype: 'total', name: 'Total Lunar Eclipse', visibility: 'Americas, Europe, Africa' },
+    { year: 2029, month: 12, day: 5, type: 'solar', subtype: 'partial', name: 'Partial Solar Eclipse', visibility: 'Antarctica, South Pacific' },
+    { year: 2029, month: 12, day: 20, type: 'lunar', subtype: 'total', name: 'Total Lunar Eclipse', visibility: 'Americas, Europe, Africa, Asia' },
+    // 2030
+    { year: 2030, month: 6, day: 1, type: 'solar', subtype: 'annular', name: 'Annular Solar Eclipse', visibility: 'Europe, North Africa, Russia' },
+    { year: 2030, month: 6, day: 15, type: 'lunar', subtype: 'partial', name: 'Partial Lunar Eclipse', visibility: 'Europe, Africa, Asia, Australia' },
+    { year: 2030, month: 11, day: 25, type: 'solar', subtype: 'total', name: 'Total Solar Eclipse', visibility: 'Southern Africa, Australia' },
+    { year: 2030, month: 12, day: 9, type: 'lunar', subtype: 'penumbral', name: 'Penumbral Lunar Eclipse', visibility: 'Americas, Europe, Africa, Asia' }
+];
+
+/**
+ * Supermoon dates - when full moon coincides with lunar perigee
+ * (Moon appears ~14% larger and 30% brighter)
+ */
+const SUPERMOONS = [
+    // 2026
+    { year: 2026, month: 4, day: 26, name: 'Pink Supermoon' },
+    { year: 2026, month: 5, day: 26, name: 'Flower Supermoon' },
+    { year: 2026, month: 11, day: 17, name: 'Beaver Supermoon' },
+    { year: 2026, month: 12, day: 17, name: 'Cold Supermoon' },
+    // 2027
+    { year: 2027, month: 4, day: 16, name: 'Pink Supermoon' },
+    { year: 2027, month: 5, day: 15, name: 'Flower Supermoon' },
+    { year: 2027, month: 11, day: 6, name: 'Beaver Supermoon' },
+    { year: 2027, month: 12, day: 6, name: 'Cold Supermoon' },
+    // 2028
+    { year: 2028, month: 5, day: 3, name: 'Flower Supermoon' },
+    { year: 2028, month: 10, day: 25, name: 'Hunter\'s Supermoon' },
+    { year: 2028, month: 11, day: 24, name: 'Beaver Supermoon' },
+    // 2029
+    { year: 2029, month: 3, day: 22, name: 'Worm Supermoon' },
+    { year: 2029, month: 4, day: 20, name: 'Pink Supermoon' },
+    { year: 2029, month: 10, day: 14, name: 'Hunter\'s Supermoon' },
+    { year: 2029, month: 11, day: 13, name: 'Beaver Supermoon' },
+    // 2030
+    { year: 2030, month: 3, day: 11, name: 'Worm Supermoon' },
+    { year: 2030, month: 4, day: 10, name: 'Pink Supermoon' },
+    { year: 2030, month: 10, day: 3, name: 'Harvest Supermoon' },
+    { year: 2030, month: 11, day: 2, name: 'Beaver Supermoon' }
+];
+
+/**
+ * Generate equinox and solstice dates dynamically
+ * These are approximate - actual times vary by ~15 minutes year to year
+ */
+function generateEquinoxSolsticeEvents(year) {
+    return [
+        {
+            date: new Date(year, 2, 20, 9, 0),  // ~March 20
+            name: 'March Equinox (Spring)',
+            description: 'Day and night are approximately equal. Marks the start of astronomical spring in the Northern Hemisphere.'
+        },
+        {
+            date: new Date(year, 5, 21, 4, 0),  // ~June 21
+            name: 'June Solstice (Summer)',
+            description: 'Longest day in Northern Hemisphere, shortest in Southern. Sun reaches highest point in the sky.'
+        },
+        {
+            date: new Date(year, 8, 22, 20, 0), // ~September 22
+            name: 'September Equinox (Autumn)',
+            description: 'Day and night are approximately equal. Marks the start of astronomical autumn in the Northern Hemisphere.'
+        },
+        {
+            date: new Date(year, 11, 21, 15, 0), // ~December 21
+            name: 'December Solstice (Winter)',
+            description: 'Shortest day in Northern Hemisphere, longest in Southern. Sun at lowest point in the sky.'
+        }
+    ];
+}
+
+/**
+ * Generate eclipse events
+ */
+function generateEclipseEvents() {
+    const events = [];
+    const now = new Date();
+    
+    ECLIPSES.forEach(eclipse => {
+        const eventDate = new Date(eclipse.year, eclipse.month - 1, eclipse.day, 12, 0, 0);
+        
+        // Skip if more than 30 days in the past
+        const daysDiff = (eventDate - now) / (1000 * 60 * 60 * 24);
+        if (daysDiff < -30) return;
+        
+        const emoji = eclipse.type === 'solar' ? '🌑' : '🌕';
+        const typeDesc = eclipse.type === 'solar' ? 'Solar' : 'Lunar';
+        
+        events.push({
+            id: `eclipse-${eclipse.type}-${eclipse.year}-${eclipse.month}`,
+            title: `${emoji} ${eclipse.name}`,
+            category: 'astronomy',
+            datetime: eventDate.toISOString(),
+            description: `${eclipse.subtype.charAt(0).toUpperCase() + eclipse.subtype.slice(1)} ${typeDesc.toLowerCase()} eclipse. Visibility: ${eclipse.visibility}. ${eclipse.type === 'solar' ? '⚠️ Never look directly at a solar eclipse without proper eye protection!' : 'Safe to view with naked eye.'}`,
+            location: eclipse.visibility,
+            eventType: `${eclipse.subtype}_${eclipse.type}_eclipse`,
+            isEclipse: true
+        });
+    });
+    
+    return events;
+}
+
+/**
+ * Generate supermoon events
+ */
+function generateSupermoonEvents() {
+    const events = [];
+    const now = new Date();
+    
+    SUPERMOONS.forEach(moon => {
+        const eventDate = new Date(moon.year, moon.month - 1, moon.day, 22, 0, 0);
+        
+        // Skip if more than 30 days in the past
+        const daysDiff = (eventDate - now) / (1000 * 60 * 60 * 24);
+        if (daysDiff < -30) return;
+        
+        events.push({
+            id: `supermoon-${moon.year}-${moon.month}`,
+            title: `🌕 ${moon.name}`,
+            category: 'astronomy',
+            datetime: eventDate.toISOString(),
+            description: `Supermoon! The full moon appears ~14% larger and ~30% brighter than average as it coincides with lunar perigee (closest approach to Earth). Great night for moon photography!`,
+            location: 'Visible worldwide (weather permitting)',
+            eventType: 'supermoon'
+        });
+    });
+    
+    return events;
+}
+
+/**
+ * Generate equinox and solstice events
+ */
+function generateSeasonalEvents() {
+    const events = [];
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    
+    // Generate for current year and next year
+    [currentYear, currentYear + 1].forEach(year => {
+        generateEquinoxSolsticeEvents(year).forEach(event => {
+            // Skip if more than 30 days in the past
+            const daysDiff = (event.date - now) / (1000 * 60 * 60 * 24);
+            if (daysDiff < -30) return;
+            if (daysDiff > 400) return;
+            
+            const emoji = event.name.includes('Solstice') ? '☀️' : '🌗';
+            
+            events.push({
+                id: `season-${year}-${event.date.getMonth()}`,
+                title: `${emoji} ${event.name}`,
+                category: 'astronomy',
+                datetime: event.date.toISOString(),
+                description: event.description,
+                location: 'Worldwide',
+                eventType: 'seasonal'
+            });
+        });
+    });
+    
+    return events;
+}
+
+/**
  * Generate meteor shower events dynamically for current and next year
  */
 function generateMeteorShowerEvents() {
@@ -512,19 +699,41 @@ function generateMeteorShowerEvents() {
 }
 
 /**
- * Load events - generates meteor showers dynamically (self-sustaining!)
+ * Load events - generates all predictable astronomical events dynamically (self-sustaining!)
+ * No external APIs needed for: meteor showers, eclipses, supermoons, equinoxes/solstices
  */
 async function loadEvents() {
     try {
         eventsContainer.innerHTML = '<div class="loading">Loading events</div>';
         
-        // Generate meteor shower events dynamically - no JSON needed!
+        // Generate all predictable astronomical events dynamically
         const meteorEvents = generateMeteorShowerEvents();
-        console.log(`Generated ${meteorEvents.length} meteor shower events dynamically`);
+        const eclipseEvents = generateEclipseEvents();
+        const supermoonEvents = generateSupermoonEvents();
+        const seasonalEvents = generateSeasonalEvents();
         
-        // Remove any existing meteor events first to avoid duplicates
-        allEvents = allEvents.filter(e => e.category !== 'meteor' && e.category !== 'workshop');
-        allEvents = [...allEvents, ...meteorEvents];
+        const allGeneratedEvents = [
+            ...meteorEvents,
+            ...eclipseEvents,
+            ...supermoonEvents,
+            ...seasonalEvents
+        ];
+        
+        console.log(`Generated ${allGeneratedEvents.length} astronomical events:`);
+        console.log(`  - ${meteorEvents.length} meteor showers`);
+        console.log(`  - ${eclipseEvents.length} eclipses`);
+        console.log(`  - ${supermoonEvents.length} supermoons`);
+        console.log(`  - ${seasonalEvents.length} equinoxes/solstices`);
+        
+        // Remove any existing generated events to avoid duplicates
+        allEvents = allEvents.filter(e => 
+            e.category !== 'meteor' && 
+            e.category !== 'workshop' &&
+            !e.isEclipse &&
+            e.eventType !== 'supermoon' &&
+            e.eventType !== 'seasonal'
+        );
+        allEvents = [...allEvents, ...allGeneratedEvents];
         
         // Sort events by datetime (earliest first)
         allEvents.sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
@@ -534,7 +743,7 @@ async function loadEvents() {
         
         return Promise.resolve();
     } catch (error) {
-        console.error('Error generating meteor events:', error);
+        console.error('Error generating astronomical events:', error);
         // Even if generation fails, don't break the app
         return Promise.resolve();
     }
