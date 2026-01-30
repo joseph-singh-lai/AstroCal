@@ -204,7 +204,7 @@ function updateLoadingProgressDisplay() {
     // Update text with current status
     const taskNames = {
         apod: 'APOD',
-        staticEvents: 'Static Events',
+        staticEvents: 'Meteor Showers',
         issPasses: 'ISS Passes',
         nasaData: 'NASA Data',
         astronomy: 'Astronomy Data',
@@ -346,25 +346,185 @@ function setupNavigation() {
 }
 
 /**
- * Load events from JSON file
+ * Meteor Shower Data - Peak dates are consistent each year (based on Earth's orbit)
+ * Data from International Meteor Organization (IMO)
+ */
+const METEOR_SHOWERS = [
+    {
+        id: 'quadrantids',
+        name: 'Quadrantid',
+        month: 1, day: 3, hour: 23,
+        zhr: 120,
+        rating: 'High',
+        direction: 'NE',
+        description: 'One of the year\'s best showers with up to 120 meteors/hour. Short peak window. Best after midnight.',
+        parent: 'Asteroid 2003 EH1'
+    },
+    {
+        id: 'lyrids',
+        name: 'Lyrid',
+        month: 4, day: 22, hour: 3,
+        zhr: 18,
+        rating: 'Moderate',
+        direction: 'E',
+        description: 'Ancient shower observed for 2,700+ years. About 10-20 meteors/hour with occasional fireballs.',
+        parent: 'Comet C/1861 G1 Thatcher'
+    },
+    {
+        id: 'eta-aquariids',
+        name: 'Eta Aquariid',
+        month: 5, day: 6, hour: 4,
+        zhr: 50,
+        rating: 'Moderate-High',
+        direction: 'E',
+        description: 'Debris from Halley\'s Comet. Fast meteors at 66 km/s. Best viewed in pre-dawn hours.',
+        parent: 'Comet 1P/Halley'
+    },
+    {
+        id: 'delta-aquariids',
+        name: 'Southern Delta Aquariid',
+        month: 7, day: 30, hour: 2,
+        zhr: 25,
+        rating: 'Moderate',
+        direction: 'S',
+        description: 'Southern-hemisphere-friendly shower. Overlaps with early Perseids. About 20-25 meteors/hour.',
+        parent: 'Comet 96P/Machholz'
+    },
+    {
+        id: 'perseids',
+        name: 'Perseid',
+        month: 8, day: 12, hour: 22,
+        zhr: 100,
+        rating: 'Very High',
+        direction: 'NE',
+        description: 'Most popular annual shower! Up to 100+ meteors/hour with many bright fireballs. Warm summer nights.',
+        parent: 'Comet 109P/Swift-Tuttle'
+    },
+    {
+        id: 'draconids',
+        name: 'Draconid',
+        month: 10, day: 8, hour: 20,
+        zhr: 10,
+        rating: 'Variable',
+        direction: 'NW',
+        description: 'Best viewed in early evening (unusual for showers). Can produce surprise outbursts.',
+        parent: 'Comet 21P/Giacobini-Zinner'
+    },
+    {
+        id: 'orionids',
+        name: 'Orionid',
+        month: 10, day: 21, hour: 23,
+        zhr: 23,
+        rating: 'Moderate',
+        direction: 'SE',
+        description: 'Second shower from Halley\'s Comet debris. Very fast meteors at 66 km/s.',
+        parent: 'Comet 1P/Halley'
+    },
+    {
+        id: 'taurids-south',
+        name: 'Southern Taurid',
+        month: 11, day: 5, hour: 23,
+        zhr: 5,
+        rating: 'Low',
+        direction: 'E',
+        description: 'Low rates but famous for spectacular fireballs! Slow-moving meteors.',
+        parent: 'Comet 2P/Encke'
+    },
+    {
+        id: 'taurids-north',
+        name: 'Northern Taurid',
+        month: 11, day: 12, hour: 23,
+        zhr: 5,
+        rating: 'Low',
+        direction: 'E',
+        description: 'Like Southern Taurids - low rates but impressive bright fireballs. Slow meteors.',
+        parent: 'Comet 2P/Encke'
+    },
+    {
+        id: 'leonids',
+        name: 'Leonid',
+        month: 11, day: 17, hour: 23,
+        zhr: 15,
+        rating: 'Moderate',
+        direction: 'E',
+        description: 'Famous for meteor storms every 33 years. Fast meteors with bright fireballs.',
+        parent: 'Comet 55P/Tempel-Tuttle'
+    },
+    {
+        id: 'geminids',
+        name: 'Geminid',
+        month: 12, day: 14, hour: 23,
+        zhr: 150,
+        rating: 'Very High',
+        direction: 'E',
+        description: 'King of meteor showers! Up to 150 meteors/hour. Multi-colored meteors, medium speed.',
+        parent: 'Asteroid 3200 Phaethon'
+    },
+    {
+        id: 'ursids',
+        name: 'Ursid',
+        month: 12, day: 22, hour: 22,
+        zhr: 10,
+        rating: 'Low-Moderate',
+        direction: 'N',
+        description: 'Often overlooked due to holiday timing. Occasional surprise outbursts possible.',
+        parent: 'Comet 8P/Tuttle'
+    }
+];
+
+/**
+ * Generate meteor shower events dynamically for current and next year
+ */
+function generateMeteorShowerEvents() {
+    const events = [];
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    
+    // Generate for current year and next year
+    [currentYear, currentYear + 1].forEach(year => {
+        METEOR_SHOWERS.forEach(shower => {
+            const eventDate = new Date(year, shower.month - 1, shower.day, shower.hour, 0, 0);
+            
+            // Skip if more than 60 days in the past
+            const daysDiff = (eventDate - now) / (1000 * 60 * 60 * 24);
+            if (daysDiff < -60) return;
+            
+            // Skip if more than 400 days in the future (just show ~1 year ahead)
+            if (daysDiff > 400) return;
+            
+            events.push({
+                id: `meteor-${shower.id}-${year}`,
+                title: `${shower.name} Meteor Shower Peak`,
+                category: 'meteor',
+                datetime: eventDate.toISOString(),
+                description: `${shower.description} Expected rate: ~${shower.zhr} meteors/hour (ZHR). Parent body: ${shower.parent}.`,
+                visibility: {
+                    direction: shower.direction,
+                    peak: shower.rating,
+                    zhr: shower.zhr.toString()
+                },
+                location: 'Dark-sky site for best viewing'
+            });
+        });
+    });
+    
+    return events;
+}
+
+/**
+ * Load events - generates meteor showers dynamically (self-sustaining!)
  */
 async function loadEvents() {
     try {
         eventsContainer.innerHTML = '<div class="loading">Loading events</div>';
         
-        const response = await fetch('data/events.json');
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
+        // Generate meteor shower events dynamically - no JSON needed!
+        const meteorEvents = generateMeteorShowerEvents();
+        console.log(`Generated ${meteorEvents.length} meteor shower events dynamically`);
         
-        const data = await response.json();
-        const staticEvents = data.events || [];
-        
-        
-        // Merge static events with existing events (don't replace - APOD might already be loaded)
-        // Remove any existing static events first to avoid duplicates
+        // Remove any existing meteor events first to avoid duplicates
         allEvents = allEvents.filter(e => e.category !== 'meteor' && e.category !== 'workshop');
-        allEvents = [...allEvents, ...staticEvents];
+        allEvents = [...allEvents, ...meteorEvents];
         
         // Sort events by datetime (earliest first)
         allEvents.sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
@@ -374,30 +534,9 @@ async function loadEvents() {
         
         return Promise.resolve();
     } catch (error) {
-        console.error('Error loading events:', error);
-        const errorMessage = error.message || 'Unknown error';
-        const isCorsError = errorMessage.includes('CORS') || errorMessage.includes('Failed to fetch') || 
-                           window.location.protocol === 'file:';
-        
-        eventsContainer.innerHTML = `
-            <div class="no-events">
-                <div class="no-events-icon">⚠️</div>
-                <p><strong>Failed to load events</strong></p>
-                <p style="margin-top: 0.5rem; font-size: 0.9rem; opacity: 0.7;">${errorMessage}</p>
-                ${isCorsError ? `
-                    <div style="margin-top: 1.5rem; padding: 1rem; background: var(--card-bg); border-radius: 8px; border: 1px solid var(--border-color);">
-                        <p style="margin-bottom: 0.5rem;"><strong>💡 Solution:</strong></p>
-                        <p style="font-size: 0.9rem; margin-bottom: 0.5rem;">You need to run a local server. Try one of these:</p>
-                        <ul style="font-size: 0.85rem; margin-left: 1.5rem; line-height: 1.8;">
-                            <li><strong>Python:</strong> <code style="background: var(--bg-secondary); padding: 0.2rem 0.4rem; border-radius: 4px;">python -m http.server 8000</code></li>
-                            <li><strong>Node.js:</strong> <code style="background: var(--bg-secondary); padding: 0.2rem 0.4rem; border-radius: 4px;">npx http-server</code></li>
-                            <li><strong>VS Code:</strong> Use the "Live Server" extension</li>
-                        </ul>
-                        <p style="font-size: 0.85rem; margin-top: 0.5rem;">Then open <code style="background: var(--bg-secondary); padding: 0.2rem 0.4rem; border-radius: 4px;">http://localhost:8000</code></p>
-                    </div>
-                ` : ''}
-            </div>
-        `;
+        console.error('Error generating meteor events:', error);
+        // Even if generation fails, don't break the app
+        return Promise.resolve();
     }
 }
 
