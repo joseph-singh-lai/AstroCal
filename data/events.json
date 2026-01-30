@@ -1,112 +1,173 @@
 {
   "events": [
     {
-      "id": "meteor-quadrantids",
+      "id": "meteor-quadrantids-2026",
       "title": "Quadrantid Meteor Shower Peak",
       "category": "meteor",
-      "datetime": "2025-01-03T23:00:00",
-      "description": "The Quadrantids meteor shower peaks around January 3–4. This is one of the year's earliest major showers.",
+      "datetime": "2026-01-03T23:00:00",
+      "description": "The Quadrantids meteor shower peaks around January 3–4. This is one of the year's earliest major showers with up to 120 meteors per hour under ideal conditions. Best viewed after midnight.",
       "visibility": {
         "direction": "NE",
-        "peak": "High"
+        "peak": "High",
+        "zhr": "120"
       },
       "location": "Dark-sky site around La Brea"
     },
     {
-      "id": "meteor-lyrids",
+      "id": "meteor-lyrids-2026",
       "title": "Lyrid Meteor Shower Peak",
       "category": "meteor",
-      "datetime": "2025-04-22T03:00:00",
-      "description": "Lyrids are active around April 22, with rates of ~10–20 meteors per hour under good conditions.",
+      "datetime": "2026-04-22T03:00:00",
+      "description": "Lyrids are active around April 22, with rates of 10–20 meteors per hour under good conditions. Associated with Comet C/1861 G1 Thatcher.",
       "visibility": {
         "direction": "E",
-        "peak": "Moderate"
+        "peak": "Moderate",
+        "zhr": "18"
       },
       "location": "Open sky area"
     },
     {
-      "id": "meteor-eta-aquariids",
+      "id": "meteor-eta-aquariids-2026",
       "title": "Eta Aquariid Meteor Shower Peak",
       "category": "meteor",
-      "datetime": "2025-05-06T04:00:00",
-      "description": "The Eta Aquariids, associated with Halley's Comet, peak around May 5–6. Good for early-morning observing.",
+      "datetime": "2026-05-06T04:00:00",
+      "description": "The Eta Aquariids, associated with Halley's Comet, peak around May 5–6. Expect 40-60 meteors per hour. Best viewed in pre-dawn hours.",
       "visibility": {
         "direction": "S / E",
-        "peak": "Moderate"
+        "peak": "Moderate-High",
+        "zhr": "50"
       },
       "location": "Low-horizon viewing spot"
     },
     {
-      "id": "meteor-delta-aquariids",
+      "id": "meteor-delta-aquariids-2026",
       "title": "Southern Delta Aquariid Meteor Shower",
       "category": "meteor",
-      "datetime": "2025-07-28T02:00:00",
-      "description": "Delta Aquariids are active from late July to early August. One of the more southern-hemisphere-friendly showers.",
+      "datetime": "2026-07-30T02:00:00",
+      "description": "Delta Aquariids are active from late July to early August. One of the more southern-hemisphere-friendly showers with 20-25 meteors per hour.",
       "visibility": {
         "direction": "S",
-        "peak": "Low-to-Moderate"
+        "peak": "Moderate",
+        "zhr": "25"
       },
       "location": "Open southern horizon"
     },
     {
-      "id": "meteor-perseids",
+      "id": "meteor-perseids-2026",
       "title": "Perseid Meteor Shower Peak",
       "category": "meteor",
-      "datetime": "2025-08-12T22:00:00",
-      "description": "The Perseids peak around August 12–13. Under ideal conditions, you could see ~60–100+ meteors per hour.",
+      "datetime": "2026-08-12T22:00:00",
+      "description": "The Perseids peak around August 12–13. Under ideal conditions, you could see 60–100+ meteors per hour. One of the most popular annual showers!",
       "visibility": {
         "direction": "NE",
-        "peak": "High"
+        "peak": "High",
+        "zhr": "100"
       },
       "location": "Dark sky viewing area"
     },
     {
-      "id": "meteor-orionids",
+      "id": "meteor-draconids-2026",
+      "title": "Draconid Meteor Shower Peak",
+      "category": "meteor",
+      "datetime": "2026-10-08T20:00:00",
+      "description": "The Draconids peak around October 8. Usually modest rates but can occasionally produce outbursts. Best viewed in early evening unlike most showers.",
+      "visibility": {
+        "direction": "NW",
+        "peak": "Variable",
+        "zhr": "10"
+      },
+      "location": "Northern sky viewing area"
+    },
+    {
+      "id": "meteor-orionids-2026",
       "title": "Orionid Meteor Shower Peak",
       "category": "meteor",
-      "datetime": "2025-10-21T23:00:00",
-      "description": "Orionids peak around October 21–22. These are debris from Halley's Comet, and they often produce fast meteors.",
+      "datetime": "2026-10-21T23:00:00",
+      "description": "Orionids peak around October 21–22. These are debris from Halley's Comet and often produce fast meteors at 66 km/s. Expect 20-25 meteors per hour.",
       "visibility": {
         "direction": "SE",
-        "peak": "Moderate"
+        "peak": "Moderate",
+        "zhr": "23"
       },
       "location": "Wide open sky area"
     },
     {
-      "id": "meteor-leonids",
-      "title": "Leonid Meteor Shower Peak",
+      "id": "meteor-taurids-south-2026",
+      "title": "Southern Taurid Meteor Shower Peak",
       "category": "meteor",
-      "datetime": "2025-11-17T23:00:00",
-      "description": "Leonids peak around November 17–18. Known for bright fireballs in some years.",
+      "datetime": "2026-11-05T23:00:00",
+      "description": "Southern Taurids peak around November 5. Known for slow, bright fireballs. Low rates but spectacular individual meteors.",
       "visibility": {
         "direction": "E",
-        "peak": "Moderate"
+        "peak": "Low",
+        "zhr": "5"
+      },
+      "location": "Dark-sky site"
+    },
+    {
+      "id": "meteor-taurids-north-2026",
+      "title": "Northern Taurid Meteor Shower Peak",
+      "category": "meteor",
+      "datetime": "2026-11-12T23:00:00",
+      "description": "Northern Taurids peak around November 12. Like their southern counterpart, known for slow-moving fireballs. Low rates but impressive brightness.",
+      "visibility": {
+        "direction": "E",
+        "peak": "Low",
+        "zhr": "5"
+      },
+      "location": "Open sky area"
+    },
+    {
+      "id": "meteor-leonids-2026",
+      "title": "Leonid Meteor Shower Peak",
+      "category": "meteor",
+      "datetime": "2026-11-17T23:00:00",
+      "description": "Leonids peak around November 17–18. Known for bright fireballs and occasional meteor storms (every 33 years). Expect 10-15 meteors per hour.",
+      "visibility": {
+        "direction": "E",
+        "peak": "Moderate",
+        "zhr": "15"
       },
       "location": "Backyard / field"
     },
     {
-      "id": "meteor-geminids",
+      "id": "meteor-geminids-2026",
       "title": "Geminid Meteor Shower Peak",
       "category": "meteor",
-      "datetime": "2025-12-13T23:00:00",
-      "description": "The Geminids are one of the richest annual showers, peaking December 13–14.",
+      "datetime": "2026-12-14T23:00:00",
+      "description": "The Geminids are one of the richest annual showers, peaking December 13–14. Up to 150 meteors per hour under ideal conditions. Multicolored meteors!",
       "visibility": {
         "direction": "E",
-        "peak": "High"
+        "peak": "Very High",
+        "zhr": "150"
       },
       "location": "Dark-sky site near La Brea"
     },
     {
-      "id": "meteor-ursids",
+      "id": "meteor-ursids-2026",
       "title": "Ursid Meteor Shower Peak",
       "category": "meteor",
-      "datetime": "2025-12-22T22:00:00",
-      "description": "The Ursids become active and peak around December 21–22 in 2025.",
+      "datetime": "2026-12-22T22:00:00",
+      "description": "The Ursids peak around December 21–22. A modest shower with 5-10 meteors per hour, but has been known to produce surprise outbursts.",
       "visibility": {
         "direction": "N",
-        "peak": "Low-Moderate"
+        "peak": "Low-Moderate",
+        "zhr": "10"
       },
       "location": "Northern horizon clear sky"
+    },
+    {
+      "id": "meteor-quadrantids-2027",
+      "title": "Quadrantid Meteor Shower Peak",
+      "category": "meteor",
+      "datetime": "2027-01-03T23:00:00",
+      "description": "The Quadrantids meteor shower peaks around January 3–4, 2027. This is one of the year's earliest major showers with up to 120 meteors per hour.",
+      "visibility": {
+        "direction": "NE",
+        "peak": "High",
+        "zhr": "120"
+      },
+      "location": "Dark-sky site around La Brea"
     }
   ]
 }
