@@ -411,13 +411,38 @@ const Renderer = {
     altAzToScreen: (alt, az) => {
         const canvas = SkyMap.canvas;
         const view = SkyMap.view;
-        const scale = Math.min(canvas.width, canvas.height) / view.fov;
-        let dAz = Astro.normalize180(az - view.azimuth);
-        let dAlt = alt - view.altitude;
-        dAz *= Math.cos(Astro.toRad(view.altitude));
-        const x = canvas.width / 2 + dAz * scale;
-        const y = canvas.height / 2 - dAlt * scale;
-        return { x, y, visible: Math.abs(dAz) < view.fov && Math.abs(dAlt) < view.fov };
+        const cx = canvas.width / 2, cy = canvas.height / 2;
+
+        const altRad = Astro.toRad(alt), azRad = Astro.toRad(az);
+        const cAltRad = Astro.toRad(view.altitude), cAzRad = Astro.toRad(view.azimuth);
+
+        // Spherical angular separation from view center
+        const cosSep = Math.sin(altRad) * Math.sin(cAltRad) +
+                       Math.cos(altRad) * Math.cos(cAltRad) * Math.cos(azRad - cAzRad);
+        const sepRad = Math.acos(Math.max(-1, Math.min(1, cosSep)));
+        const sepDeg = Astro.toDeg(sepRad);
+
+        if (sepDeg > 90) return { x: 0, y: 0, visible: false };
+
+        // Bearing (position angle on tangent plane)
+        const sinSep = Math.sin(sepRad);
+        let bearing = 0;
+        if (sinSep > 1e-8) {
+            const sinB = Math.cos(altRad) * Math.sin(azRad - cAzRad) / sinSep;
+            const cosB = (Math.sin(altRad) * Math.cos(cAltRad) -
+                         Math.cos(altRad) * Math.sin(cAltRad) * Math.cos(azRad - cAzRad)) / sinSep;
+            bearing = Math.atan2(sinB, cosB);
+        }
+
+        // Azimuthal equidistant: uniform pixel-per-degree in all directions
+        const pixPerDeg = Math.min(canvas.width, canvas.height) / view.fov;
+        const x = cx + sepDeg * Math.sin(bearing) * pixPerDeg;
+        const y = cy - sepDeg * Math.cos(bearing) * pixPerDeg;
+
+        const maxVisDeg = Math.max(canvas.width, canvas.height) / pixPerDeg / 2;
+        const visible = sepDeg < maxVisDeg * 1.1;
+
+        return { x, y, visible };
     },
 
     drawBackground: () => {
@@ -1291,7 +1316,7 @@ function setupSkyMapEventListeners() {
         if (!SkyMap.view.isDragging) return;
         const dx = e.clientX - SkyMap.view.lastX;
         const dy = e.clientY - SkyMap.view.lastY;
-        const sensitivity = SkyMap.view.fov / canvas.width;
+        const sensitivity = SkyMap.view.fov / Math.min(canvas.width, canvas.height);
         SkyMap.view.azimuth -= dx * sensitivity;
         SkyMap.view.altitude += dy * sensitivity;
         SkyMap.view.altitude = Math.max(-10, Math.min(90, SkyMap.view.altitude));
@@ -1341,7 +1366,7 @@ function setupSkyMapEventListeners() {
         if (e.touches.length === 1 && SkyMap.view.isDragging) {
             const dx = e.touches[0].clientX - SkyMap.view.lastX;
             const dy = e.touches[0].clientY - SkyMap.view.lastY;
-            const sensitivity = SkyMap.view.fov / canvas.width;
+            const sensitivity = SkyMap.view.fov / Math.min(canvas.width, canvas.height);
             SkyMap.view.azimuth -= dx * sensitivity;
             SkyMap.view.altitude += dy * sensitivity;
             SkyMap.view.altitude = Math.max(-10, Math.min(90, SkyMap.view.altitude));

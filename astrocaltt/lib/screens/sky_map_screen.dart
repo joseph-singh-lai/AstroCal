@@ -136,27 +136,34 @@ class _SkyMapScreenState extends State<SkyMapScreen> {
 
   ({double x, double y, bool visible}) _altAzToScreen(double alt, double az, Size size) {
     final w = size.width, h = size.height, cx = w / 2, cy = h / 2;
-    final a = w / 2, b = h / 2;
     final altRad = _toRad(alt), azRad = _toRad(az);
     final lookAltRad = _toRad(_altitude), lookAzRad = _toRad(_azimuth);
-    final cosSep = math.sin(altRad) * math.sin(lookAltRad) + math.cos(altRad) * math.cos(lookAltRad) * math.cos(azRad - lookAzRad);
-    final sep = _toDeg(math.acos(cosSep.clamp(-1.0, 1.0)));
-    if (sep > 95) return (x: 0, y: 0, visible: false);
-    final sinSep = math.sin(_toRad(sep));
+
+    // Spherical angular separation from view center
+    final cosSep = math.sin(altRad) * math.sin(lookAltRad) +
+        math.cos(altRad) * math.cos(lookAltRad) * math.cos(azRad - lookAzRad);
+    final sepDeg = _toDeg(math.acos(cosSep.clamp(-1.0, 1.0)));
+    if (sepDeg > 90) return (x: 0, y: 0, visible: false);
+
+    // Bearing (position angle on tangent plane)
+    final sinSep = math.sin(_toRad(sepDeg));
     double bearing;
-    if (sinSep < 1e-6) { bearing = 0; } else {
+    if (sinSep < 1e-6) {
+      bearing = 0;
+    } else {
       final sinBear = math.cos(altRad) * math.sin(azRad - lookAzRad) / sinSep;
-      final cosBear = (math.sin(altRad) * math.cos(lookAltRad) - math.cos(altRad) * math.sin(lookAltRad) * math.cos(azRad - lookAzRad)) / sinSep;
+      final cosBear = (math.sin(altRad) * math.cos(lookAltRad) -
+          math.cos(altRad) * math.sin(lookAltRad) * math.cos(azRad - lookAzRad)) / sinSep;
       bearing = math.atan2(sinBear, cosBear);
     }
-    final edgeSep = _fov / 2;
-    if (sep > edgeSep) return (x: 0, y: 0, visible: false);
-    final r = sep / edgeSep;
-    final rEllipse = (a * b) / math.sqrt(b * b * math.cos(bearing) * math.cos(bearing) + a * a * math.sin(bearing) * math.sin(bearing) + 1e-10);
-    final rScreen = r * rEllipse;
-    final x = cx + rScreen * math.sin(bearing);
-    final y = cy - rScreen * math.cos(bearing);
-    return (x: x, y: y, visible: sep < 90 && x >= 0 && x <= w && y >= 0 && y <= h);
+
+    // Azimuthal equidistant: uniform pixel-per-degree in all directions
+    final pixPerDeg = math.min(w, h) / _fov;
+    final x = cx + sepDeg * math.sin(bearing) * pixPerDeg;
+    final y = cy - sepDeg * math.cos(bearing) * pixPerDeg;
+
+    final visible = x >= -20 && x <= w + 20 && y >= -20 && y <= h + 20 && sepDeg < 90;
+    return (x: x, y: y, visible: visible);
   }
 
   DateTime? _lastTickTime;
@@ -345,8 +352,9 @@ class _SkyMapScreenState extends State<SkyMapScreen> {
             if (_useSensorMode) return;
             setState(() {
               if (d.pointerCount == 1) {
-                _azimuth = _norm360(_azimuth - d.focalPointDelta.dx * 0.4);
-                _altitude = (_altitude + d.focalPointDelta.dy * 0.25).clamp(5.0, 85.0);
+                final sens = _fov / math.min(constraints.maxWidth, constraints.maxHeight);
+                _azimuth = _norm360(_azimuth - d.focalPointDelta.dx * sens);
+                _altitude = (_altitude + d.focalPointDelta.dy * sens).clamp(-10.0, 90.0);
               } else if (d.pointerCount == 2 && _scaleStart != null) {
                 _fov = (_scaleStart! / d.scale).clamp(20.0, 120.0);
               }
