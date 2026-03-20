@@ -289,12 +289,12 @@
             <section id="sky-section" class="content-section">
                 <div class="section-header">
                     <h2>🌌 Interactive Sky Map</h2>
-                    <p class="section-description">A real-time planetarium – explore the night sky from your location</p>
+                    <p class="section-description">A real-time planetarium — explore the night sky from your location</p>
                 </div>
                 
                 <!-- Sky Map Controls -->
                 <div class="sky-controls">
-                    <!-- Location & View Controls -->
+                    <!-- Row 1: Location, Directions, Search -->
                     <div class="sky-control-group">
                         <button id="sky-use-location" class="sky-btn sky-btn-primary">
                             <span>📍</span> My Location
@@ -304,13 +304,17 @@
                         </button>
                     </div>
                     
-                    <!-- Direction Quick-Look -->
                     <div class="sky-control-group sky-directions">
                         <button class="sky-btn sky-dir" data-az="0" data-alt="45">N</button>
                         <button class="sky-btn sky-dir" data-az="90" data-alt="45">E</button>
                         <button class="sky-btn sky-dir" data-az="180" data-alt="45">S</button>
                         <button class="sky-btn sky-dir" data-az="270" data-alt="45">W</button>
                         <button class="sky-btn sky-dir" data-az="0" data-alt="90">↑</button>
+                    </div>
+
+                    <!-- Search -->
+                    <div class="sky-control-group sky-search-group">
+                        <input type="text" id="sky-search-input" class="sky-search-input" placeholder="Search objects..." aria-label="Search sky objects">
                     </div>
                     
                     <!-- Display Toggles -->
@@ -331,12 +335,20 @@
                             <span>Planets</span>
                         </label>
                         <label class="sky-toggle-label">
+                            <input type="checkbox" id="sky-show-dsos" checked>
+                            <span class="sky-toggle-switch"></span>
+                            <span>DSOs</span>
+                        </label>
+                        <label class="sky-toggle-label">
                             <input type="checkbox" id="sky-show-grid">
                             <span class="sky-toggle-switch"></span>
                             <span>Grid</span>
                         </label>
                     </div>
                     
+                    <!-- Night Mode -->
+                    <button id="sky-night-mode" class="sky-btn sky-btn-night" title="Night vision (red filter)">🔴</button>
+
                     <!-- Time Controls -->
                     <div class="sky-control-group sky-time-controls">
                         <button id="sky-time-slower" class="sky-btn sky-time-btn">⏪</button>
@@ -351,23 +363,28 @@
                         <div class="sky-clock-date" id="sky-clock-date">Jan 1, 2026</div>
                     </div>
                 </div>
+
+                <!-- Time Slider -->
+                <div class="sky-time-slider-container">
+                    <span class="sky-slider-label">-12h</span>
+                    <input type="range" id="sky-time-slider" class="sky-time-slider" min="-720" max="720" value="0" step="5" title="Scrub time ±12 hours. Double-click to reset.">
+                    <span class="sky-slider-label">+12h</span>
+                </div>
                 
                 <!-- Sky Map Canvas -->
                 <div class="sky-map-container">
                     <canvas id="skyCanvas"></canvas>
                     
-                    <!-- Compass Overlay -->
-                    <div class="sky-compass">
-                        <span class="compass-n">N</span>
-                        <span class="compass-e">E</span>
-                        <span class="compass-s">S</span>
-                        <span class="compass-w">W</span>
-                    </div>
-                    
                     <!-- Zoom Controls -->
                     <div class="sky-zoom-controls">
                         <button id="sky-zoom-in" class="sky-btn sky-zoom-btn">+</button>
                         <button id="sky-zoom-out" class="sky-btn sky-zoom-btn">−</button>
+                    </div>
+
+                    <!-- Detail Panel (shows on object click) -->
+                    <div id="sky-detail-panel" class="sky-detail-panel">
+                        <div class="sky-detail-title"></div>
+                        <div class="sky-detail-body"></div>
                     </div>
                 </div>
                 
@@ -376,6 +393,7 @@
                     <div class="legend-item"><span class="legend-dot star"></span> Stars</div>
                     <div class="legend-item"><span class="legend-dot planet"></span> Planets</div>
                     <div class="legend-item"><span class="legend-line"></span> Constellations</div>
+                    <div class="legend-item"><span class="legend-dot dso"></span> Deep Sky</div>
                 </div>
             </section>
 
@@ -497,7 +515,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="script.js?v=5.0"></script>
     <script src="gibs-map.js?v=5.0"></script>
-    <script src="sky-map.js?v=5.0"></script>
+    <script src="sky-map.js?v=6.0"></script>
 </body>
 </html>
 

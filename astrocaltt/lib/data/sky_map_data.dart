@@ -190,12 +190,53 @@ const List<({String name, List<(String, String)> lines, List<double> center})> c
 ];
 
 /// Planet orbital elements (simplified, epoch J2000)
-/// a: semi-major axis AU, e: eccentricity, i: inclination deg,
-/// L: mean longitude, w: perihelion, O: ascending node, n: mean motion deg/day
 const List<Map<String, dynamic>> planets = [
   {'name': 'Mercury', 'symbol': '☿', 'color': 0xFFb5a191, 'size': 3.0, 'a': 0.387, 'e': 0.206, 'i': 7.0, 'L': 252.251, 'w': 77.457, 'O': 48.331, 'n': 4.092},
   {'name': 'Venus', 'symbol': '♀', 'color': 0xFFffe4b5, 'size': 5.0, 'a': 0.723, 'e': 0.007, 'i': 3.4, 'L': 181.980, 'w': 131.563, 'O': 76.680, 'n': 1.602},
   {'name': 'Mars', 'symbol': '♂', 'color': 0xFFcd5c5c, 'size': 4.0, 'a': 1.524, 'e': 0.093, 'i': 1.8, 'L': 355.433, 'w': 336.041, 'O': 49.558, 'n': 0.524},
   {'name': 'Jupiter', 'symbol': '♃', 'color': 0xFFd4a574, 'size': 8.0, 'a': 5.203, 'e': 0.048, 'i': 1.3, 'L': 34.351, 'w': 14.331, 'O': 100.464, 'n': 0.083},
   {'name': 'Saturn', 'symbol': '♄', 'color': 0xFFf4d59e, 'size': 7.0, 'a': 9.537, 'e': 0.054, 'i': 2.5, 'L': 50.077, 'w': 93.057, 'O': 113.665, 'n': 0.033},
+];
+
+/// Deep Sky Objects: [name, RA(h), Dec(°), mag, type, commonName, arcmin]
+const List<List<dynamic>> dsos = [
+  ['M31', 0.712, 41.269, 3.4, 'galaxy', 'Andromeda Galaxy', 190],
+  ['M42', 5.588, -5.391, 4.0, 'nebula', 'Orion Nebula', 85],
+  ['M45', 3.791, 24.105, 1.6, 'cluster', 'Pleiades', 110],
+  ['M13', 16.695, 36.461, 5.8, 'cluster', 'Hercules Cluster', 20],
+  ['M44', 8.667, 19.672, 3.7, 'cluster', 'Beehive Cluster', 95],
+  ['M8', 18.063, -24.386, 6.0, 'nebula', 'Lagoon Nebula', 90],
+  ['M57', 18.893, 33.029, 8.8, 'nebula', 'Ring Nebula', 1.4],
+  ['M27', 19.994, 22.721, 7.5, 'nebula', 'Dumbbell Nebula', 8],
+  ['M7', 17.898, -34.793, 3.3, 'cluster', "Ptolemy's Cluster", 80],
+  ['M6', 17.668, -32.254, 4.2, 'cluster', 'Butterfly Cluster', 25],
+  ['M22', 18.607, -23.905, 5.1, 'cluster', 'Sagittarius Cluster', 32],
+  ['M4', 16.393, -26.526, 5.6, 'cluster', '', 36],
+  ['M11', 18.851, -6.272, 6.3, 'cluster', 'Wild Duck Cluster', 14],
+  ['M17', 18.346, -16.177, 6.0, 'nebula', 'Omega Nebula', 11],
+  ['M20', 18.036, -23.030, 6.3, 'nebula', 'Trifid Nebula', 28],
+  ['M33', 1.564, 30.660, 5.7, 'galaxy', 'Triangulum Galaxy', 73],
+  ['M51', 13.498, 47.195, 8.4, 'galaxy', 'Whirlpool Galaxy', 11],
+  ['M81', 9.926, 69.066, 6.9, 'galaxy', "Bode's Galaxy", 27],
+  ['M101', 14.054, 54.349, 7.9, 'galaxy', 'Pinwheel Galaxy', 29],
+  ['M104', 12.667, -11.623, 8.0, 'galaxy', 'Sombrero Galaxy', 9],
+  ['LMC', 5.392, -69.756, 0.9, 'galaxy', 'Large Magellanic Cloud', 650],
+  ['SMC', 0.877, -72.800, 2.7, 'galaxy', 'Small Magellanic Cloud', 320],
+  ['47 Tuc', 0.401, -72.081, 4.1, 'cluster', '', 50],
+  ['ω Cen', 13.447, -47.479, 3.7, 'cluster', 'Omega Centauri', 55],
+];
+
+/// Milky Way galactic plane path: [RA(h), Dec(°), width(°)]
+const List<List<double>> milkyWayPath = [
+  [18.5, -30, 25], [18.0, -25, 30], [17.5, -20, 25], [17.0, -15, 20],
+  [19.0, -28, 28], [19.5, -20, 22], [20.0, -10, 18], [20.5, 5, 16],
+  [20.8, 20, 15], [21.0, 35, 18], [21.2, 45, 20], [21.5, 55, 18],
+  [22.0, 58, 16], [22.5, 55, 14], [23.0, 50, 12], [23.5, 55, 14],
+  [0.0, 60, 16], [0.5, 62, 18], [1.0, 60, 16], [1.5, 55, 14],
+  [2.0, 50, 16], [2.5, 55, 18], [3.0, 50, 16], [3.5, 45, 14],
+  [4.0, 35, 12], [4.5, 25, 14], [5.0, 15, 16], [5.5, 5, 18],
+  [6.0, -5, 20], [6.5, -15, 22], [7.0, -25, 24], [7.5, -30, 22],
+  [8.0, -40, 20], [8.5, -45, 18], [9.0, -50, 16], [10.0, -55, 14],
+  [11.0, -60, 12], [12.0, -63, 14], [13.0, -60, 16], [14.0, -55, 18],
+  [15.0, -48, 18], [16.0, -40, 20], [17.0, -35, 22], [18.0, -28, 26],
 ];
