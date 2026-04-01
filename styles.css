@@ -440,7 +440,7 @@ body::after {
 }
 
 .main-header.condensed .site-logo {
-    height: 52px;
+    height: 60px;
 }
 
 .main-header.condensed .location-subtitle {
@@ -500,7 +500,7 @@ body::after {
 }
 
 .site-logo {
-    height: 80px;
+    height: 110px;
     width: auto;
     object-fit: contain;
     transition: height 0.3s ease;
@@ -2462,7 +2462,7 @@ body.reduce-motion .motion-toggle .motion-icon {
     }
 
     .site-logo {
-        height: 90px;
+        height: 120px;
     }
 
     .location-info {
@@ -2490,7 +2490,7 @@ body.reduce-motion .motion-toggle .motion-icon {
     }
 
     .site-logo {
-        height: 60px;
+        height: 80px;
     }
 
     .location-subtitle {
