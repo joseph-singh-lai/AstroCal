@@ -503,6 +503,8 @@ body::after {
     height: 110px;
     width: auto;
     object-fit: contain;
+    margin-top: -20px;
+    margin-bottom: -20px;
     transition: height 0.3s ease;
 }
 
