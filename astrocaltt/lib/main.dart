@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+
 import 'package:astrocaltt/utils/responsive.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:astrocaltt/screens/events_screen.dart';
@@ -167,27 +167,10 @@ class _SiteHeader extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            SvgPicture.asset(
-              'assets/logo.svg',
-              width: 20 * scale,
-              height: 20 * scale,
+            Image.asset(
+              'assets/logo_banner.png',
+              height: (36 * scale).clamp(28.0, 48.0),
               fit: BoxFit.contain,
-            ),
-            SizedBox(width: 8 * scale),
-            ShaderMask(
-              shaderCallback: (bounds) => const LinearGradient(
-                colors: [Color(0xFFf0f4ff), Color(0xFF6b8dd6), Color(0xFF9d7ce8)],
-                stops: [0.0, 0.5, 1.0],
-              ).createShader(bounds),
-              child: Text(
-                'ASTROCALTT',
-                style: GoogleFonts.orbitron(
-                  fontSize: (18 * scale).clamp(14.0, 22.0),
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 2,
-                  color: Colors.white,
-                ),
-              ),
             ),
             SizedBox(width: 12 * scale),
             Container(

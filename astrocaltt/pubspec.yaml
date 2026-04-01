@@ -71,6 +71,7 @@ flutter:
   assets:
     - assets/logo.svg
     - assets/astrocaltt_icon1.png
+    - assets/logo_banner.png
   #   - images/a_dot_ham.jpeg
 
   fonts:

@@ -439,8 +439,8 @@ body::after {
     box-shadow: 0 2px 20px rgba(0, 0, 0, 0.4);
 }
 
-.main-header.condensed .site-title {
-    font-size: 1.5rem;
+.main-header.condensed .site-logo {
+    height: 32px;
 }
 
 .main-header.condensed .location-subtitle {
@@ -493,21 +493,17 @@ body::after {
 }
 
 .site-title {
-    font-family: var(--font-display);
-    font-size: 2rem;
-    font-weight: 700;
-    color: var(--text-primary);
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    background: linear-gradient(135deg, #f0f4ff 0%, #6b8dd6 50%, #9d7ce8 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    text-shadow: none;
-    transition: font-size 0.3s ease;
+    margin: 0;
+    line-height: 1;
+}
+
+.site-logo {
+    height: 48px;
+    width: auto;
+    object-fit: contain;
+    transition: height 0.3s ease;
 }
 
 .title-icon {
@@ -2465,8 +2461,8 @@ body.reduce-motion .motion-toggle .motion-icon {
         grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
     }
 
-    .site-title {
-        font-size: 2.25rem;
+    .site-logo {
+        height: 56px;
     }
 
     .location-info {
@@ -2493,8 +2489,8 @@ body.reduce-motion .motion-toggle .motion-icon {
         align-items: center;
     }
 
-    .site-title {
-        font-size: 1.5rem;
+    .site-logo {
+        height: 36px;
     }
 
     .location-subtitle {
