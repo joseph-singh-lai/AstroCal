@@ -125,9 +125,9 @@ document.addEventListener('DOMContentLoaded', () => {
         Promise.all([
             loadEvents().then(() => updateLoadingProgress('staticEvents')),
             loadISSPasses().then(() => updateLoadingProgress('issPasses')),
-            loadNASADataOther().then(() => updateLoadingProgress('nasaData')), // Load DONKI and EONET (not APOD)
+            loadNASADataOther(false, true).then(() => updateLoadingProgress('nasaData')), // Show cache, then fetch fresh NASA data
             loadAstronomyData().then(() => updateLoadingProgress('astronomy')),
-            loadPlanetVisibility().then(() => updateLoadingProgress('planetVisibility'))
+            loadPlanetVisibility(true).then(() => updateLoadingProgress('planetVisibility'))
         ]).then(() => {
             // All categories are always shown in HTML - no need to update checkboxes
             hideLoadingProgress();
@@ -1864,7 +1864,6 @@ async function loadAPODPriority() {
     if (!config) return Promise.resolve();
     
     const cacheKey = 'nasa_apod';
-    const maxAge = config.cacheSettings.apod;
     
     // Step 1: Show cached APOD immediately if available (even if expired)
     const cached = getCachedData(cacheKey);
@@ -1895,15 +1894,8 @@ async function loadAPODPriority() {
         applyFilters();
     }
     
-    // Step 2: Check if cache is still valid
-    if (isCacheValid(cacheKey, maxAge) && cached) {
-        // Cache is valid, no need to fetch
-        console.log('APOD cache is still valid, skipping fetch');
-        return Promise.resolve();
-    }
-    
-    // Step 3: Fetch fresh APOD in background (non-blocking)
-    return loadAPOD(false).then(apodEvent => {
+    // Step 2: Always fetch fresh APOD on page load (cached version already shown above)
+    return loadAPOD(true).then(apodEvent => {
         if (apodEvent) {
             // Remove old cached APOD event if it exists
             if (cached && cached.date) {
@@ -2263,9 +2255,28 @@ function convertEONETToEvents(eonetData) {
  * Load NASA data excluding APOD (DONKI, EONET)
  * APOD is loaded separately with priority via loadAPODPriority()
  */
-async function loadNASADataOther(forceRefresh = false) {
+async function loadNASADataOther(forceRefresh = false, revalidate = false) {
     try {
         console.log('=== Loading NASA Data (DONKI, EONET) ===');
+
+        // Stale-while-revalidate: show cached NASA events immediately, then fetch fresh
+        if (revalidate && !forceRefresh) {
+            const [donkiCached, eonetCached] = await Promise.all([
+                loadDONKI(false),
+                loadEONET(false)
+            ]);
+            const cachedEvents = [
+                ...(donkiCached || []),
+                ...(eonetCached || [])
+            ];
+            if (cachedEvents.length > 0) {
+                allEvents = [...allEvents, ...cachedEvents];
+                window.allEvents = allEvents;
+                applyFilters();
+            }
+            forceRefresh = true;
+        }
+
         const [donkiEvents, eonetEvents] = await Promise.all([
             loadDONKI(forceRefresh),
             loadEONET(forceRefresh)
@@ -2296,6 +2307,10 @@ async function loadNASADataOther(forceRefresh = false) {
         
         console.log(`Loaded ${nasaEvents.length} total NASA events`);
         console.log('NASA events details:', nasaEvents);
+
+        if (forceRefresh) {
+            allEvents = allEvents.filter(e => e.category !== 'solar' && e.category !== 'natural');
+        }
         
         // Add NASA events to allEvents array
         const beforeCount = allEvents.length;
