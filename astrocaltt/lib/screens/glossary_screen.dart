@@ -18,7 +18,7 @@ class _GlossaryScreenState extends State<GlossaryScreen> {
         _GlossaryItem('APOD', 'Astronomy Picture of the Day - A daily image or video of our fascinating universe, along with a brief explanation written by a professional astronomer.'),
         _GlossaryItem('DONKI', 'Space Weather Database Of Notifications, Knowledge, Information - NASA\'s comprehensive database for space weather events including solar flares and coronal mass ejections.'),
         _GlossaryItem('EONET', 'Earth Observatory Natural Event Tracker - A system that tracks natural events on Earth such as wildfires, storms, and volcanic activity that may be visible from space.'),
-        _GlossaryItem('GIBS', 'Global Imagery Browse Services - NASA\'s system for providing satellite imagery and Earth observation data in a standardized format.'),
+        _GlossaryItem('Earth Map Layers', 'Interactive map layers including ESRI satellite imagery, terrain, and weather overlays. Optional NASA GIBS night imagery available as an overlay.'),
       ],
     ),
     _GlossaryCategory(

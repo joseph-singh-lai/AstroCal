@@ -73,6 +73,7 @@ flutter:
     - assets/astrocaltt_icon1.png
     - assets/logo_header.png
     - assets/logo_footer.png
+    - assets/data/local_tt.json
   #   - images/a_dot_ham.jpeg
 
   fonts:

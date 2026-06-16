@@ -3,14 +3,21 @@ import 'package:astrocaltt/data/astro_data.dart';
 import 'package:astrocaltt/models/event_model.dart';
 import 'package:http/http.dart' as http;
 
-const String _nasaApiKey = 'X2dVwncjWkOz6OrVnWpO16W5eWE6NaAXz3BHH67Q';
-const String _nasaBaseUrl = 'https://api.nasa.gov';
+const String _nasaProxyBase = String.fromEnvironment(
+  'NASA_PROXY_URL',
+  defaultValue: 'https://astrocal.vercel.app/api/nasa',
+);
+
+Future<http.Response> _nasaGet(String path, [Map<String, String>? query]) async {
+  final params = {'path': path, ...?query};
+  final uri = Uri.parse(_nasaProxyBase).replace(queryParameters: params);
+  return http.get(uri).timeout(const Duration(seconds: 15));
+}
 
 /// Fetch NASA APOD (Astronomy Picture of the Day)
 Future<AstroEvent?> fetchAPOD() async {
   try {
-    final url = Uri.parse('$_nasaBaseUrl/planetary/apod?api_key=$_nasaApiKey');
-    final res = await http.get(url).timeout(const Duration(seconds: 15));
+    final res = await _nasaGet('planetary/apod');
     if (res.statusCode != 200) return null;
     final data = jsonDecode(res.body) as Map<String, dynamic>;
     return AstroEvent(
@@ -46,10 +53,10 @@ Future<List<AstroEvent>> fetchISSPasses(double lat, double lon) async {
       final rise = DateTime.fromMillisecondsSinceEpoch(ts * 1000);
       return AstroEvent(
         id: 'iss-pass-$ts',
-        title: 'ISS Pass Over $locationName',
+        title: 'ISS Position Snapshot — $locationName',
         category: 'iss',
         datetime: rise,
-        description: 'The International Space Station will be visible for approximately 4 minutes. Look for a bright, fast-moving point of light.',
+        description: 'Approximate ISS visibility snapshot. Look for a bright, fast-moving point of light when elevation exceeds 10°.',
         location: locationName,
         visibility: {
           'direction': 'Variable',
@@ -75,8 +82,7 @@ Future<List<AstroEvent>> fetchDONKI() async {
 
     final events = <AstroEvent>[];
 
-    final flrUrl = Uri.parse('$_nasaBaseUrl/DONKI/FLR?startDate=$startDate&endDate=$endDate&api_key=$_nasaApiKey');
-    final flrRes = await http.get(flrUrl).timeout(const Duration(seconds: 10));
+    final flrRes = await _nasaGet('DONKI/FLR', {'startDate': startDate, 'endDate': endDate});
     if (flrRes.statusCode == 200) {
       final flrData = jsonDecode(flrRes.body);
       if (flrData is List) {
@@ -95,8 +101,7 @@ Future<List<AstroEvent>> fetchDONKI() async {
       }
     }
 
-    final cmeUrl = Uri.parse('$_nasaBaseUrl/DONKI/CME?startDate=$startDate&endDate=$endDate&api_key=$_nasaApiKey');
-    final cmeRes = await http.get(cmeUrl).timeout(const Duration(seconds: 10));
+    final cmeRes = await _nasaGet('DONKI/CME', {'startDate': startDate, 'endDate': endDate});
     if (cmeRes.statusCode == 200) {
       final cmeData = jsonDecode(cmeRes.body);
       if (cmeData is List) {
@@ -244,7 +249,7 @@ List<AstroEvent> fetchPlanetVisibility(double lat, double lon) {
     datetime: DateTime.parse('${dateStr}T20:00:00Z'),
     description: 'Jupiter is currently visible in the evening sky. Look for it as a bright, steady point of light. Best viewing in the evening when high in the sky.',
     location: 'Look East to South',
-    visibility: {'direction': 'East to South', 'peak': 'Evening to Late Night', 'elevation': 'High'},
+    visibility: {'direction': 'East to South', 'peak': 'Evening to Late Night', 'elevation': 'High', 'bestTime': '8:30 PM – 11:00 PM'},
     source: 'Current Planet Visibility',
   ));
   events.add(AstroEvent(

@@ -1,82 +1,34 @@
 # Vercel Deployment Guide
 
-## ✅ Deployment Checklist
+## Deployment Checklist
 
-### Files Configured
-- ✅ `vercel.json` - Routing and security headers
-- ✅ `config.js` - API key configuration (can use env vars)
-- ✅ `.gitignore` - Protects API keys
-- ✅ All static files ready for deployment
+- `vercel.json` — routing and security headers
+- `index.html` — loads `js/app.js` (ES modules)
+- `api/nasa.js` — NASA APOD/DONKI proxy (**requires env var**)
+- `api/eonet.js` — EONET proxy
+- `api/gibs-tile.js` — optional GIBS tile proxy
 
-### Security Considerations
+## Required environment variable
 
-1. **API Key Protection**
-   - `config.js` is in `.gitignore` (not committed)
-   - For production, consider using Vercel Environment Variables:
-     - Go to Vercel Dashboard → Project Settings → Environment Variables
-     - Add: `NASA_API_KEY` = `X2dVwncjWkOz6OrVnWpO16W5eWE6NaAXz3BHH67Q`
-   - Update `config.js` to read from `process.env.NASA_API_KEY` if using serverless functions
+1. Vercel Dashboard → Project Settings → Environment Variables
+2. Add **`NASA_API_KEY`** with your NASA API key (from https://api.nasa.gov/)
+3. Redeploy after adding the variable
 
-2. **HTTPS**
-   - ✅ Vercel provides automatic HTTPS
-   - ✅ Geolocation will work (requires HTTPS)
-   - ✅ CORS issues should be resolved with HTTPS
+The web app calls `/api/nasa?path=planetary/apod` etc. No API key is exposed in the browser.
 
-### Potential Issues & Fixes
+## Flutter release builds
 
-1. **ISS API CORS**
-   - Should work better on Vercel (HTTPS)
-   - If still blocked, consider using a serverless function as proxy
+Pass the deployed proxy URL:
 
-2. **NASA EONET API**
-   - May still have CORS issues
-   - App gracefully falls back to cached data
-
-3. **File Paths**
-   - ✅ All paths are relative (should work on Vercel)
-   - ✅ `vercel.json` configured for SPA routing
-
-4. **Static Assets**
-   - ✅ All assets in correct locations
-   - ✅ CDN will serve them efficiently
-
-### Environment Variables (Optional)
-
-If you want to use Vercel Environment Variables:
-
-1. Go to Vercel Dashboard
-2. Project Settings → Environment Variables
-3. Add:
-   - `NASA_API_KEY` = `X2dVwncjWkOz6OrVnWpO16W5eWE6NaAXz3BHH67Q`
-
-Then update `config.js` to:
-```javascript
-const NASA_API_CONFIG = {
-    apiKey: process.env.NASA_API_KEY || 'DEMO_KEY',
-    // ...
-};
+```bash
+flutter build apk --dart-define=NASA_PROXY_URL=https://your-app.vercel.app/api/nasa
 ```
 
-### Testing After Deployment
+## Local development
 
-1. ✅ Check HTTPS is working
-2. ✅ Test geolocation (should work on HTTPS)
-3. ✅ Verify NASA APIs load (CORS should be better)
-4. ✅ Test ISS API (may work now with HTTPS)
-5. ✅ Check all three sections (Events, Satellite, Sky Map)
-6. ✅ Test responsive design on mobile
+- Static files: `npx serve .` or `python -m http.server`
+- NASA/EONET proxies only work when run via Vercel CLI (`vercel dev`) or on deployed Vercel
 
-### Performance
+## PWA
 
-- Static files are served via CDN
-- No build process needed (pure HTML/CSS/JS)
-- Leaflet and other libraries loaded from CDN
-- Images and data cached in browser
-
-### Custom Domain
-
-If using a custom domain:
-- Ensure DNS is configured in Vercel
-- SSL certificate is automatic
-- All features should work the same
-
+`manifest.webmanifest` and `sw.js` are served from the project root. Install works on HTTPS deployments.

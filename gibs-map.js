@@ -21,6 +21,15 @@ const SATELLITE_LAYERS = {
         category: "satellite",
         description: "High-resolution satellite imagery worldwide"
     },
+    "nasa_gibs_viirs": {
+        name: "NASA VIIRS Day/Night Band (GIBS)",
+        type: "gibs_proxy",
+        gibsLayer: "VIIRS_SNPP_DayNightBand_ENCC",
+        attribution: '© NASA GIBS',
+        maxZoom: 8,
+        category: "nasa",
+        description: "NASA night lights imagery via GIBS proxy (optional overlay)"
+    },
     "esri_satellite_labels": {
         name: "ESRI Satellite + Labels",
         type: "dual",
@@ -169,6 +178,20 @@ const SATELLITE_LAYERS = {
     }
 };
 
+// Create NASA GIBS layer via serverless tile proxy
+function createGibsProxyLayer(config) {
+    const date = new Date().toISOString().split('T')[0];
+    return L.tileLayer('', {
+        attribution: config.attribution,
+        maxZoom: config.maxZoom || 8,
+        crossOrigin: 'anonymous',
+        getTileUrl: (coords) => {
+            const direct = `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/${config.gibsLayer}/default/${date}/GoogleMapsCompatible_L9/${coords.z}/${coords.y}/${coords.x}.jpg`;
+            return `/api/gibs-tile?url=${encodeURIComponent(direct)}`;
+        }
+    });
+}
+
 // Create a tile layer from config
 function createTileLayer(config) {
     return L.tileLayer(config.url, {
@@ -295,6 +318,7 @@ function setupLayerControl() {
         terrain: { label: '⛰️ Terrain & Topography', layers: [] },
         ocean: { label: '🌊 Ocean', layers: [] },
         weather: { label: '🌦️ Live Weather (US/Americas)', layers: [] },
+        nasa: { label: '🛰️ NASA GIBS', layers: [] },
         base: { label: '🗺️ Street Maps', layers: [] }
     };
     
@@ -373,6 +397,18 @@ function setGibsLayer(layerKey) {
         currentLayer.on('load', () => showLoadingIndicator(false));
         currentLayer.on('tileerror', handleTileError);
         
+    } else if (config.type === 'gibs_proxy') {
+        const darkBase = L.tileLayer(SATELLITE_LAYERS['carto_dark'].url, {
+            attribution: SATELLITE_LAYERS['carto_dark'].attribution,
+            subdomains: SATELLITE_LAYERS['carto_dark'].subdomains,
+            maxZoom: 19
+        });
+        baseLayer = darkBase;
+        currentLayer = createGibsProxyLayer(config);
+        baseLayer.addTo(gibsMap);
+        currentLayer.addTo(gibsMap);
+        currentLayer.on('load', () => showLoadingIndicator(false));
+        currentLayer.on('tileerror', handleTileError);
     } else if (config.type === 'dual') {
         // Dual layers (satellite + labels)
         const layers = createDualLayers(config);

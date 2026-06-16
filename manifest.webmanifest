@@ -1,0 +1,17 @@
+{
+  "name": "AstroCalTT",
+  "short_name": "AstroCalTT",
+  "description": "Trinidad & Tobago astronomy events, sky map, and earth imagery",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0e27",
+  "theme_color": "#0a0e27",
+  "icons": [
+    {
+      "src": "assets/logo_header.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

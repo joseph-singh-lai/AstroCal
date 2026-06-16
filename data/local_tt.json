@@ -1,0 +1,32 @@
+{
+  "darkSkySites": [
+    {
+      "name": "La Brea Pitch Lake area",
+      "description": "Open southern horizons away from Port of Spain light dome. Good for Crux and Magellanic Clouds."
+    },
+    {
+      "name": "Nariva Swamp / Manzanilla coast",
+      "description": "Eastern dark skies with low horizon toward the Atlantic. Best on moonless nights."
+    },
+    {
+      "name": "Tobago Main Ridge",
+      "description": "Darker skies than Trinidad; excellent for Milky Way and deep-sky targets."
+    }
+  ],
+  "seasonalTips": [
+    {
+      "season": "Dry season (Jan–May)",
+      "tip": "Clearest nights for stargazing. Plan sessions after 8 PM when humidity drops."
+    },
+    {
+      "season": "Wet season (Jun–Dec)",
+      "tip": "Watch cloud forecasts; brief clear windows after evening showers can be excellent."
+    }
+  ],
+  "southernSkyHighlights": [
+    "Southern Cross (Crux) — circumpolar from T&T",
+    "Large Magellanic Cloud (LMC) — naked-eye galaxy in the south",
+    "Small Magellanic Cloud (SMC) — companion to the LMC",
+    "Alpha Centauri — brightest star in Centaurus, low in the south"
+  ]
+}

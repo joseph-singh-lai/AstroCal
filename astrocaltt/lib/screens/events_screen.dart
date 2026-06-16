@@ -21,7 +21,7 @@ class EventsScreen extends StatefulWidget {
 class _EventsScreenState extends State<EventsScreen> {
   List<AstroEvent> _allEvents = [];
   List<AstroEvent> _filteredEvents = [];
-  final Set<String> _selectedCategories = {'apod', 'meteor', 'iss', 'astronomy'};
+  final Set<String> _selectedCategories = {'apod', 'meteor', 'planet', 'astronomy'};
   final _searchController = TextEditingController();
   bool _loading = true;
   bool _locationLoading = false;
@@ -37,7 +37,6 @@ class _EventsScreenState extends State<EventsScreen> {
     'solar': 'Solar Event',
     'astronomy': 'Astronomy',
     'natural': 'Natural Event',
-    'workshop': 'Workshops',
   };
 
   static const _categoryEmojis = {
@@ -48,7 +47,6 @@ class _EventsScreenState extends State<EventsScreen> {
     'solar': '☀️',
     'astronomy': '🌙',
     'natural': '🌋',
-    'workshop': '🎓',
   };
 
   @override
@@ -145,15 +143,16 @@ class _EventsScreenState extends State<EventsScreen> {
 
   void _selectAllFilters() {
     setState(() {
-      _selectedCategories.addAll(['apod', 'meteor', 'iss', 'planet', 'solar', 'natural', 'astronomy', 'workshop']);
+      _selectedCategories.addAll(['apod', 'meteor', 'iss', 'planet', 'solar', 'natural', 'astronomy']);
       _applyFilters();
     });
   }
 
   void _clearAllFilters() {
     setState(() {
-      _selectedCategories.clear();
-      _selectedCategories.add('apod');
+      _selectedCategories
+        ..clear()
+        ..addAll(['apod', 'meteor', 'planet', 'astronomy']);
       _applyFilters();
     });
   }
@@ -224,7 +223,7 @@ class _EventsScreenState extends State<EventsScreen> {
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                    ...['apod', 'meteor', 'iss', 'planet', 'solar', 'natural', 'astronomy', 'workshop']
+                    ...['apod', 'meteor', 'iss', 'planet', 'solar', 'natural', 'astronomy']
                         .map((key) => FilterChip(
                               label: Text('${_categoryEmojis[key] ?? ''} ${_categoryLabels[key] ?? key}'),
                               selected: _selectedCategories.contains(key),

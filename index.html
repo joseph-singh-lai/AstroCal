@@ -15,13 +15,13 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="manifest" href="manifest.webmanifest">
     <link rel="stylesheet" href="styles.css">
-    <!-- Leaflet CSS for GIBS map -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script>
         // NASA API Configuration (inlined to avoid MIME type issues on Vercel)
         window.NASA_API_CONFIG = {
-            apiKey: 'X2dVwncjWkOz6OrVnWpO16W5eWE6NaAXz3BHH67Q',
+            useProxy: true,
+            proxyUrl: '/api/nasa',
             baseUrl: 'https://api.nasa.gov',
             
             // Cache settings (in milliseconds)
@@ -76,27 +76,23 @@
             <div class="header-inner">
                 <div class="header-content">
                     <h1 class="site-title">
-                        <img src="assets/logo_header.png" alt="AstroCalTT" class="site-logo">
+                        <img src="assets/logo_header.svg" alt="AstroCalTT" class="site-logo" width="160" height="48">
                     </h1>
-                    <p class="location-subtitle">
-                        <span class="location-dot"></span>
-                        La Brea, Trinidad & Tobago
-                    </p>
                 </div>
-                <nav class="main-nav">
-                    <button class="nav-button active" data-section="events">
+                <nav class="main-nav" role="tablist" aria-label="Main sections">
+                    <button class="nav-button active" data-section="events" role="tab" aria-selected="true" aria-controls="events-section">
                         <span class="nav-icon">📅</span>
                         <span class="nav-text">Events</span>
                     </button>
-                    <button class="nav-button" data-section="gibs">
-                        <span class="nav-icon">🛰️</span>
-                        <span class="nav-text">Satellite</span>
+                    <button class="nav-button" data-section="gibs" role="tab" aria-selected="false" aria-controls="gibs-section">
+                        <span class="nav-icon">🗺️</span>
+                        <span class="nav-text">Earth Map</span>
                     </button>
-                    <button class="nav-button" data-section="sky">
+                    <button class="nav-button" data-section="sky" role="tab" aria-selected="false" aria-controls="sky-section">
                         <span class="nav-icon">⭐</span>
                         <span class="nav-text">Sky Map</span>
                     </button>
-                    <button class="nav-button" data-section="glossary">
+                    <button class="nav-button" data-section="glossary" role="tab" aria-selected="false" aria-controls="glossary-section">
                         <span class="nav-icon">📖</span>
                         <span class="nav-text">Glossary</span>
                     </button>
@@ -113,14 +109,27 @@
             <section id="events-section" class="content-section active">
                 <!-- Quick Actions Bar -->
                 <div class="quick-actions-bar">
-                    <button id="refreshNASA" class="refresh-button">
+                    <p class="events-location-subtitle">
+                        <span class="location-dot"></span>
+                        La Brea, Trinidad & Tobago
+                    </p>
+                            <button id="exportIcsButton" class="refresh-button" type="button" title="Download filtered events as calendar file">
+                                <span class="refresh-icon">📅</span>
+                                <span class="refresh-text">Export .ics</span>
+                            </button>
+                            <button id="refreshNASA" class="refresh-button">
                         <span class="refresh-icon">🔄</span>
                         <span class="refresh-text">Refresh NASA Data</span>
                     </button>
                     <button id="filterToggleMobile" class="filter-toggle-mobile">
                         <span>🎛️ Filters</span>
-                        <span class="filter-count" id="filterCount">1</span>
+                        <span class="filter-count" id="filterCount" aria-live="polite">4</span>
                     </button>
+                </div>
+
+                <div id="onboardingBanner" class="onboarding-banner" role="status" hidden>
+                    <p>Tip: Enable <strong>ISS Passes</strong>, <strong>Solar Events</strong>, and <strong>Natural Events</strong> in the filter panel for more live data.</p>
+                    <button id="onboardingDismiss" class="onboarding-dismiss" aria-label="Dismiss tip">✕</button>
                 </div>
                 
                 <div class="events-layout">
@@ -131,7 +140,7 @@
                         </div>
                         <div class="filter-options">
                             <label class="filter-checkbox">
-                                <input type="checkbox" value="meteor">
+                                <input type="checkbox" value="meteor" checked>
                                 <span class="checkbox-custom"></span>
                                 <span class="filter-label">
                                     <span class="filter-emoji">☄️</span>
@@ -139,7 +148,7 @@
                                 </span>
                             </label>
                             <label class="filter-checkbox">
-                                <input type="checkbox" value="planet">
+                                <input type="checkbox" value="planet" checked>
                                 <span class="checkbox-custom"></span>
                                 <span class="filter-label">
                                     <span class="filter-emoji">🪐</span>
@@ -179,15 +188,7 @@
                                 </span>
                             </label>
                             <label class="filter-checkbox">
-                                <input type="checkbox" value="workshop">
-                                <span class="checkbox-custom"></span>
-                                <span class="filter-label">
-                                    <span class="filter-emoji">🎓</span>
-                                    Workshops
-                                </span>
-                            </label>
-                            <label class="filter-checkbox">
-                                <input type="checkbox" value="astronomy">
+                                <input type="checkbox" value="astronomy" checked>
                                 <span class="checkbox-custom"></span>
                                 <span class="filter-label">
                                     <span class="filter-emoji">🌙</span>
@@ -199,11 +200,16 @@
                             <button id="selectAllFilters" class="filter-action-btn">Select All</button>
                             <button id="clearAllFilters" class="filter-action-btn">Clear All</button>
                         </div>
+                        <details class="local-tt-panel">
+                            <summary>🇹🇹 Stargazing in T&amp;T</summary>
+                            <div id="localTTContent" class="local-tt-content"></div>
+                        </details>
                     </aside>
 
                     <div class="events-content">
+                        <div id="tonightStrip" class="tonight-strip" aria-label="Tonight's highlights"></div>
                         <!-- Loading Progress Bar -->
-                        <div id="loadingProgress" class="loading-progress-container" style="display: none;">
+                        <div id="loadingProgress" class="loading-progress-container" style="display: none;" aria-live="polite">
                             <div class="loading-progress-bar">
                                 <div id="loadingProgressFill" class="loading-progress-fill"></div>
                             </div>
@@ -251,11 +257,11 @@
             </section>
             </section>
 
-            <!-- Satellite Imagery Section -->
+            <!-- Earth Map Section -->
             <section id="gibs-section" class="content-section">
                 <div class="section-header">
-                    <h2>🛰️ Satellite Imagery Explorer</h2>
-                    <p class="section-description">Explore Earth with NASA GIBS satellite imagery, ESRI, and live weather data</p>
+                    <h2>🗺️ Earth Map Explorer</h2>
+                    <p class="section-description">Explore Earth with ESRI satellite imagery, terrain maps, and weather overlays</p>
                 </div>
                 
                 <div class="map-controls">
@@ -426,8 +432,8 @@
                                 <p>Earth Observatory Natural Event Tracker - A system that tracks natural events on Earth such as wildfires, storms, and volcanic activity that may be visible from space.</p>
                             </div>
                             <div class="glossary-item">
-                                <strong>GIBS</strong>
-                                <p>Global Imagery Browse Services - NASA's system for providing satellite imagery and Earth observation data in a standardized format.</p>
+                                <strong>Earth Map Layers</strong>
+                                <p>Interactive map tiles from ESRI (satellite and terrain), OpenStreetMap, CARTO, and weather overlays including GOES satellite and radar data for the Americas.</p>
                             </div>
                         </div>
                     </div>
@@ -511,11 +517,7 @@
         </footer>
     </div>
 
-    <!-- Leaflet JS for GIBS map -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="script.js?v=5.2"></script>
-    <script src="gibs-map.js?v=5.0"></script>
-    <script src="sky-map.js?v=6.1"></script>
+    <script type="module" src="js/app.js?v=7.0"></script>
 </body>
 </html>
 

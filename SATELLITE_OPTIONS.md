@@ -1,9 +1,10 @@
-# Satellite Imagery Options Assessment
+# Earth Map Layer Options
 
-## Current Situation
-- **GIBS (NASA)**: Currently implemented but not working (tile errors)
-- **OpenStreetMap**: Was working but removed
-- **Need**: Working satellite imagery solution
+## Current implementation (2026)
+
+The **Earth Map** section uses CORS-friendly tile sources (ESRI, OSM, CARTO, Stadia). NASA GIBS is available as an **optional overlay** (`NASA VIIRS Day/Night Band`) routed through `api/gibs-tile.js` on Vercel.
+
+## Historical assessment
 
 ## Option 1: Fix GIBS (NASA) ⚠️
 **Pros:**

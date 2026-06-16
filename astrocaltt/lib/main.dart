@@ -118,7 +118,7 @@ class _MainNavState extends State<_MainNav> {
               backgroundColor: Theme.of(context).colorScheme.surface.withValues(alpha: 0.95),
               destinations: const [
                 NavigationDestination(icon: Icon(Icons.event), label: 'Events'),
-                NavigationDestination(icon: Icon(Icons.satellite_alt), label: 'Satellite'),
+                NavigationDestination(icon: Icon(Icons.map), label: 'Earth Map'),
                 NavigationDestination(icon: Icon(Icons.nightlight_round), label: 'Sky Map'),
                 NavigationDestination(icon: Icon(Icons.menu_book), label: 'Glossary'),
               ],
@@ -182,17 +182,7 @@ class _SiteHeader extends StatelessWidget {
               ),
             ),
             SizedBox(width: 6 * scale),
-            Expanded(
-              child: Text(
-                LocationService.name,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  fontSize: (12 * scale).clamp(10.0, 14.0),
-                  color: scheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w400,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
+            const Spacer(),
           ],
         ),
       ),
