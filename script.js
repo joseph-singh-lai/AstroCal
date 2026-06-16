@@ -2847,29 +2847,34 @@ function checkMercuryVisibility(month) {
 function setupHeaderScroll() {
     const header = document.getElementById('mainHeader');
     if (!header) return;
-    
-    let lastScrollY = window.scrollY;
+
+    const CONDENSE_AT = 100;
+    const EXPAND_AT = 20;
+    let isCondensed = header.classList.contains('condensed');
     let ticking = false;
-    
+
     const handleScroll = () => {
         const scrollY = window.scrollY;
-        
-        if (scrollY > 80) {
+
+        if (!isCondensed && scrollY > CONDENSE_AT) {
+            isCondensed = true;
             header.classList.add('condensed');
-        } else {
+        } else if (isCondensed && scrollY < EXPAND_AT) {
+            isCondensed = false;
             header.classList.remove('condensed');
         }
-        
-        lastScrollY = scrollY;
+
         ticking = false;
     };
-    
+
     window.addEventListener('scroll', () => {
         if (!ticking) {
             window.requestAnimationFrame(handleScroll);
             ticking = true;
         }
     }, { passive: true });
+
+    handleScroll();
 }
 
 /**

@@ -429,8 +429,8 @@ body::after {
     z-index: 100;
     border-bottom: 1px solid rgba(107, 141, 214, 0.3);
     backdrop-filter: blur(20px);
-    overflow: hidden;
-    transition: padding 0.3s ease, box-shadow 0.3s ease;
+    overflow: visible;
+    transition: padding 0.25s ease, box-shadow 0.25s ease;
 }
 
 /* Condensed header on scroll */
@@ -440,11 +440,16 @@ body::after {
 }
 
 .main-header.condensed .site-logo {
-    height: 60px;
+    height: 52px;
+    margin-top: -10px;
+    margin-bottom: -10px;
 }
 
 .main-header.condensed .location-subtitle {
-    display: none;
+    max-height: 0;
+    opacity: 0;
+    margin-top: 0;
+    pointer-events: none;
 }
 
 /* Starfield background for header */
@@ -490,22 +495,24 @@ body::after {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+    min-width: 0;
 }
 
 .site-title {
     display: flex;
     align-items: center;
     margin: 0;
-    line-height: 1;
+    line-height: 0;
 }
 
 .site-logo {
+    display: block;
     height: 110px;
     width: auto;
     object-fit: contain;
     margin-top: -20px;
     margin-bottom: -20px;
-    transition: height 0.3s ease;
+    transition: height 0.25s ease, margin 0.25s ease;
 }
 
 .title-icon {
@@ -528,7 +535,10 @@ body::after {
     gap: 0.5rem;
     font-weight: 400;
     letter-spacing: 0.5px;
-    transition: opacity 0.3s ease;
+    max-height: 2rem;
+    opacity: 1;
+    overflow: hidden;
+    transition: max-height 0.25s ease, opacity 0.2s ease, margin 0.25s ease;
 }
 
 .location-dot {
@@ -2467,6 +2477,10 @@ body.reduce-motion .motion-toggle .motion-icon {
         height: 120px;
     }
 
+    .main-header.condensed .site-logo {
+        height: 56px;
+    }
+
     .location-info {
         flex-direction: row;
         align-items: center;
@@ -2493,6 +2507,12 @@ body.reduce-motion .motion-toggle .motion-icon {
 
     .site-logo {
         height: 80px;
+    }
+
+    .main-header.condensed .site-logo {
+        height: 44px;
+        margin-top: -8px;
+        margin-bottom: -8px;
     }
 
     .location-subtitle {
