@@ -168,8 +168,8 @@ class _SiteHeader extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Image.asset(
-              'assets/logo_banner.png',
-              height: (36 * scale).clamp(28.0, 48.0),
+              'assets/logo_header.png',
+              height: (40 * scale).clamp(32.0, 52.0),
               fit: BoxFit.contain,
             ),
             SizedBox(width: 12 * scale),

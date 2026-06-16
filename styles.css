@@ -440,9 +440,7 @@ body::after {
 }
 
 .main-header.condensed .site-logo {
-    height: 52px;
-    margin-top: -10px;
-    margin-bottom: -10px;
+    height: 36px;
 }
 
 .main-header.condensed .location-subtitle {
@@ -507,12 +505,11 @@ body::after {
 
 .site-logo {
     display: block;
-    height: 110px;
+    height: 52px;
     width: auto;
     object-fit: contain;
-    margin-top: -20px;
-    margin-bottom: -20px;
-    transition: height 0.25s ease, margin 0.25s ease;
+    filter: drop-shadow(0 0 10px rgba(107, 141, 214, 0.2));
+    transition: height 0.25s ease;
 }
 
 .title-icon {
@@ -1713,11 +1710,21 @@ body.reduce-motion .motion-toggle .motion-icon {
     margin-bottom: 0.5rem;
 }
 
+.footer-logo {
+    display: block;
+    height: 72px;
+    width: auto;
+    max-width: min(100%, 420px);
+    margin: 0 auto 1rem;
+    object-fit: contain;
+    filter: drop-shadow(0 0 12px rgba(107, 141, 214, 0.25));
+}
+
 .footer-brand {
-    font-family: var(--font-display);
-    font-size: 1rem;
-    letter-spacing: 1px;
-    color: var(--text-primary);
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
 }
 
 .footer-credit {
@@ -2474,11 +2481,15 @@ body.reduce-motion .motion-toggle .motion-icon {
     }
 
     .site-logo {
-        height: 120px;
+        height: 56px;
     }
 
     .main-header.condensed .site-logo {
-        height: 56px;
+        height: 40px;
+    }
+
+    .footer-logo {
+        height: 80px;
     }
 
     .location-info {
@@ -2506,13 +2517,15 @@ body.reduce-motion .motion-toggle .motion-icon {
     }
 
     .site-logo {
-        height: 80px;
+        height: 44px;
     }
 
     .main-header.condensed .site-logo {
-        height: 44px;
-        margin-top: -8px;
-        margin-bottom: -8px;
+        height: 32px;
+    }
+
+    .footer-logo {
+        height: 64px;
     }
 
     .location-subtitle {

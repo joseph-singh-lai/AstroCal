@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:astrocaltt/services/location_service.dart';
 
 /// Footer shown at the bottom of scrollable content (e.g. Events list), matching the site layout.
@@ -34,31 +32,14 @@ class SiteFooter extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              SvgPicture.asset(
-                'assets/logo.svg',
-                width: 22 * scale,
-                height: 22 * scale,
-                fit: BoxFit.contain,
-              ),
-              SizedBox(width: 6 * scale),
-              Text(
-                'ASTROCALTT',
-                style: GoogleFonts.orbitron(
-                  fontSize: (14 * scale).clamp(12.0, 18.0),
-                  letterSpacing: 2,
-                  fontWeight: FontWeight.w700,
-                  color: scheme.onSurface,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
+          Image.asset(
+            'assets/logo_footer.png',
+            height: (64 * scale).clamp(52.0, 80.0),
+            fit: BoxFit.contain,
           ),
-          SizedBox(height: 4 * scale),
+          SizedBox(height: 8 * scale),
           Text(
-            '• ${LocationService.name}',
+            '${LocationService.name} 🇹🇹',
             style: theme.textTheme.bodySmall?.copyWith(
               fontSize: (12 * scale).clamp(10.0, 14.0),
               color: scheme.onSurfaceVariant,
