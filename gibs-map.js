@@ -9,6 +9,240 @@ let currentLayer = null;
 let baseLayer = null;
 window.gibsMapInitialized = false;
 
+const GOES_TILE_BASE = 'https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0';
+
+const WEATHER_CHANNELS = {
+    vis: { label: 'Visible', channel: 'ch02', opacity: 0.92, baseLayer: 'esri_satellite' },
+    ir: { label: 'Infrared', channel: 'ch13', opacity: 0.88, baseLayer: 'carto_dark' }
+};
+
+// Regional GOES sectors — sorted in the Earth Map dropdown by `sortOrder`
+const WEATHER_REGIONS = [
+    {
+        id: 'auto',
+        label: 'Your Location',
+        sortOrder: 0,
+        dynamic: true,
+        description: 'Automatically selects the best GOES satellite sector for your coordinates'
+    },
+    {
+        id: 'caribbean',
+        label: 'Caribbean & Trinidad and Tobago',
+        sortOrder: 10,
+        priority: 1,
+        satellite: 'east',
+        sector: 'puertorico',
+        suggestedZoom: 7,
+        bounds: { minLat: 5, maxLat: 28, minLon: -92, maxLon: -55 },
+        description: 'High-resolution GOES-East Puerto Rico sector — best for T&T and the wider Caribbean'
+    },
+    {
+        id: 'hawaii',
+        label: 'Hawaii & Central Pacific',
+        sortOrder: 20,
+        priority: 2,
+        satellite: 'west',
+        sector: 'hawaii',
+        suggestedZoom: 8,
+        bounds: { minLat: 10, maxLat: 32, minLon: -175, maxLon: -140 },
+        description: 'GOES-West Hawaii sector'
+    },
+    {
+        id: 'alaska',
+        label: 'Alaska & North Pacific',
+        sortOrder: 30,
+        priority: 3,
+        satellite: 'west',
+        sector: 'alaska',
+        suggestedZoom: 5,
+        bounds: { minLat: 48, maxLat: 72, minLon: -180, maxLon: -125 },
+        description: 'GOES-West Alaska sector'
+    },
+    {
+        id: 'north_america',
+        label: 'United States & Canada',
+        sortOrder: 40,
+        priority: 4,
+        suggestedZoom: 5,
+        center: [39, -98],
+        bounds: { minLat: 24, maxLat: 55, minLon: -130, maxLon: -65 },
+        resolveTile: (lat, lon) => ({
+            satellite: lon < -105 ? 'west' : 'east',
+            sector: 'conus'
+        }),
+        description: 'GOES CONUS sector — eastern or western satellite chosen by longitude'
+    },
+    {
+        id: 'central_america',
+        label: 'Mexico & Central America',
+        sortOrder: 50,
+        priority: 5,
+        satellite: 'east',
+        sector: 'puertorico',
+        suggestedZoom: 6,
+        bounds: { minLat: 5, maxLat: 32, minLon: -120, maxLon: -75 },
+        description: 'GOES-East sector covering Mexico and Central America'
+    },
+    {
+        id: 'south_america',
+        label: 'South America',
+        sortOrder: 60,
+        priority: 6,
+        satellite: 'east',
+        sector: 'fulldisk',
+        suggestedZoom: 4,
+        center: [-15, -60],
+        bounds: { minLat: -58, maxLat: 12, minLon: -82, maxLon: -30 },
+        description: 'GOES-East full disk centered on South America'
+    },
+    {
+        id: 'europe_africa',
+        label: 'Europe & Africa',
+        sortOrder: 70,
+        priority: 7,
+        satellite: 'east',
+        sector: 'fulldisk',
+        suggestedZoom: 3,
+        center: [20, 10],
+        bounds: { minLat: -35, maxLat: 72, minLon: -25, maxLon: 55 },
+        description: 'GOES-East full disk — western Europe, Africa, and eastern Atlantic'
+    },
+    {
+        id: 'asia_pacific',
+        label: 'Asia, Oceania & Australia',
+        sortOrder: 80,
+        priority: 8,
+        satellite: 'west',
+        sector: 'fulldisk',
+        suggestedZoom: 3,
+        center: [10, 120],
+        bounds: { minLat: -50, maxLat: 60, minLon: 55, maxLon: 180 },
+        description: 'GOES-West full disk — East Asia, Oceania, and Australia'
+    },
+    {
+        id: 'pacific',
+        label: 'Eastern Pacific',
+        sortOrder: 90,
+        priority: 9,
+        satellite: 'west',
+        sector: 'fulldisk',
+        suggestedZoom: 3,
+        center: [15, -140],
+        bounds: { minLat: -50, maxLat: 50, minLon: -180, maxLon: -100 },
+        description: 'GOES-West full disk — eastern Pacific Ocean'
+    },
+    {
+        id: 'global_americas',
+        label: 'Americas & Atlantic (wide view)',
+        sortOrder: 100,
+        priority: 99,
+        satellite: 'east',
+        sector: 'fulldisk',
+        suggestedZoom: 2,
+        center: [10, -60],
+        description: 'GOES-East full disk — Americas, Caribbean, and Atlantic'
+    },
+    {
+        id: 'global_pacific',
+        label: 'Pacific & Asia (wide view)',
+        sortOrder: 110,
+        priority: 99,
+        satellite: 'west',
+        sector: 'fulldisk',
+        suggestedZoom: 2,
+        center: [0, 160],
+        description: 'GOES-West full disk — Pacific and Asia'
+    }
+];
+
+function pointInWeatherBounds(lat, lon, region) {
+    if (!region.bounds) return false;
+    const { minLat, maxLat, minLon, maxLon } = region.bounds;
+    return lat >= minLat && lat <= maxLat && lon >= minLon && lon <= maxLon;
+}
+
+function resolveWeatherRegion(lat, lon, regionId = null) {
+    if (regionId && regionId !== 'auto') {
+        return WEATHER_REGIONS.find((region) => region.id === regionId) || WEATHER_REGIONS.find((r) => r.id === 'global_americas');
+    }
+
+    const staticRegions = WEATHER_REGIONS
+        .filter((region) => !region.dynamic && region.bounds)
+        .sort((a, b) => (a.priority || 100) - (b.priority || 100));
+
+    for (const region of staticRegions) {
+        if (pointInWeatherBounds(lat, lon, region)) {
+            return region;
+        }
+    }
+
+    if (lon >= 55) return WEATHER_REGIONS.find((r) => r.id === 'asia_pacific');
+    if (lon >= -25 && lon < 55) return WEATHER_REGIONS.find((r) => r.id === 'europe_africa');
+    if (lon < -100) return WEATHER_REGIONS.find((r) => r.id === 'pacific');
+    return WEATHER_REGIONS.find((r) => r.id === 'global_americas');
+}
+
+function buildGoesTileUrl(satellite, sector, channel) {
+    return `${GOES_TILE_BASE}/goes_${satellite}_${sector}_${channel}/{z}/{x}/{y}.png`;
+}
+
+function buildResolvedGoesConfig(config, lat, lon) {
+    const channelKey = config.channel || 'vis';
+    const channel = WEATHER_CHANNELS[channelKey];
+    const region = resolveWeatherRegion(
+        lat,
+        lon,
+        config.type === 'goes_overlay_dynamic' ? null : config.regionId
+    );
+    const tileInfo = region.resolveTile
+        ? region.resolveTile(lat, lon)
+        : { satellite: region.satellite, sector: region.sector };
+
+    return {
+        ...config,
+        type: 'goes_overlay',
+        url: buildGoesTileUrl(tileInfo.satellite, tileInfo.sector, channel.channel),
+        baseLayer: channel.baseLayer,
+        opacity: channel.opacity,
+        attribution: `© Iowa Environmental Mesonet / NOAA GOES-${tileInfo.satellite === 'west' ? 'West' : 'East'}`,
+        maxZoom: 10,
+        resolvedRegion: region,
+        description: region.description
+    };
+}
+
+function registerRegionalWeatherLayers() {
+    WEATHER_REGIONS.forEach((region) => {
+        Object.entries(WEATHER_CHANNELS).forEach(([channelKey, channel]) => {
+            const layerKey = `weather_${region.id}_${channelKey}`;
+            const isAuto = region.dynamic;
+            const name = isAuto
+                ? (channelKey === 'vis' ? 'Live Weather (Recommended)' : 'Infrared (Your Region)')
+                : channel.label;
+
+            SATELLITE_LAYERS[layerKey] = {
+                name,
+                type: isAuto ? 'goes_overlay_dynamic' : 'goes_overlay',
+                regionId: region.id,
+                channel: channelKey,
+                url: region.sector
+                    ? buildGoesTileUrl(region.satellite, region.sector, channel.channel)
+                    : undefined,
+                baseLayer: channel.baseLayer,
+                opacity: channel.opacity,
+                attribution: '© Iowa Environmental Mesonet / NOAA',
+                maxZoom: 10,
+                category: `weather_region_${region.id}`,
+                regionLabel: region.label,
+                sortOrder: region.sortOrder,
+                suggestedZoom: region.suggestedZoom,
+                center: region.center,
+                description: region.description
+            };
+        });
+    });
+}
+
 // Available Satellite & Map Layers - All CORS-friendly
 const SATELLITE_LAYERS = {
     // === SATELLITE IMAGERY ===
@@ -77,43 +311,15 @@ const SATELLITE_LAYERS = {
         description: "Ocean bathymetry and features"
     },
     
-    // === WEATHER OVERLAYS ===
-    "openweather_clouds": {
-        name: "Cloud Cover (Live)",
-        type: "overlay",
-        url: "https://tile.openweathermap.org/map/clouds_new/{z}/{x}/{y}.png?appid=YOUR_API_KEY",
-        fallbackUrl: "https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/goes-vis-1km-900913/{z}/{x}/{y}.png",
-        attribution: '© Iowa Environmental Mesonet',
-        maxZoom: 8,
-        category: "weather",
-        description: "GOES visible satellite imagery"
-    },
+    // === US-ONLY WEATHER TOOLS ===
     "radar_us": {
-        name: "Weather Radar (US)",
+        name: "Weather Radar (US only)",
         type: "overlay",
         url: "https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/nexrad-n0q-900913/{z}/{x}/{y}.png",
         attribution: '© Iowa Environmental Mesonet / NOAA',
         maxZoom: 8,
-        category: "weather",
-        description: "Live NEXRAD radar reflectivity"
-    },
-    "goes_visible": {
-        name: "GOES Visible (US)",
-        type: "overlay",
-        url: "https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/goes-vis-1km-900913/{z}/{x}/{y}.png",
-        attribution: '© Iowa Environmental Mesonet / NOAA',
-        maxZoom: 8,
-        category: "weather",
-        description: "GOES visible satellite"
-    },
-    "goes_ir": {
-        name: "GOES Infrared (US)",
-        type: "overlay",
-        url: "https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/goes-ir-4km-900913/{z}/{x}/{y}.png",
-        attribution: '© Iowa Environmental Mesonet / NOAA',
-        maxZoom: 6,
-        category: "weather",
-        description: "GOES infrared satellite"
+        category: "weather_us_tools",
+        description: "Live NEXRAD radar reflectivity — continental United States only"
     },
 
     // === BASE MAPS ===
@@ -157,14 +363,17 @@ const SATELLITE_LAYERS = {
         category: "base",
         description: "Colorful detailed map"
     },
-    "stadia_outdoors": {
+    "outdoors_hiking": {
         name: "Outdoors / Hiking",
-        type: "tile",
-        url: "https://tiles.stadiamaps.com/tiles/outdoors/{z}/{x}/{y}{r}.png",
-        attribution: '© Stadia Maps © OpenStreetMap',
-        maxZoom: 18,
+        type: "dual",
+        baseUrl: "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",
+        overlayUrl: "https://tile.waymarkedtrails.org/hiking/{z}/{x}/{y}.png",
+        attribution: '© OpenTopoMap © Waymarked Trails © OpenStreetMap',
+        subdomains: ['a', 'b', 'c'],
+        overlayOpacity: 0.9,
+        maxZoom: 17,
         category: "terrain",
-        description: "Great for outdoor activities"
+        description: "Topographic map with hiking trail overlays (no API key required)"
     },
     "opentopomap": {
         name: "OpenTopoMap",
@@ -177,6 +386,8 @@ const SATELLITE_LAYERS = {
         description: "Topographic contour map"
     }
 };
+
+registerRegionalWeatherLayers();
 
 // Create NASA GIBS layer via serverless tile proxy
 function createGibsProxyLayer(config) {
@@ -202,6 +413,27 @@ function createTileLayer(config) {
     });
 }
 
+// Create GOES weather overlay (regional IEM XYZ tiles — includes Caribbean puertorico sector)
+function createGoesOverlayLayers(config) {
+    const baseKey = config.baseLayer || 'carto_dark';
+    const baseConfig = SATELLITE_LAYERS[baseKey];
+    const base = L.tileLayer(baseConfig.url, {
+        attribution: baseConfig.attribution,
+        subdomains: baseConfig.subdomains || [],
+        maxZoom: baseConfig.maxZoom || 19,
+        crossOrigin: 'anonymous'
+    });
+
+    const overlay = L.tileLayer(config.url, {
+        attribution: config.attribution,
+        maxZoom: config.maxZoom || 10,
+        opacity: config.opacity ?? 0.92,
+        crossOrigin: 'anonymous'
+    });
+
+    return { base, overlay };
+}
+
 // Create overlay layer (with dark base underneath)
 function createOverlayLayers(config) {
     const base = L.tileLayer(SATELLITE_LAYERS['carto_dark'].url, {
@@ -222,19 +454,23 @@ function createOverlayLayers(config) {
     return { base, overlay };
 }
 
-// Create dual layer (satellite + labels)
+// Create dual layer (base + overlay)
 function createDualLayers(config) {
     const base = L.tileLayer(config.baseUrl, {
         attribution: config.attribution,
-        maxZoom: config.maxZoom || 18
-    });
-    
-    const labels = L.tileLayer(config.overlayUrl, {
-        attribution: '',
+        subdomains: config.subdomains || [],
         maxZoom: config.maxZoom || 18,
+        crossOrigin: 'anonymous'
+    });
+
+    const labels = L.tileLayer(config.overlayUrl, {
+        attribution: config.overlayAttribution || '',
+        maxZoom: config.maxZoom || 18,
+        opacity: config.overlayOpacity ?? 1,
+        crossOrigin: 'anonymous',
         pane: 'overlayPane'
     });
-    
+
     return { base, labels };
 }
 
@@ -308,52 +544,93 @@ function initGIBSMap() {
 function setupLayerControl() {
     const select = document.getElementById('gibs-layer-select');
     if (!select) return;
-    
-    // Clear existing options
+
+    const previousValue = select.value;
     select.innerHTML = '';
-    
-    // Group layers by category
-    const categories = {
+
+    const lat = window.userLocation?.lat || 10.25;
+    const lon = window.userLocation?.lon || -61.63;
+    const recommendedRegion = resolveWeatherRegion(lat, lon);
+
+    const staticCategories = {
         satellite: { label: '🛰️ Satellite Imagery', layers: [] },
         terrain: { label: '⛰️ Terrain & Topography', layers: [] },
         ocean: { label: '🌊 Ocean', layers: [] },
-        weather: { label: '🌦️ Live Weather (US/Americas)', layers: [] },
         nasa: { label: '🛰️ NASA GIBS', layers: [] },
         base: { label: '🗺️ Street Maps', layers: [] }
     };
-    
-    // Sort layers into categories
+
+    const weatherByRegion = new Map();
+    const usTools = [];
+
     Object.entries(SATELLITE_LAYERS).forEach(([key, config]) => {
         const cat = config.category || 'base';
-        if (categories[cat]) {
-            categories[cat].layers.push({ key, ...config });
+
+        if (cat === 'weather_us_tools') {
+            usTools.push({ key, ...config });
+            return;
+        }
+
+        if (cat.startsWith('weather_region_')) {
+            const regionId = config.regionId || cat.replace('weather_region_', '');
+            if (!weatherByRegion.has(regionId)) {
+                const region = WEATHER_REGIONS.find((r) => r.id === regionId);
+                weatherByRegion.set(regionId, {
+                    sortOrder: region?.sortOrder ?? 999,
+                    label: region?.label || regionId,
+                    layers: []
+                });
+            }
+            weatherByRegion.get(regionId).layers.push({ key, ...config });
+            return;
+        }
+
+        if (staticCategories[cat]) {
+            staticCategories[cat].layers.push({ key, ...config });
         }
     });
-    
-    // Create optgroups
-    Object.entries(categories).forEach(([catKey, category]) => {
-        if (category.layers.length === 0) return;
-        
+
+    const appendOptgroup = (label, layers, defaultKey = 'esri_satellite') => {
+        if (layers.length === 0) return;
+
         const optgroup = document.createElement('optgroup');
-        optgroup.label = category.label;
-        
-        category.layers.forEach(layer => {
+        optgroup.label = label;
+
+        layers.forEach((layer) => {
             const option = document.createElement('option');
             option.value = layer.key;
             option.textContent = layer.name;
-            if (layer.key === 'esri_satellite') {
+            if (layer.key === defaultKey) {
                 option.selected = true;
             }
             optgroup.appendChild(option);
         });
-        
+
         select.appendChild(optgroup);
+    };
+
+    const weatherGroups = Array.from(weatherByRegion.entries())
+        .sort((a, b) => a[1].sortOrder - b[1].sortOrder);
+
+    weatherGroups.forEach(([regionId, group]) => {
+        const isRecommended = regionId === 'auto' || regionId === recommendedRegion.id;
+        const prefix = isRecommended ? '★ ' : '';
+        appendOptgroup(`🌦️ ${prefix}${group.label}`, group.layers);
     });
+
+    if (usTools.length > 0) {
+        appendOptgroup('🌦️ US-only tools', usTools);
+    }
+
+    Object.entries(staticCategories).forEach(([, category]) => {
+        appendOptgroup(category.label, category.layers);
+    });
+
+    if (previousValue && SATELLITE_LAYERS[previousValue]) {
+        select.value = previousValue;
+    }
     
-    // Handle layer change
-    select.addEventListener('change', (e) => {
-        setGibsLayer(e.target.value);
-    });
+    select.onchange = (e) => setGibsLayer(e.target.value);
 }
 
 // Set the active layer
@@ -385,7 +662,34 @@ function setGibsLayer(layerKey) {
     showLoadingIndicator(true);
     
     // Create layer based on type
-    if (config.type === 'overlay') {
+    if (config.type === 'goes_overlay' || config.type === 'goes_overlay_dynamic') {
+        const lat = window.userLocation?.lat ?? gibsMap.getCenter().lat;
+        const lon = window.userLocation?.lon ?? gibsMap.getCenter().lng;
+        const resolvedConfig = config.type === 'goes_overlay_dynamic'
+            ? buildResolvedGoesConfig(config, lat, lon)
+            : config;
+
+        const layers = createGoesOverlayLayers(resolvedConfig);
+        baseLayer = layers.base;
+        currentLayer = layers.overlay;
+
+        baseLayer.addTo(gibsMap);
+        currentLayer.addTo(gibsMap);
+
+        currentLayer.on('load', () => showLoadingIndicator(false));
+        currentLayer.on('tileerror', handleTileError);
+
+        const region = resolvedConfig.resolvedRegion
+            || WEATHER_REGIONS.find((r) => r.id === resolvedConfig.regionId);
+        const center = config.type === 'goes_overlay_dynamic'
+            ? [lat, lon]
+            : (region?.center || [lat, lon]);
+        const zoom = Math.max(gibsMap.getZoom(), region?.suggestedZoom || resolvedConfig.suggestedZoom || 5);
+        gibsMap.setView(center, zoom);
+
+        updateLayerInfo({ ...resolvedConfig, name: config.name });
+        return;
+    } else if (config.type === 'overlay') {
         // Weather/overlay layers need a base map underneath
         const layers = createOverlayLayers(config);
         baseLayer = layers.base;
@@ -475,8 +779,11 @@ function updateLayerInfo(config) {
     if (!infoEl) return;
     
     let extraInfo = '';
-    if (config.category === 'weather') {
-        extraInfo = `<br><small>⚡ Live data - refreshes automatically</small>`;
+    if (config.category?.startsWith('weather_region_') || config.resolvedRegion) {
+        const regionLabel = config.resolvedRegion?.label || config.regionLabel || 'Regional GOES';
+        extraInfo = `<br><small>⚡ Live GOES satellite · ${regionLabel}</small>`;
+    } else if (config.category === 'weather_us_tools') {
+        extraInfo = '<br><small>⚡ Live data · Continental US coverage only</small>';
     }
     
     infoEl.innerHTML = `
@@ -500,6 +807,7 @@ function updateGIBSMapLocation() {
     const lon = window.userLocation?.lon || -61.63;
     
     centerGIBSMap(lat, lon);
+    setupLayerControl();
 }
 
 // Setup map control buttons

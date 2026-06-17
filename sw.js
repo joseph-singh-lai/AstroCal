@@ -1,4 +1,4 @@
-const CACHE_NAME = 'astrocaltt-v2';
+const CACHE_NAME = 'astrocaltt-v3';
 const SHELL = ['/', '/index.html', '/styles.css', '/js/app.js', '/assets/logo_header.png'];
 
 self.addEventListener('install', (event) => {
