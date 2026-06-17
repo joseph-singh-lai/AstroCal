@@ -2,7 +2,7 @@
 
 | Item | Web | Flutter | Status |
 |------|-----|---------|--------|
-| Default filters (apod, meteor, planet, astronomy) | `js/config.js` | `events_screen.dart` | ✅ |
+| Default filters (APOD only) | `js/config.js` | `events_screen.dart` | ✅ |
 | NASA refresh on load | `js/nasa-api.js` stale-while-revalidate | `events_screen.dart` `_loadEvents` | ✅ |
 | Header logo | `assets/logo_header.svg` | `assets/logo_header.png` | ✅ |
 | Earth Map naming | Nav label "Earth Map" | Nav label "Earth Map" | ✅ |

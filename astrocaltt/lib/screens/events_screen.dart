@@ -21,7 +21,7 @@ class EventsScreen extends StatefulWidget {
 class _EventsScreenState extends State<EventsScreen> {
   List<AstroEvent> _allEvents = [];
   List<AstroEvent> _filteredEvents = [];
-  final Set<String> _selectedCategories = {'apod', 'meteor', 'planet', 'astronomy'};
+  final Set<String> _selectedCategories = {'apod'};
   final _searchController = TextEditingController();
   bool _loading = true;
   bool _locationLoading = false;
@@ -152,7 +152,7 @@ class _EventsScreenState extends State<EventsScreen> {
     setState(() {
       _selectedCategories
         ..clear()
-        ..addAll(['apod', 'meteor', 'planet', 'astronomy']);
+        ..add('apod');
       _applyFilters();
     });
   }

@@ -1,4 +1,4 @@
-export const DEFAULT_CATEGORIES = ['apod', 'meteor', 'planet', 'astronomy'];
+export const DEFAULT_CATEGORIES = ['apod'];
 
 export const LA_BREA_COORDS = {
     lat: 10.25,
