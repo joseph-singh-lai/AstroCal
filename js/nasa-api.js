@@ -316,7 +316,7 @@ export async function loadEONET(forceRefresh = false) {
 
     try {
         const limit = 100;
-        const proxyUrl = `/api/eonet.js?status=open&limit=${limit}`;
+        const proxyUrl = `/api/eonet?status=open&limit=${limit}`;
         const response = await fetch(proxyUrl, {
             mode: 'cors',
             credentials: 'omit'

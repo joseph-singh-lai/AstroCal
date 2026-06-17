@@ -1,5 +1,5 @@
-# API Keys and Configuration
-config.js
+# API Keys and Configuration (root only — js/app-config.js is tracked)
+/config.js
 api-info-DO-NOT-DELETE.txt
 
 # Stellarium Web Engine build files

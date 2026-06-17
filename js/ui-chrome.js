@@ -4,6 +4,7 @@ import {
     loadingProgressContainer,
     loadingProgressFill,
     loadingProgressText,
+    selectedCategories,
     triggerApplyFilters
 } from './state.js';
 import { debounce, escapeRegExp } from './utils.js';
@@ -193,8 +194,10 @@ export function setupFilterPanel() {
         clearAllBtn.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
+            selectedCategories.clear();
+            DEFAULT_CATEGORIES.forEach(c => selectedCategories.add(c));
             document.querySelectorAll('.filter-checkbox input[type="checkbox"]').forEach(cb => {
-                cb.checked = DEFAULT_CATEGORIES.includes(cb.value);
+                cb.checked = selectedCategories.has(cb.value);
             });
             updateFilterCount();
             triggerApplyFilters();

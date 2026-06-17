@@ -71,9 +71,7 @@ function bootstrap() {
     }
 
     filterCheckboxes.forEach(checkbox => {
-        if (selectedCategories.has(checkbox.value)) {
-            checkbox.checked = true;
-        }
+        checkbox.checked = selectedCategories.has(checkbox.value);
     });
 
     showLoadingProgress();
