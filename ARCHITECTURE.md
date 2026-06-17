@@ -29,7 +29,7 @@ flowchart TB
 | NASA EONET | `/api/eonet` | `js/nasa-api.js` |
 | Open-Meteo astronomy | Direct CORS | `js/astronomy.js` |
 | ISS positions | WhereTheISS.at | `js/iss.js` |
-| Meteor/eclipse/supermoon | `data/astro_constants.js` | `js/events-generators.js` |
+| Meteor/eclipse/supermoon | `js/astro_constants.js` | `js/events-generators.js` |
 | T&T local tips | `data/local_tt.json` | `js/local-tt.js` |
 
 ## File map

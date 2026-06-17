@@ -1,4 +1,4 @@
-import { METEOR_SHOWERS, ECLIPSES, SUPERMOONS } from '../data/astro_constants.js';
+import { METEOR_SHOWERS, ECLIPSES, SUPERMOONS } from './astro_constants.js';
 import { allEvents, eventsContainer, syncWindowAllEvents } from './state.js';
 
 function generateEquinoxSolsticeEvents(year) {

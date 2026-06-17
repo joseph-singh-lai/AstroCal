@@ -28,7 +28,7 @@
       ]
     },
     {
-      "source": "/data/(.*)",
+      "source": "/data/(.*\\.json)",
       "headers": [
         {
           "key": "Content-Type",
