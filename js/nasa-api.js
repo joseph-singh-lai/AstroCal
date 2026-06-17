@@ -9,15 +9,24 @@ import {
 export async function nasaFetch(path, queryParams = {}) {
     const config = getNASAConfig();
     const params = new URLSearchParams({ path, ...queryParams });
+    let url;
     if (config?.useProxy) {
         const proxyBase = config.proxyUrl || '/api/nasa';
-        return fetch(`${proxyBase}?${params.toString()}`, { mode: 'cors', credentials: 'omit' });
-    }
-    if (config?.apiKey) {
+        url = `${proxyBase}?${params.toString()}`;
+    } else if (config?.apiKey) {
         params.set('api_key', config.apiKey);
-        return fetch(`${config.baseUrl}/${path}?${params.toString()}`, { mode: 'cors', credentials: 'omit' });
+        url = `${config.baseUrl}/${path}?${params.toString()}`;
+    } else {
+        throw new Error('NASA API not configured');
     }
-    throw new Error('NASA API not configured');
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 12000);
+    try {
+        return await fetch(url, { mode: 'cors', credentials: 'omit', signal: controller.signal });
+    } finally {
+        clearTimeout(timeoutId);
+    }
 }
 
 export function isCacheValid(cacheKey, maxAge) {

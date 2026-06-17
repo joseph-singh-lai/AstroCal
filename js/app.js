@@ -76,25 +76,24 @@ function bootstrap() {
 
     showLoadingProgress();
 
-    loadAPODPriority().then(() => {
-        updateLoadingProgress('apod');
-        Promise.all([
-            loadEvents().then(() => updateLoadingProgress('staticEvents')),
-            loadISSPasses().then(() => updateLoadingProgress('issPasses')),
-            loadNASADataOther(false, true).then(() => updateLoadingProgress('nasaData')),
-            loadAstronomyData().then(() => updateLoadingProgress('astronomy')),
-            loadPlanetVisibility(true).then(() => updateLoadingProgress('planetVisibility'))
-        ]).then(() => {
-            hideLoadingProgress();
+    Promise.all([
+        loadAPODPriority().then(() => updateLoadingProgress('apod')),
+        loadEvents().then(() => updateLoadingProgress('staticEvents')),
+        loadISSPasses().then(() => updateLoadingProgress('issPasses')),
+        loadNASADataOther(false, true).then(() => updateLoadingProgress('nasaData')),
+        loadAstronomyData().then(() => updateLoadingProgress('astronomy')),
+        loadPlanetVisibility(true).then(() => updateLoadingProgress('planetVisibility'))
+    ]).then(() => {
+        hideLoadingProgress();
+        applyFilters();
+        renderTonightStrip();
+    }).catch((error) => {
+        console.error('Error loading events:', error);
+        hideLoadingProgress();
+        if (allEvents.length > 0) {
             applyFilters();
             renderTonightStrip();
-        }).catch((error) => {
-            console.error('Error loading events:', error);
-            hideLoadingProgress();
-            if (allEvents.length > 0) {
-                applyFilters();
-            }
-        });
+        }
     });
 
     setupEventListeners();
