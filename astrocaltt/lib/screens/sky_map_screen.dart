@@ -343,7 +343,10 @@ class _SkyMapScreenState extends State<SkyMapScreen> {
           IconButton(icon: const Icon(Icons.refresh), onPressed: _resetView, tooltip: 'Reset'),
         ],
       ),
-      body: LayoutBuilder(builder: (context, constraints) {
+      body: Column(
+        children: [
+          Expanded(
+            child: LayoutBuilder(builder: (context, constraints) {
         final canvasSize = Size(constraints.maxWidth, constraints.maxHeight);
         return GestureDetector(
           onTapUp: (d) => _handleTap(d, canvasSize),
@@ -394,6 +397,10 @@ class _SkyMapScreenState extends State<SkyMapScreen> {
           ),
         );
       }),
+          ),
+          _HandAngleGuide(nightMode: nm),
+        ],
+      ),
     );
   }
 
@@ -832,6 +839,71 @@ class _LegendItem extends StatelessWidget {
     const SizedBox(width: 6),
     Text(label, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: on ? Colors.white : Colors.white54, fontSize: 12)),
   ])));
+}
+
+class _HandAngleGuide extends StatelessWidget {
+  final bool nightMode;
+  const _HandAngleGuide({required this.nightMode});
+
+  static const _items = <(String, String, String, String)>[
+    ('🤙', 'Pinky finger width', '~1°', 'The Moon and Sun are each about half a pinky wide.'),
+    ('☝️', 'Index finger width', '~1°', 'Useful for small gaps between close stars.'),
+    ('🤟', 'Three middle fingers', '~5°', "Orion's Belt is roughly three fingers long."),
+    ('✊', 'Closed fist', '~10°', 'The Big Dipper spans about two fists end to end.'),
+    ('🖐️', 'Spread hand (thumb to pinky)', '~25°', 'From the horizon to one hand-span up is ~25° altitude.'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = nightMode ? const Color(0xFFff9977) : Theme.of(context).colorScheme.primary;
+    final textColor = nightMode ? const Color(0xFFcc8866) : const Color(0xFFa0b8e0);
+    final bg = nightMode ? const Color(0xEE1a0500) : const Color(0xEE0a0f23);
+
+    return Material(
+      color: bg,
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+          iconColor: accent,
+          collapsedIconColor: accent,
+          title: Text(
+            '✋ Estimating angles with your hand',
+            style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w600, color: accent),
+          ),
+          children: [
+            Text(
+              'Hold your arm straight out at full length — your hand is a simple ruler against the sky.',
+              style: GoogleFonts.outfit(fontSize: 12, color: textColor, height: 1.45),
+            ),
+            const SizedBox(height: 10),
+            ..._items.map((item) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: nightMode ? const Color(0x331a0000) : const Color(0x33142032),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: accent.withValues(alpha: 0.2)),
+                ),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('${item.$1} ${item.$2}', style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white)),
+                  Text(item.$3, style: GoogleFonts.orbitron(fontSize: 14, fontWeight: FontWeight.w700, color: accent)),
+                  Text(item.$4, style: GoogleFonts.outfit(fontSize: 11, color: textColor, height: 1.4)),
+                ]),
+              ),
+            )),
+            Text(
+              "Tip: Hand sizes vary — calibrate against Orion's Belt (~3°). Enable Grid in layers to practice.",
+              style: GoogleFonts.outfit(fontSize: 11, color: textColor, height: 1.45),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _TimeBar extends StatelessWidget {
